@@ -1,77 +1,327 @@
 /* ============================================================
    VISTA — View (funciones puras estado → DOM)
-   PASO 1: render MÍNIMO para confirmar el flujo sobre el modelo v4.
-   (Los 3 tabs reales se construyen en el PASO 2.)
-   No muta estado ni toca persistencia.
+   PASO 2: tab Primadas (corazón) + overlays Personas/Ajustes.
+   Render puro: recibe (state, ui) y dibuja. NO muta estado ni persiste.
+   `ui` es estado EFÍMERO de navegación (tab/overlay) que vive en el
+   Controller — NO es estado de dominio, por eso no entra al Store v4.
    ============================================================ */
 (function (root) {
   'use strict';
 
   const Util  = root.Util;
   const Store = root.Store;
+  const S     = () => Store.select;
   const els = {};
 
   function cache() {
-    els.screen = document.getElementById('screen');
-    els.toast  = document.getElementById('toast');
+    els.screen  = document.getElementById('screen');
+    els.overlay = document.getElementById('overlay');
+    els.toast   = document.getElementById('toast');
+    els.tabbar  = document.getElementById('tabbar');
   }
 
-  function badge(text, cls) { return `<span class="badge ${cls || ''}">${text}</span>`; }
+  /* ---------- helpers de marcado ---------- */
+  const e = Util.esc;
+  const $peso = Util.peso;
+  function badge(text, cls) { return `<span class="badge ${cls || ''}">${e(text)}</span>`; }
+  function nombrePersona(id) { const p = S().persona(id); return p ? p.nombre : '—'; }
 
-  function activePanel() {
-    const S = Store.select;
-    const p = S.activePrimada();
-    if (!p) return '<div class="empty">No hay primada activa.<br>Crea una con “+ Primada”.</div>';
-    const inf = S.informePrincipal(p);
-    const inc = S.primadaIncompleta(p) ? ' ' + badge('sin principal', 'warn') : '';
-    return `<div class="panel">
-        <div class="panel-title">${Util.esc(p.nombre)}${inc}</div>
-        <div class="kv"><span>Mes contable</span><b>${Util.esc(Util.monthLabel(p.mesContable))}</b></div>
-        <div class="kv"><span>Estado</span><b>${p.estado}</b></div>
-        <div class="kv"><span>Asistencias</span><b>${p.asistencias.length}</b></div>
-        <div class="kv"><span>Recaudado</span><b>${Util.peso(S.recaudado(p))}</b></div>
-        <div class="kv"><span>Ganancia (al Tesorero)</span><b>${Util.peso(inf.entregaTesorero)}</b></div>
-        <div class="kv"><span>Reparte entre</span><b>${S.asistenciasAhorradoras(p).length} ahorrador(es)</b></div>
+  /* ============================================================
+     TAB PRIMADAS (corazón)
+     ============================================================ */
+  function primadaCabecera(p) {
+    const cerrada = p.estado === 'cerrada';
+    const inc = S().primadaIncompleta(p) ? ' ' + badge('sin principal', 'warn') : '';
+    const ro = cerrada ? 'disabled' : '';
+    return `<div class="card">
+      <div class="card-head">
+        <input class="ti name" data-ch="rename-primada" data-id="${p.id}" value="${e(p.nombre)}" ${ro} maxlength="40" aria-label="Nombre de la primada">
+        ${inc}
+      </div>
+      <div class="grid2">
+        <label class="fld"><span>Fecha</span>
+          <input class="ti" type="date" data-ch="fecha-primada" data-id="${p.id}" value="${e(p.fecha)}" ${ro}></label>
+        <label class="fld"><span>Mes contable</span>
+          <input class="ti" type="month" data-ch="mes-primada" data-id="${p.id}" value="${e(p.mesContable)}" ${ro}></label>
+      </div>
+      <div class="row gap end">
+        <span class="state ${cerrada ? 'closed' : 'open'}">${cerrada ? '🔒 Cerrada' : '🟢 Abierta'}</span>
+        ${cerrada
+          ? `<button class="mini" data-act="reabrir-primada" data-id="${p.id}">Reabrir</button>`
+          : `<button class="mini" data-act="cerrar-primada" data-id="${p.id}">Cerrar cuenta</button>`}
+        <button class="mini danger" data-act="borrar-primada" data-id="${p.id}">Borrar</button>
+      </div>
+    </div>`;
+  }
+
+  function productosStepper(p, a) {
+    const cerrada = p.estado === 'cerrada';
+    return p.productos.map(prod => {
+      const q = a.items[prod.id] || 0;
+      const dis = cerrada ? 'disabled' : '';
+      return `<div class="prod ${q ? 'has' : ''}">
+        <span class="prod-name">${e(prod.emoji)} ${e(prod.nombre)} <i>${$peso(prod.precioVenta)}</i></span>
+        <span class="stepper">
+          <button class="step" data-act="item-minus" data-pid="${a.personaId}" data-prod="${prod.id}" ${dis} aria-label="menos">−</button>
+          <b class="qty">${q}</b>
+          <button class="step" data-act="item-plus" data-pid="${a.personaId}" data-prod="${prod.id}" ${dis} aria-label="más">+</button>
+        </span>
       </div>`;
+    }).join('');
+  }
+
+  function coverLinea(p, a) {
+    const cerrada = p.estado === 'cerrada';
+    const dis = cerrada ? 'disabled' : '';
+    if (a.rol !== 'asistente') {
+      return `<div class="cover org">Sin cover · organizador (su margen sí entra al fondo)</div>`;
+    }
+    const cv = S().coverDe(p, a);
+    if (a.coverExonerado) {
+      return `<div class="cover">Cover <b>exonerado</b> ($0)
+        <button class="mini" data-act="toggle-exonerado" data-pid="${a.personaId}" ${dis}>Cobrar cover</button></div>`;
+    }
+    return `<div class="cover">Cover <b>${$peso(cv)}</b> <i>(${a.estadoEnEseMomento})</i>
+      <button class="mini" data-act="toggle-exonerado" data-pid="${a.personaId}" ${dis}>Exonerar</button></div>`;
+  }
+
+  function rolSelect(p, a) {
+    const cerrada = p.estado === 'cerrada';
+    const esAhorrador = a.estadoEnEseMomento === 'ahorrador';
+    // INVARIANTE #2: solo un snapshot 'ahorrador' puede ser principal → la opción se deshabilita si no.
+    const opt = (val, label) => {
+      const disabled = (val === 'principal' && !esAhorrador) ? 'disabled' : '';
+      const sel = a.rol === val ? 'selected' : '';
+      return `<option value="${val}" ${sel} ${disabled}>${label}</option>`;
+    };
+    return `<select class="sel rol" data-ch="rol" data-pid="${a.personaId}" data-id="${p.id}" ${cerrada ? 'disabled' : ''}>
+      ${opt('asistente', 'Asistente')}
+      ${opt('organizador', 'Organizador')}
+      ${opt('principal', 'Principal' + (esAhorrador ? '' : ' (solo ahorrador)'))}
+    </select>`;
+  }
+
+  function asistenciaCard(p, a) {
+    const cerrada = p.estado === 'cerrada';
+    const total = S().totalAsistencia(p, a);
+    const esPrin = S().esPrincipal(p, a);
+    const saldo = S().saldoDe(p, a);
+    const snapBadge = badge(a.estadoEnEseMomento, a.estadoEnEseMomento === 'ahorrador' ? 'good' : '');
+    return `<div class="asis ${esPrin ? 'is-principal' : ''}">
+      <div class="asis-head">
+        <div class="asis-id">
+          <b>${e(nombrePersona(a.personaId))}</b> ${snapBadge}
+          ${esPrin ? badge('principal', 'red') : ''}
+        </div>
+        <div class="asis-ctl">
+          ${rolSelect(p, a)}
+          <button class="mini danger" data-act="remove-asistencia" data-pid="${a.personaId}" ${cerrada ? 'disabled' : ''} aria-label="quitar">✕</button>
+        </div>
+      </div>
+      ${coverLinea(p, a)}
+      <div class="prods">${productosStepper(p, a)}</div>
+      <div class="asis-foot">
+        <span>Total <b>${$peso(total)}</b></span>
+        ${esPrin ? `<span class="muted">auto-saldado (principal)</span>`
+                 : `<span>Saldo <b class="${saldo > 0 ? 'owe' : ''}">${$peso(saldo)}</b></span>`}
+      </div>
+    </div>`;
+  }
+
+  function pickerAsistentes(p) {
+    if (p.estado === 'cerrada') return '';
+    const dentro = new Set(p.asistencias.map(a => a.personaId));
+    const fuera = S().personasOrdenadas().filter(per => !dentro.has(per.id));
+    const opts = fuera.length
+      ? fuera.map(per => `<option value="${per.id}">${e(per.nombre)} · ${per.estado}</option>`).join('')
+      : '';
+    return `<div class="addbar">
+      <select class="sel" id="as-pick" ${fuera.length ? '' : 'disabled'}>
+        ${fuera.length ? opts : '<option>— directorio vacío —</option>'}
+      </select>
+      <button class="mini" data-act="add-asistencia" ${fuera.length ? '' : 'disabled'}>+ Asistente</button>
+      <button class="mini ghost" data-act="open-personas">Nueva persona</button>
+    </div>`;
+  }
+
+  function reparto(p) {
+    const sel = S();
+    const gan = sel.ganancia(p);
+    const ahorr = sel.asistenciasAhorradoras(p);
+    const pi = sel.parteIgual(p);
+    const sob = sel.sobranteFondo(p);
+    const lista = ahorr.length
+      ? ahorr.map(a => `<div class="kv"><span>${e(nombrePersona(a.personaId))}</span><b>${$peso(pi)}</b></div>`).join('')
+      : `<div class="muted small">Sin asistencias ahorradoras todavía.</div>`;
+    return `<div class="card dark">
+      <div class="card-title">Reparto del fondo</div>
+      <div class="kv"><span>Cover cobrado</span><b>${$peso(sel.coverCobrado(p))}</b></div>
+      <div class="kv"><span>Margen de productos</span><b>${$peso(sel.margenTotal(p))}</b></div>
+      <div class="kv total"><span>Ganancia de la primada</span><b>${$peso(gan)}</b></div>
+      <div class="kv"><span>Asistencias ahorradoras</span><b>${ahorr.length}</b></div>
+      <div class="kv"><span>Parte igual c/u</span><b>${$peso(pi)}</b></div>
+      <div class="kv"><span>Sobrante (queda en el fondo)</span><b>${$peso(sob)}</b></div>
+      <div class="sub">Reparto por persona</div>
+      ${lista}
+    </div>`;
+  }
+
+  function informe(p) {
+    const sel = S();
+    const inf = sel.informePrincipal(p);
+    if (inf.incompleta) {
+      return `<div class="card">
+        <div class="card-title">Informe del principal</div>
+        <div class="muted small">Asigna un <b>principal</b> (rol en una asistencia ahorradora) para ver cuánto recupera y entrega al Tesorero.</div>
+      </div>`;
+    }
+    const prinId = p.organizadorPrincipalId;
+    const deud = sel.deudores(p).filter(d => d.personaId !== prinId);
+    const deudList = deud.length
+      ? deud.map(d => `<div class="kv"><span>${e(nombrePersona(d.personaId))}</span><b class="owe">${$peso(d.saldo)}</b></div>`).join('')
+      : `<div class="muted small">Nadie debe (o aún no se registran consumos).</div>`;
+    return `<div class="card">
+      <div class="card-title">Informe del principal — ${e(nombrePersona(prinId))}</div>
+      <div class="kv"><span>Llave de pago (Bre-B)</span><b>${p.pago.breB ? e(p.pago.breB) : '— sin llave —'}</b></div>
+      <div class="kv"><span>Recaudo teórico</span><b>${$peso(inf.recaudadoTeorico)}</b></div>
+      <div class="kv"><span>Recupera de su bolsillo</span><b>${$peso(inf.recuperaPrincipal)}</b></div>
+      <div class="kv total"><span>Entrega al Tesorero</span><b>${$peso(inf.entregaTesorero)}</b></div>
+      <div class="kv"><span>Recaudo real (abonos)</span><b>${$peso(inf.recaudadoReal)}</b></div>
+      <div class="kv"><span>Saldo pendiente</span><b class="${inf.saldoPendiente > 0 ? 'owe' : ''}">${$peso(inf.saldoPendiente)}</b></div>
+      <div class="sub">Quién debe</div>
+      ${deudList}
+    </div>`;
+  }
+
+  function primadaDetalle(p) {
+    return `${primadaCabecera(p)}
+      <h2 class="h2">Asistencias <span class="muted">(${p.asistencias.length})</span></h2>
+      ${pickerAsistentes(p)}
+      <div class="asis-list">
+        ${p.asistencias.length
+          ? p.asistencias.map(a => asistenciaCard(p, a)).join('')
+          : '<div class="empty">Aún no hay asistencias. Agrega personas del directorio.</div>'}
+      </div>
+      ${reparto(p)}
+      ${informe(p)}`;
   }
 
   function primadaItem(state, p) {
-    const S = Store.select;
+    const sel = S();
     const activo = p.id === state.activePrimadaId ? 'active' : '';
-    const inc = S.primadaIncompleta(p) ? ' ' + badge('incompleta', 'warn') : '';
+    const inc = sel.primadaIncompleta(p) ? ' ' + badge('incompleta', 'warn') : '';
+    const cer = p.estado === 'cerrada' ? ' 🔒' : '';
     return `<button class="pitem ${activo}" data-act="select-primada" data-id="${p.id}">
-        <div class="pitem-main">
-          <div class="pitem-name">${Util.esc(p.nombre)}${inc}</div>
-          <div class="pitem-meta">${Util.esc(Util.monthLabel(p.mesContable))} · ${p.asistencias.length} asist. · ${p.estado}</div>
-        </div>
-        <div class="pitem-num"><div class="muted">recaudo</div><b>${Util.peso(S.recaudado(p))}</b></div>
-      </button>`;
+      <div class="pitem-main">
+        <div class="pitem-name">${e(p.nombre)}${inc}${cer}</div>
+        <div class="pitem-meta">${e(Util.monthLabel(p.mesContable))} · ${p.asistencias.length} asist.</div>
+      </div>
+      <div class="pitem-num"><div class="muted">ganancia</div><b>${$peso(sel.ganancia(p))}</b></div>
+    </button>`;
   }
 
-  function render(state) {
-    const nPer = state.personas.length, nPrm = state.primadas.length;
-    els.screen.innerHTML = `
-      <div class="status">Modelo <b>v${state.schemaVersion}</b> cableado ✓ · ${nPer} persona(s) · ${nPrm} primada(s) en el directorio.</div>
-
+  function tabPrimadas(state) {
+    const activa = S().activePrimada();
+    const otras = state.primadas.filter(p => !activa || p.id !== activa.id);
+    return `
       <div class="bar">
-        <button class="btn" data-act="new-primada">+ Primada</button>
-        <button class="btn ghost" data-act="new-persona">+ Persona</button>
+        <button class="btn" data-act="new-primada">+ Nueva primada</button>
       </div>
+      ${activa ? primadaDetalle(activa)
+               : '<div class="empty">No hay primada activa.<br>Crea una con “+ Nueva primada”.</div>'}
+      ${otras.length ? `<h2 class="h2">Otras primadas</h2>
+        <div class="plist">${otras.map(p => primadaItem(state, p)).join('')}</div>` : ''}`;
+  }
 
-      ${activePanel()}
+  /* ============================================================
+     TABS Resumen / Fondo (placeholders)
+     ============================================================ */
+  function placeholder(titulo, txt) {
+    return `<div class="empty big"><div class="ph-title">${e(titulo)}</div><div>${txt}</div>
+      <div class="badge warn" style="margin-top:10px">Próximamente</div></div>`;
+  }
 
-      <h2 class="h2">Primadas</h2>
-      <div class="plist">
-        ${nPrm ? state.primadas.map(p => primadaItem(state, p)).join('') : '<div class="empty">Aún no hay primadas.</div>'}
+  /* ============================================================
+     OVERLAYS (detrás del engranaje): Personas y Ajustes
+     ============================================================ */
+  function overlayPersonas(state) {
+    const personas = S().personasOrdenadas();
+    const filas = personas.length
+      ? personas.map(per => `<div class="prow">
+          <input class="ti" data-ch="rename-persona" data-pid="${per.id}" value="${e(per.nombre)}" maxlength="40" aria-label="Nombre">
+          <button class="mini ${per.estado === 'ahorrador' ? 'on' : ''}" data-act="toggle-estado-persona" data-pid="${per.id}">${per.estado}</button>
+          <input class="ti breb" data-ch="breb-persona" data-pid="${per.id}" value="${per.breB ? e(per.breB) : ''}" placeholder="Llave Bre-B" aria-label="Llave Bre-B">
+        </div>`).join('')
+      : '<div class="muted small">Directorio vacío. Agrega la primera persona abajo.</div>';
+    return overlayShell('Personas', `
+      <div class="plist-people">${filas}</div>
+      <div class="sub">Agregar persona</div>
+      <div class="addbar">
+        <input class="ti" id="np-nombre" placeholder="Nombre" maxlength="40">
+        <select class="sel" id="np-estado">
+          <option value="ahorrador">ahorrador</option>
+          <option value="invitado">invitado</option>
+        </select>
+        <button class="mini" data-act="add-persona">+ Agregar</button>
       </div>
+      <div class="muted small" style="margin-top:8px">El <b>estado</b> es vigente y puede cambiar sin reescribir la historia: las asistencias ya creadas conservan su snapshot.</div>
+    `);
+  }
 
-      <div class="note">PASO 1 · cableado mínimo del modelo v4.<br>El tab <b>Primadas</b> completo (organizadores, consumos, cover, informe) llega en el PASO 2.</div>`;
+  function overlayAjustes(state) {
+    const c = state.settings.cover;
+    return overlayShell('Ajustes', `
+      <div class="sub">Cover vigente (aplica a primadas NUEVAS)</div>
+      <div class="grid2">
+        <label class="fld"><span>Ahorrador</span>
+          <input class="ti" type="number" min="0" step="500" data-ch="cover-ahorrador" value="${c.ahorrador}"></label>
+        <label class="fld"><span>Invitado</span>
+          <input class="ti" type="number" min="0" step="500" data-ch="cover-invitado" value="${c.invitado}"></label>
+      </div>
+      <div class="muted small" style="margin-top:8px">Editar el cover NO reescribe el snapshot de primadas ya creadas.</div>
+    `);
+  }
+
+  function overlayShell(titulo, body) {
+    return `<div class="sheet">
+      <div class="sheet-head">
+        <div class="sheet-title">${e(titulo)}</div>
+        <button class="gear" data-act="close-overlay" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="sheet-body">${body}</div>
+    </div>`;
+  }
+
+  /* ============================================================
+     RENDER raíz: (state, ui) → DOM
+     ============================================================ */
+  function render(state, ui) {
+    ui = ui || { tab: 'primadas', overlay: null };
+
+    // 1) tabbar: marcar el activo
+    if (els.tabbar) {
+      els.tabbar.querySelectorAll('.tab').forEach(t =>
+        t.classList.toggle('active', t.dataset.tab === ui.tab));
+    }
+
+    // 2) contenido del tab
+    let html;
+    if (ui.tab === 'resumen')      html = placeholder('Resumen', 'El dashboard del fondo (totales y estado) se construye luego de Primadas.');
+    else if (ui.tab === 'fondo')   html = placeholder('Fondo', 'Tesorería: aportes, retiros, préstamos y actividades extra.');
+    else                           html = tabPrimadas(state);
+    els.screen.innerHTML = html;
+
+    // 3) overlay (detrás del engranaje)
+    if (ui.overlay === 'personas')      els.overlay.innerHTML = overlayPersonas(state);
+    else if (ui.overlay === 'ajustes')  els.overlay.innerHTML = overlayAjustes(state);
+    else                                els.overlay.innerHTML = '';
+    els.overlay.hidden = !ui.overlay;
   }
 
   let toastTimer;
   function toast(msg) {
     els.toast.textContent = msg; els.toast.classList.add('show');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2200);
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2400);
   }
 
   root.View = { cache, render, toast };

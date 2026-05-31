@@ -4,7 +4,7 @@
   "private": true,
   "description": "Núcleo de eventos de La Primada — natillera familiar, vanilla JS servido por GitHub Pages",
   "scripts": {
-    "test": "node tests/run.js"
+    "test": "node tests/run.js && node tests/e2e.js"
   },
   "devDependencies": {
     "jsdom": "^24.0.0"

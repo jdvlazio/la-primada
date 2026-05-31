@@ -193,11 +193,12 @@ Asistencia{ personaId, estadoEnEseMomento:'ahorrador'|'invitado', rol:'principal
       selectores + acciones + invariantes, todo con tests. *(UI pendiente.)*
 - [x] **PASO 1:** split del `index.html` a shell + `<script src>` (config→util→store→view→controller) + `view.js`/`controller.js`
       mínimos cableados al modelo v4 (migra localStorage al abrir). Sin tabs todavía.
-- [ ] **PASO 2:** UI Tab **Primadas** (corazón): crear/seleccionar primada, organizadores/principal, asistencias, consumos (±),
-      cover automático por tipo con exoneración, resumen de ganancia + informe del principal.
+- [x] **PASO 2:** UI Tab **Primadas** (corazón): crear/seleccionar primada, organizadores/principal, asistencias, consumos (±),
+      cover automático por tipo con exoneración, resumen de ganancia + informe del principal. Verificado en navegador real
+      (Chrome) + e2e con jsdom (clics reales). Personas/Ajustes mínimos tras el engranaje como prerrequisito.
 - [ ] UI Tab Historial: primadas pasadas con totales, ganancias y deudas; registro de abonos.
-- [ ] Directorio de personas en UI: alta, cambio de estado, `breB`.
-- [ ] Tab "Próximamente" (placeholder).
+- [ ] Directorio de personas en UI (pantalla propia tras el engranaje): alta, cambio de estado, `breB`. *(versión mínima ya cableada en PASO 2.)*
+- [ ] Tab "Próximamente" (placeholder). *(Resumen y Fondo ya muestran placeholder en PASO 2.)*
 - [ ] **Futuro:** módulo de **Ahorro/Tesorería** (aportes mensuales, retiros, préstamos, inversiones, actividades extra).
 - [ ] **Futuro:** cierre de año / liquidación por persona (aún NO; el año es solo etiqueta).
 - [ ] **Futuro:** **costo fijo de rifa/premio.** Hoy la rifa se modela como producto con `costoNeto = 0` (ganancia bruta);
@@ -221,3 +222,16 @@ Asistencia{ personaId, estadoEnEseMomento:'ahorrador'|'invitado', rol:'principal
 - Las **decisiones de producto/arquitectura** se toman fuera de código (chat PM) y se reflejan aquí.
 - El **trabajo de código** lo hace Claude Code: implementa el roadmap respetando esta guía, corre pruebas y commitea.
 - Ante una decisión de producto ambigua, **preguntar** antes de inventar; no cambiar el alcance por cuenta propia.
+
+## Resumen copiable (regla de comunicación)
+El usuario trabaja con Claude Code por **Remote Control en el celular**, donde no se puede seleccionar y copiar
+el texto largo de las respuestas. Por eso, **SIEMPRE** termina cada respuesta con un bloque de resumen dentro de un
+**único bloque de código** (```), que el usuario pueda copiar de un toque para pegarlo en el chat de PM. El resumen
+debe ser **autocontenido** e incluir:
+- **Qué hiciste** (cambios concretos: archivos, acciones).
+- **Resultado de la verificación** (tests, números clave, lo que se confirmó en el navegador).
+- **Estado del repo** (qué está commiteado, en qué rama, qué queda sin commitear).
+- **Qué sigue** / qué decisión o aprobación se necesita del usuario.
+
+Mantén el resumen **conciso pero completo**: es lo único que el PM va a ver, así que no dejes por fuera nada que
+necesite para decidir. El detalle largo va arriba como siempre, pero **el bloque copiable al final es obligatorio**.
