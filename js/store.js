@@ -234,7 +234,12 @@
     } catch (e) { state = defaultState(); }
   }
   function persist() { try { if (typeof localStorage !== 'undefined') localStorage.setItem(CONFIG.storageKey, JSON.stringify(state)); } catch (e) {} }
-  function commit() { persist(); listeners.forEach(fn => fn(state)); }
+  function notify() { listeners.forEach(fn => fn(state)); }
+  function commit() { persist(); notify(); }
+  // Persiste SIN notificar (sin re-render). Para ediciones de texto en vivo (nombre, cover,
+  // fecha, breB): el input ya muestra lo tecleado; reconstruir el DOM en plena edición rompería
+  // el foco y el cursor. El próximo render estructural reflejará lo derivado.
+  function commitQuiet() { persist(); }
   function subscribe(fn) { listeners.push(fn); }
 
   /* ---------- Helpers de derivación ---------- */
@@ -326,14 +331,14 @@
     },
     // INVARIANTE #1 (inmutabilidad histórica): solo cambia el estado VIGENTE; NUNCA toca estadoEnEseMomento de asistencias.
     setEstadoPersona(personaId, estado) { const per = select.persona(personaId); if (!per) return; per.estado = normEstado(estado); commit(); },
-    renombrarPersona(personaId, nombre) { const per = select.persona(personaId); if (!per) return; per.nombre = String(nombre || per.nombre).slice(0, 40); commit(); },
-    setBreBPersona(personaId, breB) { const per = select.persona(personaId); if (!per) return; per.breB = (breB != null && breB !== '') ? String(breB) : null; commit(); },
+    renombrarPersona(personaId, nombre) { const per = select.persona(personaId); if (!per) return; per.nombre = String(nombre || per.nombre).slice(0, 40); commitQuiet(); },
+    setBreBPersona(personaId, breB) { const per = select.persona(personaId); if (!per) return; per.breB = (breB != null && breB !== '') ? String(breB) : null; commitQuiet(); },
 
     // ----- settings -----
     setCover({ ahorrador, invitado } = {}) {
       if (ahorrador != null) state.settings.cover.ahorrador = Number(ahorrador) || 0;
       if (invitado != null) state.settings.cover.invitado = Number(invitado) || 0;
-      commit();
+      commitQuiet();
     },
     upsertDefaultProducto(prod) {
       const np = normProducts([prod])[0];
@@ -383,9 +388,9 @@
       commit(); return prm.id;
     },
     seleccionarPrimada(id) { if (findPrimada(id)) { state.activePrimadaId = id; commit(); } },
-    renombrarPrimada(id, nombre) { const p = findPrimada(id); if (!p) return; p.nombre = String(nombre || p.nombre).slice(0, 40); commit(); },
-    setFecha(id, fecha) { const p = findPrimada(id); if (!p) return; p.fecha = normFecha(fecha); commit(); },
-    setMesContable(id, mes) { const p = findPrimada(id); if (!p) return; if (/^\d{4}-\d{2}$/.test(String(mes))) { p.mesContable = mes; commit(); } },
+    renombrarPrimada(id, nombre) { const p = findPrimada(id); if (!p) return; p.nombre = String(nombre || p.nombre).slice(0, 40); commitQuiet(); },
+    setFecha(id, fecha) { const p = findPrimada(id); if (!p) return; p.fecha = normFecha(fecha); commitQuiet(); },
+    setMesContable(id, mes) { const p = findPrimada(id); if (!p) return; if (/^\d{4}-\d{2}$/.test(String(mes))) { p.mesContable = mes; commitQuiet(); } },
     cerrarPrimada(id) { const p = findPrimada(id); if (!p) return; p.estado = 'cerrada'; commit(); },
     reabrirPrimada(id) { const p = findPrimada(id); if (!p) return; p.estado = 'abierta'; commit(); },
     borrarPrimada(id) {

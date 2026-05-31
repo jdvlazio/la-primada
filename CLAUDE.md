@@ -91,6 +91,12 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
 - `Controller` (`js/controller.js`) — escucha eventos (delegación) y llama `Store.actions`. **No** dibuja ni persiste.
 - Flujo único e inviolable: **evento → acción → commit (guarda) → notifica → render**.
 - La Vista se suscribe a Store y **re-renderiza la sección completa** en cada cambio (deliberado).
+- **Excepción `commitQuiet` (fluidez de inputs):** las ediciones de **texto en vivo** (`renombrarPrimada`, `setFecha`,
+  `setMesContable`, `renombrarPersona`, `setBreBPersona`, `setCover`) persisten **sin notificar** (`commitQuiet`),
+  por lo que **no** disparan re-render. Motivo: el re-render completo reconstruiría el `<input>` en plena escritura y
+  rompería foco y cursor; el campo ya muestra lo tecleado y el próximo render estructural reflejará lo derivado.
+  Todo lo demás (consumos ±, roles, abonos, alta/baja, navegación) usa `commit` normal (persiste **y** re-renderiza).
+  Regla: una acción nueva de **edición de texto en un input** usa `commitQuiet`; cualquier cambio **estructural** usa `commit`.
 
 ## Navegación (DECIDIDA) — 3 tabs inferiores + engranaje
 - **Barra de tabs inferior (fija):**

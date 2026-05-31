@@ -338,6 +338,12 @@
 
   /* ============================================================
      RENDER raíz: (state, ui) → DOM
+     ------------------------------------------------------------
+     Re-render completo de la sección (deliberado). Para que escribir
+     sea fluido, las ediciones de texto persisten SIN disparar render
+     (Store.commitQuiet): así no se reconstruye el campo en plena
+     edición ni se pelea con el foco. Los cambios estructurales
+     (consumos, roles, abonos, navegación) sí re-renderizan.
      ============================================================ */
   function render(state, ui) {
     ui = ui || { tab: 'primadas', overlay: null };
