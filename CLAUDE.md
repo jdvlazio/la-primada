@@ -202,7 +202,10 @@ Asistencia{ personaId, estadoEnEseMomento:'ahorrador'|'invitado', rol:'principal
 - [x] **PASO 2:** UI Tab **Primadas** (corazón): crear/seleccionar primada, organizadores/principal, asistencias, consumos (±),
       cover automático por tipo con exoneración, resumen de ganancia + informe del principal. Verificado en navegador real
       (Chrome) + e2e con jsdom (clics reales). Personas/Ajustes mínimos tras el engranaje como prerrequisito.
-- [ ] UI Tab Historial: primadas pasadas con totales, ganancias y deudas; registro de abonos.
+- [x] Historial **dentro del tab Primadas** (no es tab aparte): la activa arriba, las pasadas debajo (lista con
+      nombre, fecha, recaudo y ganancia, ordenadas por fecha); tap abre cualquiera. Abrir una vieja muestra sus
+      **snapshots congelados** (cover y precios de cuando se creó), no se recalcula con valores de hoy.
+      Verificado en navegador real. Abonos y "quién debe" ya integrados en el detalle.
 - [x] Directorio de personas en UI (pantalla propia tras el engranaje): alta, edición de nombre, cambio de estado
       ahorrador↔invitado (vigente, sin reescribir snapshots), llave `breB`, y nº de primadas donde aparece.
       Verificado en navegador real (INVARIANTE #1: misma persona, dos primadas, dos snapshots distintos).

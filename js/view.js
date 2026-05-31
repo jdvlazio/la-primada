@@ -231,30 +231,39 @@
       ${informe(p)}`;
   }
 
+  // Ítem del historial. Las cifras salen de los SNAPSHOTS de esa primada (cover y precios
+  // congelados al crearla), no de los valores globales de hoy → muestra "lo que fue".
   function primadaItem(state, p) {
     const sel = S();
-    const activo = p.id === state.activePrimadaId ? 'active' : '';
     const inc = sel.primadaIncompleta(p) ? ' ' + badge('incompleta', 'warn') : '';
-    const cer = p.estado === 'cerrada' ? ' 🔒' : '';
-    return `<button class="pitem ${activo}" data-act="select-primada" data-id="${p.id}">
+    const estado = p.estado === 'cerrada' ? badge('cerrada', '') : badge('abierta', 'good');
+    return `<button class="pitem" data-act="select-primada" data-id="${p.id}">
       <div class="pitem-main">
-        <div class="pitem-name">${e(p.nombre)}${inc}${cer}</div>
-        <div class="pitem-meta">${e(Util.monthLabel(p.mesContable))} · ${p.asistencias.length} asist.</div>
+        <div class="pitem-name">${e(p.nombre)}${inc}</div>
+        <div class="pitem-meta">${e(Util.monthLabel(p.mesContable))} · ${e(p.fecha)} · ${p.asistencias.length} asist. ${estado}</div>
       </div>
-      <div class="pitem-num"><div class="muted">ganancia</div><b>${$peso(sel.ganancia(p))}</b></div>
+      <div class="pitem-num">
+        <div><span class="muted">recaudo</span> <b>${$peso(sel.recaudado(p))}</b></div>
+        <div><span class="muted">ganancia</span> <b class="g">${$peso(sel.ganancia(p))}</b></div>
+      </div>
     </button>`;
   }
 
   function tabPrimadas(state) {
     const activa = S().activePrimada();
-    const otras = state.primadas.filter(p => !activa || p.id !== activa.id);
+    // Historial: todas menos la activa, más recientes arriba (por fecha).
+    const otras = state.primadas
+      .filter(p => !activa || p.id !== activa.id)
+      .slice()
+      .sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0));
     return `
       <div class="bar">
         <button class="btn" data-act="new-primada">+ Nueva primada</button>
       </div>
       ${activa ? primadaDetalle(activa)
                : '<div class="empty">No hay primada activa.<br>Crea una con “+ Nueva primada”.</div>'}
-      ${otras.length ? `<h2 class="h2">Otras primadas</h2>
+      ${otras.length ? `<h2 class="h2">Historial <span class="muted">(${otras.length})</span></h2>
+        <div class="muted small" style="margin:-4px 2px 8px">Toca una para abrirla. Cada una muestra sus valores congelados (cover y precios de cuando se creó).</div>
         <div class="plist">${otras.map(p => primadaItem(state, p)).join('')}</div>` : ''}`;
   }
 

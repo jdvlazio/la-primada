@@ -208,6 +208,29 @@ const saved = JSON.parse(window.localStorage.getItem('laPrimada'));
 check('localStorage tiene schemaVersion 4', saved && saved.schemaVersion === 4);
 check('Persistió la primada con sus 2 asistencias', saved.primadas[0].asistencias.length === 2);
 
+/* ---------- 11. Historial: abrir una primada vieja muestra valores CONGELADOS ---------- */
+section('Historial: abrir una primada pasada muestra sus snapshots (no recalcula con hoy)');
+const viejaId = Store.select.activePrimada().id;
+const coverViejo = JSON.stringify(Store.select.activePrimada().cover);   // snapshot original (15.000/10.000)
+// Cambiar el cover GLOBAL en Ajustes (no debe reescribir la vieja)
+click('#gearBtn');
+click('[data-act="overlay-tab"][data-overlay="ajustes"]');
+setVal('[data-ch="cover-ahorrador"]', '20000');
+setVal('[data-ch="cover-invitado"]', '12000');
+click('[data-act="close-overlay"]');
+eq('Cover global cambiado a invitado 12.000', Store.select.state().settings.cover.invitado, 12000);
+// Crear una primada nueva → toma el cover NUEVO
+click('[data-act="new-primada"]');
+const nuevaId = Store.select.activePrimada().id;
+eq('La primada NUEVA toma el cover global nuevo (12.000)', Store.select.activePrimada().cover.invitado, 12000);
+// La vieja aparece en el Historial; abrirla con un tap
+check('La vieja aparece en el Historial', !!q(`[data-act="select-primada"][data-id="${viejaId}"]`));
+check('Historial visible', /Historial/.test(q('#screen').innerHTML));
+click(`[data-act="select-primada"][data-id="${viejaId}"]`);
+eq('Se abrió la primada vieja', Store.select.activePrimada().id, viejaId);
+eq('Su cover sigue CONGELADO (10.000, no 12.000)', Store.select.activePrimada().cover.invitado, 10000);
+eq('Snapshot del cover idéntico al original', JSON.stringify(Store.select.activePrimada().cover), coverViejo);
+
 /* ---------- Resumen ---------- */
 console.log(`\n${'='.repeat(50)}`);
 console.log(`E2E: ${pass} pasaron, ${fail} fallaron`);
