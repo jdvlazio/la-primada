@@ -281,14 +281,23 @@
     informePrincipal(primada) {
       const pid = primada.organizadorPrincipalId;
       const recaudadoTeorico = select.recaudado(primada);
-      const recaudadoReal = (primada.asistencias || []).reduce((sum, a) => sum + select.abonadoDe(a), 0);
+      // Abonos REALES de terceros (no el principal: él no se abona a sí mismo).
+      const abonosTerceros = (primada.asistencias || []).reduce((sum, a) =>
+        select.esPrincipal(primada, a) ? sum : sum + select.abonadoDe(a), 0);
+      // El principal tiene su parte EN MANO: su total cuenta como ABONO AUTOMÁTICO (no es deuda).
+      // Así el pendiente refleja solo deuda de terceros y la identidad real+pendiente=teórico se mantiene.
+      const principalAsis = (primada.asistencias || []).find(a => select.esPrincipal(primada, a));
+      const autoAbonoPrincipal = principalAsis ? select.totalAsistencia(primada, principalAsis) : 0;
+      const recaudadoReal = abonosTerceros + autoAbonoPrincipal;
       return {
         incompleta: pid == null,
         recaudadoTeorico,
         recuperaPrincipal: pid ? select.recuperaDe(primada, pid) : 0,
         entregaTesorero: select.ganancia(primada),
+        abonosTerceros,
+        autoAbonoPrincipal,
         recaudadoReal,
-        saldoPendiente: recaudadoTeorico - recaudadoReal,
+        saldoPendiente: recaudadoTeorico - recaudadoReal,   // = Σ saldos de los terceros
       };
     },
     deudores(primada) {

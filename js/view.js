@@ -209,8 +209,10 @@
       <div class="kv"><span>Recaudo teórico</span><b>${$peso(inf.recaudadoTeorico)}</b></div>
       <div class="kv"><span>Recupera de su bolsillo</span><b>${$peso(inf.recuperaPrincipal)}</b></div>
       <div class="kv total"><span>Entrega al Tesorero</span><b>${$peso(inf.entregaTesorero)}</b></div>
-      <div class="kv"><span>Recaudo real (abonos)</span><b>${$peso(inf.recaudadoReal)}</b></div>
-      <div class="kv"><span>Saldo pendiente</span><b class="${inf.saldoPendiente > 0 ? 'owe' : ''}">${$peso(inf.saldoPendiente)}</b></div>
+      <div class="kv"><span>Recaudado real</span><b>${$peso(inf.recaudadoReal)}</b></div>
+      <div class="kv subkv"><span>· abonos de terceros</span><b>${$peso(inf.abonosTerceros)}</b></div>
+      <div class="kv subkv"><span>· del principal (en mano)</span><b>${$peso(inf.autoAbonoPrincipal)}</b></div>
+      <div class="kv"><span>Saldo pendiente <i>(deuda de terceros)</i></span><b class="${inf.saldoPendiente > 0 ? 'owe' : ''}">${$peso(inf.saldoPendiente)}</b></div>
       <div class="sub">Quién debe</div>
       ${deudList}
     </div>`;

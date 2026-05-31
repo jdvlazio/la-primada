@@ -207,14 +207,19 @@ let v4primada;
   check('v4: identidad contable recaudado = costoNeto + ganancia', inf.recaudadoTeorico === select.costoNetoTotal(p) + select.ganancia(p));
   eq('v4: recuperaPrincipal = costoNeto 8000', inf.recuperaPrincipal, 8000);
   eq('v4: entregaTesorero = ganancia 29000', inf.entregaTesorero, 29000);
-  eq('v4: recaudadoReal (abonos) = 5000', inf.recaudadoReal, 5000);
-  eq('v4: saldoPendiente = 32000', inf.saldoPendiente, 32000);
+  // Auto-abono del principal: A tiene su total (6000) en mano; D abonó 5000.
+  eq('v4: abonosTerceros = 5000 (solo D)', inf.abonosTerceros, 5000);
+  eq('v4: autoAbonoPrincipal = total de A = 6000', inf.autoAbonoPrincipal, 6000);
+  eq('v4: recaudadoReal = terceros 5000 + principal 6000 = 11000', inf.recaudadoReal, 11000);
+  eq('v4: saldoPendiente = solo deuda de terceros = 26000', inf.saldoPendiente, 26000);
+  eq('v4: identidad real + pendiente = teórico', inf.recaudadoReal + inf.saldoPendiente, inf.recaudadoTeorico);
 
-  // Deudas: principal A auto-saldado (0), D pagó (0). Deben B 3000 y C 23000.
+  // Deudas: principal A auto-saldado (0), D pagó (0). Deben B 3000 y C 23000 → suma = saldoPendiente.
   eq('v4: saldo principal A = 0 (auto-saldado)', select.saldoDe(p, p.asistencias[0]), 0);
   eq('v4: saldo D = 0 (abonó completo)', select.saldoDe(p, p.asistencias[3]), 0);
   const deudores = select.deudores(p).map(d => d.personaId).sort();
   check('v4: deudores = B, C', deepEqual(deudores, ['per_b', 'per_c']));
+  eq('v4: saldoPendiente == Σ deudores (B+C = 26000)', inf.saldoPendiente, select.deudores(p).reduce((s2, d) => s2 + d.saldo, 0));
 }
 
 /* ============================================================ 5. Reparto indivisible explícito */
@@ -309,6 +314,52 @@ section('Acciones e invariantes');
 
   // aportadoPor por defecto = principal al crear
   check('aportadoPor por defecto = principal', pr3().productos.every(pr => pr.aportadoPor === ahorrA));
+}
+
+/* ============================================================ 7b. Informe: auto-abono del principal */
+section('Informe — saldoPendiente excluye al principal (auto-abono)');
+{
+  Store.actions.replaceState(null);
+  const ana = Store.actions.addPersona({ nombre: 'Ana', estado: 'ahorrador' });
+  const beto = Store.actions.addPersona({ nombre: 'Beto', estado: 'invitado' });
+  const carlos = Store.actions.addPersona({ nombre: 'Carlos', estado: 'invitado' });
+  const pid = Store.actions.createPrimada({ principalId: ana, organizadores: [ana] });
+  Store.actions.addAsistencia(pid, beto);
+  Store.actions.addAsistencia(pid, carlos);
+  // El principal SÍ consume (1 cerveza); terceros consumen + cover (15.000/10.000 por defecto).
+  Store.actions.changeItem(pid, ana, 'cerveza', 1);    // total Ana = 3.500 (sin cover)
+  Store.actions.changeItem(pid, beto, 'cerveza', 2);   // total Beto = 10.000 + 7.000 = 17.000
+  Store.actions.changeItem(pid, carlos, 'brownie', 1); // total Carlos = 10.000 + 9.000 = 19.000
+
+  const P = () => Store.select.state().primadas.find(p => p.id === pid);
+  const inf0 = Store.select.informePrincipal(P());
+  eq('Teórico = 39.500', inf0.recaudadoTeorico, 39500);
+  eq('Identidad teórico = ΣcostoNeto + ganancia', Store.select.costoNetoTotal(P()) + Store.select.ganancia(P()), inf0.recaudadoTeorico);
+
+  // Beto paga completo, Carlos parcial
+  Store.actions.registrarAbono(pid, beto, 17000);
+  Store.actions.registrarAbono(pid, carlos, 9000);
+  const inf = Store.select.informePrincipal(P());
+
+  eq('autoAbonoPrincipal = total del principal (3.500)', inf.autoAbonoPrincipal, 3500);
+  eq('abonosTerceros = 26.000', inf.abonosTerceros, 26000);
+  eq('recaudadoReal = terceros + principal (29.500)', inf.recaudadoReal, 29500);
+  eq('saldoPendiente = solo deuda de terceros (10.000)', inf.saldoPendiente, 10000);
+  // saldoPendiente == Σ saldos de los deudores (terceros)
+  const sumaDeudores = Store.select.deudores(P()).reduce((s, d) => s + d.saldo, 0);
+  eq('saldoPendiente == Σ deudores', inf.saldoPendiente, sumaDeudores);
+  check('El principal NO aparece como deudor', !Store.select.deudores(P()).some(d => d.personaId === ana));
+  // Las DOS identidades cierran
+  eq('Identidad real + pendiente = teórico', inf.recaudadoReal + inf.saldoPendiente, inf.recaudadoTeorico);
+  eq('Identidad teórico = ΣcostoNeto + ganancia (tras abonar)', Store.select.costoNetoTotal(P()) + Store.select.ganancia(P()), inf.recaudadoTeorico);
+
+  // Borde: primada sin principal (incompleta) → autoAbonoPrincipal = 0, comportamiento previo
+  const pid2 = Store.actions.createPrimada({});   // incompleta
+  const x = Store.actions.addPersona({ nombre: 'X', estado: 'invitado' });
+  Store.actions.addAsistencia(pid2, x);
+  Store.actions.changeItem(pid2, x, 'cerveza', 1);
+  const infInc = Store.select.informePrincipal(Store.select.state().primadas.find(p => p.id === pid2));
+  eq('Incompleta: autoAbonoPrincipal = 0', infInc.autoAbonoPrincipal, 0);
 }
 
 /* ============================================================ 8. Robustez */

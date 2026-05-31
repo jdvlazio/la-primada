@@ -46,14 +46,20 @@ sobranteFondo   = gananciaPrimada − parteIgual × nAhorradoras                
 
 ### Informe del organizador principal (lo calcula la app)
 ```
-recaudadoTeorico = Σ total de todas las asistencias           // = Σ costoNeto + gananciaPrimada (identidad)
-recuperaPrincipal = Σ costoNeto × unidades de los productos que él frontó (aportadoPor)
-entregaTesorero  = gananciaPrimada
-recaudadoReal    = Σ abonos registrados
-saldoPendiente   = recaudadoTeorico − recaudadoReal
+recaudadoTeorico   = Σ total de todas las asistencias         // = Σ costoNeto + gananciaPrimada (identidad)
+recuperaPrincipal  = Σ costoNeto × unidades de los productos que él frontó (aportadoPor)
+entregaTesorero    = gananciaPrimada
+abonosTerceros     = Σ abonos registrados de las asistencias NO principal
+autoAbonoPrincipal = total del principal                      // su parte EN MANO: no se debe a sí mismo
+recaudadoReal      = abonosTerceros + autoAbonoPrincipal
+saldoPendiente     = recaudadoTeorico − recaudadoReal         // = Σ saldos de los terceros (deuda real)
 ```
+- **El principal cuenta como auto-abonado:** su total entra a `recaudadoReal` como abono automático, de modo
+  que **`saldoPendiente` refleja solo la deuda de terceros** (la palanca de "quién debe"). Esto **mantiene las dos
+  identidades**: `recaudadoReal + saldoPendiente = recaudadoTeorico` **y** `recaudadoTeorico = Σ costoNeto + ganancia`
+  (no se toca el teórico). *No* se resta el principal del teórico — eso rompería la segunda identidad.
 - Los asistentes pagan **después**, al principal, y pueden **abonar de a poco** (historial `abonos[]`).
-  Saber **quién debe cuánto** es protagonista de la UI más adelante.
+  Saber **quién debe cuánto** es protagonista de la UI.
 
 ## Stack y restricciones (no negociables)
 - **Vanilla JS**, sin librerías de frontend (no React/Vue). Sin build, sin bundler, sin npm en producción.
