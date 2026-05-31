@@ -68,8 +68,8 @@ index.html         ← shell HTML + CSS embebido + <script src> de cada módulo 
 js/config.js       ← CONFIG (constantes y valores por defecto)
 js/util.js         ← Util (uid, esc, peso, fechas) — sin estado
 js/store.js        ← Store (MODELO: estado, migraciones, selectores, acciones, invariantes, persistencia)
-js/view.js         ← View (VISTA: render puro estado→DOM)            [PENDIENTE: paso de UI]
-js/controller.js   ← Controller (eventos por delegación → Store.actions) [PENDIENTE: paso de UI]
+js/view.js         ← View (VISTA: render puro estado→DOM)            [PASO 1: mínimo · tabs en PASO 2]
+js/controller.js   ← Controller (eventos por delegación → Store.actions) + bootstrap [PASO 1: mínimo]
 tests/run.js       ← runner de pruebas (npm test / node tests/run.js)
 package.json       ← solo para npm test; jsdom como devDependency (no entra a producción)
 ```
@@ -86,11 +86,17 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
 - Flujo único e inviolable: **evento → acción → commit (guarda) → notifica → render**.
 - La Vista se suscribe a Store y **re-renderiza la sección completa** en cada cambio (deliberado).
 
-## Arquitectura de información — 3 tabs (la UI no se construye aún)
-- **Tab 1 · Primada** — el evento activo: organizadores, asistencias, consumos, cover + **resumen de ganancia + informe del principal**.
-- **Tab 2 · Historial** — primadas pasadas con sus totales, ganancias y deudas.
-- **Tab 3 · Ahorro ("Próximamente")** — tesorería futura.
-- Toda feature nueva debe caber en esta IA de 3 tabs. Si no cabe → **pausar y consultar** (no inventar un cuarto tab).
+## Navegación (DECIDIDA) — 3 tabs inferiores + engranaje
+- **Barra de tabs inferior (fija):**
+  - **Resumen** — dashboard del fondo (totales, estado). *[se construye después de Primadas]*
+  - **Primadas** — lista de eventos: la **activa arriba**, las **pasadas debajo** (el **historial vive aquí**, no es un tab aparte).
+    Es el **corazón** de la app; se construye **primero**. Aquí: crear/seleccionar primada, organizadores y principal,
+    asistencias, consumos (±), cover automático por tipo con exoneración, resumen de ganancia + informe del principal.
+  - **Fondo** — tesorería futura, estado **"Próximamente"**.
+- **Detrás del engranaje (⚙ en el encabezado) — NO son tabs:**
+  - **Personas** — directorio (alta, cambio de estado invitado↔ahorrador, `breB`). También se accede **al agregar un asistente**.
+  - **Ajustes** — cover vigente, productos por defecto.
+- Toda feature nueva debe caber en esta navegación. Si no cabe → **pausar y consultar** (no inventar un cuarto tab).
 
 ## Modelo de datos (esquema v4 — DEFINITIVO)
 ```
@@ -185,8 +191,10 @@ Asistencia{ personaId, estadoEnEseMomento:'ahorrador'|'invitado', rol:'principal
 - [x] Paso 1: dominio Primadas (crear/listar/seleccionar/renombrar/borrar) + migración v2→v3.
 - [x] Paso 2: **modelo v4 definitivo** — capa de datos (config/util/store), migración v1→v4 tolerante,
       selectores + acciones + invariantes, todo con tests. *(UI pendiente.)*
-- [ ] Split a multi-archivo del `index.html` (shell + `<script src>`) y cableado a los módulos.
-- [ ] UI Tab Primada: organizadores/principal, asistencias, consumos, cover, resumen de ganancia + informe del principal.
+- [x] **PASO 1:** split del `index.html` a shell + `<script src>` (config→util→store→view→controller) + `view.js`/`controller.js`
+      mínimos cableados al modelo v4 (migra localStorage al abrir). Sin tabs todavía.
+- [ ] **PASO 2:** UI Tab **Primadas** (corazón): crear/seleccionar primada, organizadores/principal, asistencias, consumos (±),
+      cover automático por tipo con exoneración, resumen de ganancia + informe del principal.
 - [ ] UI Tab Historial: primadas pasadas con totales, ganancias y deudas; registro de abonos.
 - [ ] Directorio de personas en UI: alta, cambio de estado, `breB`.
 - [ ] Tab "Próximamente" (placeholder).
