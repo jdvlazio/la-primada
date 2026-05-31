@@ -1,0 +1,475 @@
+/* ============================================================
+   MODELO — Store (único dueño del estado) · esquema v4 DEFINITIVO
+   Se carga tras CONFIG y Util.
+   ------------------------------------------------------------
+   AppState  { schemaVersion:4, settings{cover,defaultProducts}, personas[], primadas[], activePrimadaId }
+   Persona   { id, nombre, estado:'ahorrador'|'invitado', breB }
+   Primada   { id, nombre, fecha:'YYYY-MM-DD', mesContable:'YYYY-MM', organizadorPrincipalId,
+               pago{breB}, cover{ahorrador,invitado}, productos[], asistencias[], estado }
+   Producto  { id, nombre, emoji, costoNeto, precioVenta, aportadoPor }
+   Asistencia{ personaId, estadoEnEseMomento, rol:'principal'|'organizador'|'asistente',
+               coverExonerado, items{prodId:cant}, abonos[]{id,monto,fecha} }
+   ------------------------------------------------------------
+   Flujo: evento → acción → commit (guarda) → notifica → render.
+   Las ACCIONES hacen cumplir los invariantes (ver CLAUDE.md).
+   ============================================================ */
+(function (root) {
+  'use strict';
+
+  const CONFIG = root.CONFIG || (typeof require !== 'undefined' ? require('./config.js').CONFIG : {});
+  const Util   = root.Util   || (typeof require !== 'undefined' ? require('./util.js').Util   : {});
+
+  let state = null;
+  const listeners = [];
+
+  /* ---------- Estado por defecto ---------- */
+  function defaultState() {
+    return {
+      schemaVersion: CONFIG.schemaVersion,
+      settings: { cover: { ...CONFIG.defaultCover }, defaultProducts: CONFIG.defaultProducts.map(p => ({ ...p })) },
+      personas: [],
+      primadas: [],
+      activePrimadaId: null,
+    };
+  }
+
+  // Catálogo base (con costoNeto real) para settings; catálogo "histórico" sin costos (margen 0) para envolver datos viejos.
+  function catalogoBase()      { return CONFIG.defaultProducts.map(p => ({ ...p })); }
+  function catalogoHistorico() { return CONFIG.defaultProducts.map(p => ({ id: p.id, nombre: p.nombre, emoji: p.emoji, precioVenta: p.precioVenta })); }
+
+  /* ---------- Normalizadores (tolerantes) ---------- */
+  function normEstado(t) { return t === 'invitado' ? 'invitado' : 'ahorrador'; }
+  function normRol(r)    { return (r === 'principal' || r === 'organizador') ? r : 'asistente'; }
+  function normCover(c)  { return { ahorrador: Number((c || {}).ahorrador) || 0, invitado: Number((c || {}).invitado) || 0 }; }
+  function normFecha(f) {
+    const s = String(f || '');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    if (/^\d{4}-\d{2}$/.test(s)) return s + '-01';
+    return Util.currentDate();
+  }
+  function normProducts(arr) {
+    return (arr || []).map(p => {
+      const precioVenta = Number(p.precioVenta != null ? p.precioVenta : p.price) || 0;
+      // costoNeto: usa el que venga (incl. costoReal de borradores); si no, = precioVenta (margen 0, sin inventar costos).
+      const costoNetoRaw = (p.costoNeto != null) ? p.costoNeto : (p.costoReal != null ? p.costoReal : precioVenta);
+      return {
+        id: p.id || Util.uid('prod'),
+        nombre: String(p.nombre || p.name || 'Ítem').slice(0, 40),
+        emoji: p.emoji || '•',
+        costoNeto: Number(costoNetoRaw) || 0,
+        precioVenta,
+        aportadoPor: p.aportadoPor || null,
+      };
+    });
+  }
+  function normItems(productos, raw) {
+    const items = {};
+    productos.forEach(prod => { items[prod.id] = Math.max(0, parseInt((raw || {})[prod.id]) || 0); });
+    return items;
+  }
+  function normAbonos(arr) {
+    return (arr || []).map(b => ({ id: b.id || Util.uid('ab'), monto: Number(b.monto) || 0, fecha: normFecha(b.fecha) }));
+  }
+
+  /* ---------- Migración: cualquier dato viejo → v4 ---------- */
+  function migrate(raw) {
+    if (raw == null) return defaultState();
+
+    // Ya tiene forma v4 (personas[] + primadas[]) → normalizar tolerante (sube también borradores parciales)
+    if (typeof raw === 'object' && Array.isArray(raw.personas) && Array.isArray(raw.primadas)) {
+      return normV4(raw);
+    }
+    // v3: primadas[] con asistentes{tipo,nombre} y Producto.price
+    if (typeof raw === 'object' && Array.isArray(raw.primadas)) {
+      return migrateV3toV4(raw);
+    }
+    // v1 (arreglo pelado) / v2 ({products, people}) → envolver como una primada (cover 0, no había) y migrar como v3
+    let products = catalogoHistorico(), people = [];
+    if (Array.isArray(raw)) {
+      people = raw;
+    } else if (typeof raw === 'object') {
+      if (Array.isArray(raw.products) && raw.products.length) products = raw.products;
+      if (Array.isArray(raw.people)) people = raw.people;
+    }
+    const pseudoV3 = {
+      settings: { defaultProducts: products },
+      primadas: [{
+        nombre: 'Primada actual',
+        fecha: Util.currentMonth(),
+        cover: { ahorrador: 0, invitado: 0 },        // v1/v2 no cobraban cover: no inventamos cargos
+        productos: products,
+        asistentes: people.map(pe => ({ nombre: pe.name || pe.nombre, tipo: pe.tipo, items: pe.items })),
+        estado: 'abierta',
+      }],
+      activePrimadaId: null,
+    };
+    return migrateV3toV4(pseudoV3);
+  }
+
+  // v3 → v4: levanta el directorio de personas desde los asistentes y congela el snapshot por asistencia.
+  function migrateV3toV4(raw) {
+    const s = defaultState();
+    // Cover VIGENTE: se preserva si venía; si no, queda el sugerido (solo afecta el valor actual, no la historia).
+    s.settings.cover = (raw.settings && raw.settings.cover) ? normCover(raw.settings.cover) : { ...CONFIG.defaultCover };
+    s.settings.defaultProducts = normProducts(
+      (raw.settings && raw.settings.defaultProducts && raw.settings.defaultProducts.length)
+        ? raw.settings.defaultProducts : catalogoBase()
+    );
+
+    const primadasRaw = raw.primadas || [];
+
+    // --- Pase 1: directorio de personas. Última aparición (por fecha) gana el estado VIGENTE. ---
+    const byNombre = new Map();
+    primadasRaw.map((p, i) => ({ p, i }))
+      .sort((a, b) => { const fa = String(a.p.fecha || ''), fb = String(b.p.fecha || ''); return fa < fb ? -1 : fa > fb ? 1 : a.i - b.i; })
+      .forEach(({ p }) => {
+        (p.asistentes || []).forEach(a => {
+          const nombre = String(a.nombre || a.name || 'Primo').slice(0, 40);
+          const estado = normEstado(a.tipo);
+          let per = byNombre.get(nombre);
+          if (!per) { per = { id: Util.uid('per'), nombre, estado, breB: null }; byNombre.set(nombre, per); s.personas.push(per); }
+          else { per.estado = estado; }   // procesamos viejo→nuevo: la aparición más reciente gana
+        });
+      });
+
+    // --- Pase 2: primadas en su orden original; asistencias enlazadas + snapshot inmutable. ---
+    s.primadas = primadasRaw.map(p => {
+      const productos = normProducts(p.productos && p.productos.length ? p.productos : catalogoHistorico());
+      const fecha = normFecha(p.fecha);
+      const asistencias = (p.asistentes || []).map(a => {
+        const nombre = String(a.nombre || a.name || 'Primo').slice(0, 40);
+        const per = byNombre.get(nombre);
+        return {
+          personaId: per ? per.id : null,
+          estadoEnEseMomento: normEstado(a.tipo),      // SNAPSHOT, independiente del estado actual
+          rol: 'asistente',
+          coverExonerado: !!a.coverExonerado,
+          items: normItems(productos, a.items),
+          abonos: [],
+        };
+      });
+      return {
+        id: p.id || Util.uid('prm'),
+        nombre: String(p.nombre || p.familia || 'Primada').slice(0, 40),
+        fecha,
+        mesContable: Util.mesDeFecha(fecha),
+        organizadorPrincipalId: null,                  // incompleta: principal desconocido en datos viejos
+        pago: { breB: null },
+        cover: normCover(p.cover),                     // SNAPSHOT preservado (no se reescribe historia)
+        productos,
+        asistencias,
+        estado: p.estado === 'cerrada' ? 'cerrada' : 'abierta',
+      };
+    });
+
+    s.activePrimadaId = s.primadas.some(p => p.id === raw.activePrimadaId)
+      ? raw.activePrimadaId : (s.primadas[0] ? s.primadas[0].id : null);
+    return s;
+  }
+
+  // v4 → v4: normaliza tolerante conservando ids (idempotente). Rellena campos faltantes con defaults.
+  function normV4(raw) {
+    const s = defaultState();
+    s.settings.cover = (raw.settings && raw.settings.cover) ? normCover(raw.settings.cover) : { ...CONFIG.defaultCover };
+    s.settings.defaultProducts = normProducts(
+      (raw.settings && raw.settings.defaultProducts && raw.settings.defaultProducts.length)
+        ? raw.settings.defaultProducts : catalogoBase()
+    );
+
+    s.personas = (raw.personas || []).map(p => ({
+      id: p.id || Util.uid('per'),
+      nombre: String(p.nombre || 'Primo').slice(0, 40),
+      estado: normEstado(p.estado),
+      breB: (p.breB != null && p.breB !== '') ? String(p.breB) : null,
+    }));
+
+    s.primadas = (raw.primadas || []).map(p => {
+      const productos = normProducts(p.productos && p.productos.length ? p.productos : catalogoBase());
+      const fecha = normFecha(p.fecha);
+      const asisRaw = Array.isArray(p.asistencias) ? p.asistencias : (Array.isArray(p.asistentes) ? p.asistentes : []);
+      const asistencias = asisRaw.map(a => ({
+        personaId: a.personaId || null,
+        estadoEnEseMomento: normEstado(a.estadoEnEseMomento != null ? a.estadoEnEseMomento : a.tipo),
+        rol: normRol(a.rol),
+        coverExonerado: !!a.coverExonerado,
+        items: normItems(productos, a.items),
+        abonos: normAbonos(a.abonos),
+      }));
+
+      // Reconciliar el principal con un único rol coherente.
+      let principalId = (p.organizadorPrincipalId != null && asistencias.some(a => a.personaId === p.organizadorPrincipalId))
+        ? p.organizadorPrincipalId : null;
+      if (principalId) {
+        asistencias.forEach(a => { if (a.personaId === principalId) a.rol = 'principal'; else if (a.rol === 'principal') a.rol = 'organizador'; });
+      } else {
+        const prin = asistencias.filter(a => a.rol === 'principal');
+        if (prin.length === 1) { principalId = prin[0].personaId; }
+        else { asistencias.forEach(a => { if (a.rol === 'principal') a.rol = 'organizador'; }); }
+      }
+
+      return {
+        id: p.id || Util.uid('prm'),
+        nombre: String(p.nombre || p.familia || 'Primada').slice(0, 40),
+        fecha,
+        mesContable: /^\d{4}-\d{2}$/.test(String(p.mesContable)) ? p.mesContable : Util.mesDeFecha(fecha),
+        organizadorPrincipalId: principalId,
+        pago: { breB: (p.pago && p.pago.breB != null && p.pago.breB !== '') ? String(p.pago.breB) : null },
+        cover: normCover(p.cover),
+        productos,
+        asistencias,
+        estado: p.estado === 'cerrada' ? 'cerrada' : 'abierta',
+      };
+    });
+
+    s.activePrimadaId = s.primadas.some(p => p.id === raw.activePrimadaId)
+      ? raw.activePrimadaId : (s.primadas[0] ? s.primadas[0].id : null);
+    return s;
+  }
+
+  /* ---------- Persistencia ---------- */
+  function load() {
+    try {
+      const raw = (typeof localStorage !== 'undefined') ? JSON.parse(localStorage.getItem(CONFIG.storageKey)) : null;
+      state = migrate(raw);
+    } catch (e) { state = defaultState(); }
+  }
+  function persist() { try { if (typeof localStorage !== 'undefined') localStorage.setItem(CONFIG.storageKey, JSON.stringify(state)); } catch (e) {} }
+  function commit() { persist(); listeners.forEach(fn => fn(state)); }
+  function subscribe(fn) { listeners.push(fn); }
+
+  /* ---------- Helpers de derivación ---------- */
+  function unidadesVendidas(primada, prod) { return (primada.asistencias || []).reduce((sum, a) => sum + (a.items[prod.id] || 0), 0); }
+  function aportanteEfectivo(primada, prod) { return prod.aportadoPor || primada.organizadorPrincipalId || null; }
+  function findPrimada(id) { return state ? (state.primadas.find(p => p.id === id) || null) : null; }
+
+  /* ---------- Selectores (lectura / derivados puros) ---------- */
+  const select = {
+    state: () => state,
+    activePrimada: () => (state ? state.primadas.find(p => p.id === state.activePrimadaId) || null : null),
+    persona: (id) => (state ? state.personas.find(p => p.id === id) || null : null),
+    personasOrdenadas: () => (state ? state.personas.slice().sort((a, b) => a.nombre.localeCompare(b.nombre, CONFIG.locale)) : []),
+    ahorradores: () => (state ? state.personas.filter(p => p.estado === 'ahorrador') : []),
+    invitados: () => (state ? state.personas.filter(p => p.estado === 'invitado') : []),
+
+    margenProducto: (prod) => (Number(prod.precioVenta) || 0) - (Number(prod.costoNeto) || 0),
+    esOrganizador: (a) => a.rol === 'principal' || a.rol === 'organizador',
+    aplicaCover: (a) => a.rol === 'asistente' && !a.coverExonerado,
+    coverDe(primada, a) { return select.aplicaCover(a) ? (primada.cover[a.estadoEnEseMomento] || 0) : 0; },
+    consumoDe(primada, a) { return primada.productos.reduce((sum, prod) => sum + (prod.precioVenta || 0) * (a.items[prod.id] || 0), 0); },
+    totalAsistencia(primada, a) { return select.coverDe(primada, a) + select.consumoDe(primada, a); },
+    abonadoDe(a) { return (a.abonos || []).reduce((sum, b) => sum + (Number(b.monto) || 0), 0); },
+    esPrincipal(primada, a) { return a.personaId != null && a.personaId === primada.organizadorPrincipalId; },
+    // El principal se considera auto-saldado (tiene la plata en mano): no es deudor.
+    saldoDe(primada, a) { return select.esPrincipal(primada, a) ? 0 : select.totalAsistencia(primada, a) - select.abonadoDe(a); },
+
+    recaudado(primada) { return (primada.asistencias || []).reduce((sum, a) => sum + select.totalAsistencia(primada, a), 0); },
+    ventaProductos(primada) { return primada.productos.reduce((sum, prod) => sum + (prod.precioVenta || 0) * unidadesVendidas(primada, prod), 0); },
+    costoNetoTotal(primada) { return primada.productos.reduce((sum, prod) => sum + (prod.costoNeto || 0) * unidadesVendidas(primada, prod), 0); },
+    coverCobrado(primada) { return (primada.asistencias || []).reduce((sum, a) => sum + select.coverDe(primada, a), 0); },
+    margenTotal(primada) { return select.ventaProductos(primada) - select.costoNetoTotal(primada); },
+    ganancia(primada) { return select.coverCobrado(primada) + select.margenTotal(primada); },
+
+    asistenciasAhorradoras(primada) { return (primada.asistencias || []).filter(a => a.estadoEnEseMomento === 'ahorrador'); },
+    parteIgual(primada) { const n = select.asistenciasAhorradoras(primada).length; return n ? Math.floor(select.ganancia(primada) / n) : 0; },
+    sobranteFondo(primada) { const n = select.asistenciasAhorradoras(primada).length; return select.ganancia(primada) - select.parteIgual(primada) * n; },
+    repartoPorPersona(primada) { const pi = select.parteIgual(primada); const r = {}; select.asistenciasAhorradoras(primada).forEach(a => { r[a.personaId] = pi; }); return r; },
+
+    recuperaDe(primada, personaId) {
+      return primada.productos.reduce((sum, prod) =>
+        aportanteEfectivo(primada, prod) === personaId ? sum + (prod.costoNeto || 0) * unidadesVendidas(primada, prod) : sum, 0);
+    },
+    informePrincipal(primada) {
+      const pid = primada.organizadorPrincipalId;
+      const recaudadoTeorico = select.recaudado(primada);
+      const recaudadoReal = (primada.asistencias || []).reduce((sum, a) => sum + select.abonadoDe(a), 0);
+      return {
+        incompleta: pid == null,
+        recaudadoTeorico,
+        recuperaPrincipal: pid ? select.recuperaDe(primada, pid) : 0,
+        entregaTesorero: select.ganancia(primada),
+        recaudadoReal,
+        saldoPendiente: recaudadoTeorico - recaudadoReal,
+      };
+    },
+    deudores(primada) {
+      return (primada.asistencias || [])
+        .map(a => ({ personaId: a.personaId, saldo: select.saldoDe(primada, a) }))
+        .filter(d => d.saldo > 0);
+    },
+
+    primadaIncompleta(primada) { return primada.organizadorPrincipalId == null; },
+    nombreSugerido(organizadorIds) {
+      const nombres = (organizadorIds || []).map(id => { const p = select.persona(id); return p ? p.nombre : null; }).filter(Boolean);
+      return nombres.length ? 'Primada ' + nombres.join(', ') : 'Primada';
+    },
+    anioContable(primada) { return String(primada.mesContable || '').slice(0, 4); },
+  };
+
+  /* ---------- Acciones (único punto que muta; hacen cumplir invariantes) ---------- */
+  const actions = {
+    // ----- personas -----
+    addPersona({ nombre, estado, breB } = {}) {
+      const per = { id: Util.uid('per'), nombre: String(nombre || 'Persona').slice(0, 40), estado: normEstado(estado), breB: (breB != null && breB !== '') ? String(breB) : null };
+      state.personas.push(per); commit(); return per.id;
+    },
+    // INVARIANTE #1 (inmutabilidad histórica): solo cambia el estado VIGENTE; NUNCA toca estadoEnEseMomento de asistencias.
+    setEstadoPersona(personaId, estado) { const per = select.persona(personaId); if (!per) return; per.estado = normEstado(estado); commit(); },
+    renombrarPersona(personaId, nombre) { const per = select.persona(personaId); if (!per) return; per.nombre = String(nombre || per.nombre).slice(0, 40); commit(); },
+    setBreBPersona(personaId, breB) { const per = select.persona(personaId); if (!per) return; per.breB = (breB != null && breB !== '') ? String(breB) : null; commit(); },
+
+    // ----- settings -----
+    setCover({ ahorrador, invitado } = {}) {
+      if (ahorrador != null) state.settings.cover.ahorrador = Number(ahorrador) || 0;
+      if (invitado != null) state.settings.cover.invitado = Number(invitado) || 0;
+      commit();
+    },
+    upsertDefaultProducto(prod) {
+      const np = normProducts([prod])[0];
+      const i = state.settings.defaultProducts.findIndex(p => p.id === np.id);
+      if (i >= 0) state.settings.defaultProducts[i] = np; else state.settings.defaultProducts.push(np);
+      commit();
+    },
+    removeDefaultProducto(id) { state.settings.defaultProducts = state.settings.defaultProducts.filter(p => p.id !== id); commit(); },
+
+    // ----- ciclo de primada -----
+    createPrimada({ fecha, mesContable, organizadores, principalId, nombre } = {}) {
+      organizadores = Array.isArray(organizadores) ? organizadores.slice() : [];
+      if (principalId && !organizadores.includes(principalId)) organizadores.unshift(principalId);
+      // INVARIANTE #2: el principal debe ser ahorrador (estado vigente al crear → snapshot ahorrador).
+      let principalPer = null;
+      if (principalId) {
+        principalPer = select.persona(principalId);
+        if (!principalPer) throw new Error('createPrimada: el organizador principal no existe');
+        if (principalPer.estado !== 'ahorrador') throw new Error('createPrimada: el organizador principal debe ser ahorrador');
+      }
+      const f = normFecha(fecha || Util.currentDate());
+      const productos = state.settings.defaultProducts.map(x => ({ ...x, aportadoPor: principalId || null }));
+      const asistencias = organizadores.map(pid => {
+        const per = select.persona(pid);
+        return {
+          personaId: pid,
+          estadoEnEseMomento: per ? normEstado(per.estado) : 'ahorrador',
+          rol: pid === principalId ? 'principal' : 'organizador',
+          coverExonerado: false,
+          items: normItems(productos, {}),
+          abonos: [],
+        };
+      });
+      const prm = {
+        id: Util.uid('prm'),
+        nombre: (nombre && String(nombre).trim()) ? String(nombre).slice(0, 40) : select.nombreSugerido(organizadores),
+        fecha: f,
+        mesContable: /^\d{4}-\d{2}$/.test(String(mesContable)) ? mesContable : Util.mesDeFecha(f),
+        organizadorPrincipalId: principalId || null,
+        pago: { breB: principalPer ? principalPer.breB : null },
+        cover: { ...state.settings.cover },        // SNAPSHOT del cover vigente
+        productos, asistencias,
+        estado: 'abierta',
+      };
+      state.primadas.unshift(prm);
+      state.activePrimadaId = prm.id;
+      commit(); return prm.id;
+    },
+    seleccionarPrimada(id) { if (findPrimada(id)) { state.activePrimadaId = id; commit(); } },
+    renombrarPrimada(id, nombre) { const p = findPrimada(id); if (!p) return; p.nombre = String(nombre || p.nombre).slice(0, 40); commit(); },
+    setFecha(id, fecha) { const p = findPrimada(id); if (!p) return; p.fecha = normFecha(fecha); commit(); },
+    setMesContable(id, mes) { const p = findPrimada(id); if (!p) return; if (/^\d{4}-\d{2}$/.test(String(mes))) { p.mesContable = mes; commit(); } },
+    cerrarPrimada(id) { const p = findPrimada(id); if (!p) return; p.estado = 'cerrada'; commit(); },
+    reabrirPrimada(id) { const p = findPrimada(id); if (!p) return; p.estado = 'abierta'; commit(); },
+    borrarPrimada(id) {
+      state.primadas = state.primadas.filter(p => p.id !== id);
+      if (state.activePrimadaId === id) state.activePrimadaId = state.primadas[0] ? state.primadas[0].id : null;
+      commit();
+    },
+
+    // ----- productos de la primada (INVARIANTE #4: bloqueado si cerrada) -----
+    addProducto(primadaId, prod) {
+      const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
+      const np = normProducts([prod])[0]; if (!np.aportadoPor) np.aportadoPor = p.organizadorPrincipalId || null;
+      p.productos.push(np); p.asistencias.forEach(a => { if (a.items[np.id] == null) a.items[np.id] = 0; });
+      commit();
+    },
+    setPreciosProducto(primadaId, prodId, { costoNeto, precioVenta } = {}) {
+      const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
+      const prod = p.productos.find(x => x.id === prodId); if (!prod) return;
+      if (costoNeto != null) prod.costoNeto = Number(costoNeto) || 0;
+      if (precioVenta != null) prod.precioVenta = Number(precioVenta) || 0;
+      commit();
+    },
+    setAportadoPor(primadaId, prodId, personaId) {
+      const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
+      const prod = p.productos.find(x => x.id === prodId); if (!prod) return;
+      prod.aportadoPor = personaId || null; commit();
+    },
+    removeProducto(primadaId, prodId) {
+      const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
+      p.productos = p.productos.filter(x => x.id !== prodId);
+      p.asistencias.forEach(a => { delete a.items[prodId]; });
+      commit();
+    },
+
+    // ----- asistencias (INVARIANTE #4: bloqueado si cerrada) -----
+    addAsistencia(primadaId, personaId) {
+      const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
+      if (p.asistencias.some(a => a.personaId === personaId)) return;
+      const per = select.persona(personaId); if (!per) return;
+      p.asistencias.push({ personaId, estadoEnEseMomento: normEstado(per.estado), rol: 'asistente', coverExonerado: false, items: normItems(p.productos, {}), abonos: [] });
+      commit();
+    },
+    removeAsistencia(primadaId, personaId) {
+      const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
+      p.asistencias = p.asistencias.filter(a => a.personaId !== personaId);
+      if (p.organizadorPrincipalId === personaId) { p.organizadorPrincipalId = null; p.pago = { breB: null }; }
+      commit();
+    },
+    setRol(primadaId, personaId, rol) {
+      const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
+      const a = p.asistencias.find(x => x.personaId === personaId); if (!a) return;
+      if (rol === 'principal') {
+        // INVARIANTE #2: el principal debe ser ahorrador EN ESE MOMENTO (snapshot).
+        if (a.estadoEnEseMomento !== 'ahorrador') throw new Error('setRol: el principal debe ser ahorrador (snapshot)');
+        p.asistencias.forEach(x => { if (x.rol === 'principal') x.rol = 'organizador'; });   // INVARIANTE #3: único principal
+        a.rol = 'principal';
+        p.organizadorPrincipalId = personaId;
+        const per = select.persona(personaId); p.pago = { breB: per ? per.breB : null };
+      } else {
+        a.rol = normRol(rol);
+        if (p.organizadorPrincipalId === personaId) { p.organizadorPrincipalId = null; p.pago = { breB: null }; }
+      }
+      commit();
+    },
+    toggleCoverExonerado(primadaId, personaId) {
+      const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
+      const a = p.asistencias.find(x => x.personaId === personaId); if (!a) return;
+      a.coverExonerado = !a.coverExonerado; commit();
+    },
+    changeItem(primadaId, personaId, prodId, delta) {
+      const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
+      const a = p.asistencias.find(x => x.personaId === personaId); if (!a) return;
+      a.items[prodId] = Math.max(0, (a.items[prodId] || 0) + delta); commit();
+    },
+
+    // ----- abonos (INVARIANTE #4: permitidos AUNQUE la primada esté cerrada) -----
+    registrarAbono(primadaId, personaId, monto, fecha) {
+      const p = findPrimada(primadaId); if (!p) return;
+      const a = p.asistencias.find(x => x.personaId === personaId); if (!a) return;
+      const m = Number(monto) || 0; if (m <= 0) return;
+      a.abonos.push({ id: Util.uid('ab'), monto: m, fecha: normFecha(fecha || Util.currentDate()) });
+      commit();
+    },
+    removerAbono(primadaId, personaId, abonoId) {
+      const p = findPrimada(primadaId); if (!p) return;
+      const a = p.asistencias.find(x => x.personaId === personaId); if (!a) return;
+      a.abonos = a.abonos.filter(b => b.id !== abonoId); commit();
+    },
+
+    // ----- infra -----
+    replaceState(raw) { state = migrate(raw); commit(); },
+  };
+
+  const Store = { load, subscribe, select, actions, defaultState, migrate };
+  root.Store = Store;
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { Store, defaultState, migrate, select, actions, normProducts };
+  }
+})(typeof window !== 'undefined' ? window : globalThis);

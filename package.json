@@ -1,0 +1,12 @@
+{
+  "name": "la-primada",
+  "version": "0.4.0",
+  "private": true,
+  "description": "Núcleo de eventos de La Primada — natillera familiar, vanilla JS servido por GitHub Pages",
+  "scripts": {
+    "test": "node tests/run.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}
