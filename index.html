@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>La Primada · La Cuenta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3e7cf;
+    --paper-2:#efe0c2;
+    --ink:#2b2118;
+    --ink-soft:#7a6a55;
+    --line:#d8c5a0;
+    --red:#c8472f;
+    --red-deep:#a3331e;
+    --green:#3f7a52;
+    --shadow:0 1px 0 rgba(0,0,0,.04), 0 12px 30px -18px rgba(43,33,24,.5);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    font-family:"Space Mono",ui-monospace,monospace;
+    color:var(--ink);
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(43,33,24,.05) 1px, transparent 0);
+    background-size:14px 14px;
+    padding:18px 14px 130px;
+    line-height:1.4;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:520px;margin:0 auto}
+
+  /* ---------- Header ---------- */
+  header{
+    text-align:center;
+    padding:22px 0 16px;
+    border-bottom:2px dashed var(--line);
+    margin-bottom:18px;
+    position:relative;
+  }
+  .kicker{
+    font-size:11px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--red-deep);font-weight:700;
+  }
+  h1{
+    font-family:"Bricolage Grotesque",sans-serif;
+    font-weight:800;font-size:clamp(40px,13vw,62px);
+    line-height:.92;letter-spacing:-.02em;color:var(--ink);
+    margin:4px 0 6px;
+  }
+  .tagline{font-size:12px;color:var(--ink-soft)}
+  .price-strip{
+    display:flex;justify-content:center;gap:14px;flex-wrap:wrap;
+    margin-top:12px;font-size:12px;color:var(--ink-soft);
+  }
+  .price-strip b{color:var(--ink)}
+
+  /* ---------- Add person ---------- */
+  .add-bar{display:flex;gap:8px;margin-bottom:18px}
+  .add-bar input{
+    flex:1;font-family:inherit;font-size:15px;
+    padding:13px 14px;border:2px solid var(--line);border-radius:12px;
+    background:var(--paper-2);color:var(--ink);
+  }
+  .add-bar input:focus{outline:none;border-color:var(--red)}
+  .add-bar input::placeholder{color:var(--ink-soft)}
+  .btn{
+    font-family:"Bricolage Grotesque",sans-serif;font-weight:700;
+    border:none;cursor:pointer;border-radius:12px;
+    background:var(--red);color:#fff8ee;padding:0 18px;font-size:15px;
+    transition:transform .08s ease, background .15s;
+  }
+  .btn:active{transform:scale(.95)}
+  .btn:hover{background:var(--red-deep)}
+
+  /* ---------- Actions toolbar ---------- */
+  .tools{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+  .tool{
+    flex:1;min-width:0;font-family:inherit;font-size:12px;font-weight:700;
+    padding:11px 8px;border:2px solid var(--line);border-radius:11px;
+    background:var(--paper-2);color:var(--ink);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    transition:transform .08s ease, border-color .15s;
+  }
+  .tool:active{transform:scale(.96)}
+  .tool:hover{border-color:var(--red)}
+  .tool.ok{border-color:var(--green);color:var(--green)}
+  .toast{
+    position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:var(--paper);padding:11px 18px;border-radius:30px;
+    font-size:13px;font-weight:700;opacity:0;pointer-events:none;
+    transition:opacity .2s, transform .2s;z-index:50;box-shadow:0 10px 30px -12px rgba(0,0,0,.5);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---------- Person card ---------- */
+  .empty{
+    text-align:center;color:var(--ink-soft);font-size:14px;
+    padding:40px 20px;border:2px dashed var(--line);border-radius:16px;
+  }
+  .empty .big{font-size:34px;display:block;margin-bottom:10px;filter:grayscale(.2)}
+
+  .card{
+    background:var(--paper-2);border:2px solid var(--line);
+    border-radius:16px;padding:16px 16px 6px;margin-bottom:14px;
+    box-shadow:var(--shadow);position:relative;
+    animation:pop .25s cubic-bezier(.2,.8,.3,1.2);
+  }
+  @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .card-head{
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px dashed var(--line);padding-bottom:10px;margin-bottom:8px;
+  }
+  .name{
+    font-family:"Bricolage Grotesque",sans-serif;font-weight:700;
+    font-size:20px;letter-spacing:-.01em;
+  }
+  .del{
+    background:none;border:none;cursor:pointer;color:var(--ink-soft);
+    font-family:inherit;font-size:18px;padding:4px 6px;line-height:1;border-radius:8px;
+  }
+  .del:active{transform:scale(.9)}
+  .del:hover{color:var(--red-deep)}
+
+  .row{display:flex;align-items:center;gap:10px;padding:9px 0}
+  .row .label{flex:1;min-width:0}
+  .row .item-name{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
+  .row .item-price{font-size:11px;color:var(--ink-soft)}
+  .stepper{display:flex;align-items:center;gap:0;
+    border:2px solid var(--line);border-radius:10px;overflow:hidden;background:var(--paper)}
+  .stepper button{
+    width:34px;height:34px;border:none;background:transparent;cursor:pointer;
+    font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:18px;color:var(--ink);
+  }
+  .stepper button:active{background:var(--line)}
+  .stepper .minus{color:var(--red-deep)}
+  .stepper .plus{color:var(--green)}
+  .stepper .count{
+    min-width:30px;text-align:center;font-weight:700;font-size:15px;
+    border-left:2px solid var(--line);border-right:2px solid var(--line);
+    height:34px;line-height:34px;
+  }
+  .row .sub{width:78px;text-align:right;font-size:13px;font-weight:700}
+  .row.zero{opacity:.5}
+
+  .card-total{
+    display:flex;justify-content:space-between;align-items:baseline;
+    border-top:1px dashed var(--line);margin-top:6px;padding:11px 2px 12px;
+    font-weight:700;
+  }
+  .card-total .t-amt{font-size:18px;color:var(--red-deep);font-family:"Bricolage Grotesque",sans-serif}
+
+  /* ---------- Footer total ---------- */
+  .grand{
+    position:fixed;left:0;right:0;bottom:0;
+    background:var(--ink);color:var(--paper);
+    padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    box-shadow:0 -10px 30px -20px rgba(0,0,0,.6);
+  }
+  .grand-inner{max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .grand .meta{font-size:11px;letter-spacing:.06em;color:#c9b896;text-transform:uppercase}
+  .grand .total{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:30px;line-height:1;letter-spacing:-.02em}
+  .grand .reset{
+    background:transparent;border:1.5px solid rgba(255,255,255,.25);color:var(--paper);
+    border-radius:10px;padding:9px 12px;font-family:inherit;font-size:12px;cursor:pointer;
+  }
+  .grand .reset:active{transform:scale(.95)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Encuentro de primos</div>
+    <h1>La Primada</h1>
+    <div class="tagline">La cuenta de la parranda 🍻</div>
+    <div class="price-strip">
+      <span>🍺 Costeñita <b>$3.500</b></span>
+      <span>🍫 Brownie <b>$9.000</b></span>
+      <span>🌀 Rollo <b>$9.000</b></span>
+    </div>
+  </header>
+
+  <div class="add-bar">
+    <input id="nameInput" type="text" placeholder="Nombre del primo…" autocomplete="off" maxlength="22">
+    <button class="btn" id="addBtn">Agregar</button>
+  </div>
+
+  <div class="tools">
+    <button class="tool" id="copyBtn">📋 Copiar</button>
+    <button class="tool" id="backupBtn">⬇️ Respaldo</button>
+    <button class="tool" id="restoreBtn">⬆️ Restaurar</button>
+  </div>
+  <input type="file" id="fileInput" accept=".json,application/json" style="display:none">
+
+  <div id="list"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="grand">
+  <div class="grand-inner">
+    <div>
+      <div class="meta" id="grandMeta">0 primos</div>
+      <div class="total" id="grandTotal">$0</div>
+    </div>
+    <button class="reset" id="resetBtn">Reiniciar</button>
+  </div>
+</div>
+
+<script>
+  const PRODUCTS = [
+    { id:'cerveza', name:'Costeñita', emoji:'🍺', price:3500 },
+    { id:'brownie', name:'Brownie',   emoji:'🍫', price:9000 },
+    { id:'rollo',   name:'Rollo de canela', emoji:'🌀', price:9000 },
+  ];
+  const KEY = 'laPrimada.v1';
+  const peso = n => '$' + n.toLocaleString('es-CO');
+
+  let people = load();
+
+  function load(){
+    try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+    catch(e){ return []; }
+  }
+  function save(){
+    try { localStorage.setItem(KEY, JSON.stringify(people)); }
+    catch(e){ /* sin persistencia en vista previa */ }
+  }
+
+  function addPerson(name){
+    const items = {};
+    PRODUCTS.forEach(p => items[p.id] = 0);
+    people.push({ id: Date.now()+''+Math.random().toString(36).slice(2,6), name, items });
+    save(); render();
+  }
+  function personTotal(p){
+    return PRODUCTS.reduce((s,prod) => s + prod.price * (p.items[prod.id]||0), 0);
+  }
+  function change(pid, prodId, delta){
+    const p = people.find(x => x.id === pid);
+    if(!p) return;
+    p.items[prodId] = Math.max(0, (p.items[prodId]||0) + delta);
+    save(); render();
+  }
+  function removePerson(pid){
+    const p = people.find(x => x.id === pid);
+    if(p && (personTotal(p) === 0 || confirm('¿Eliminar a ' + p.name + '?'))){
+      people = people.filter(x => x.id !== pid);
+      save(); render();
+    }
+  }
+
+  const list = document.getElementById('list');
+  const grandTotal = document.getElementById('grandTotal');
+  const grandMeta = document.getElementById('grandMeta');
+
+  function render(){
+    list.innerHTML = '';
+    if(people.length === 0){
+      list.innerHTML = '<div class="empty"><span class="big">🪑</span>Aún no hay primos en la mesa.<br>Agrega el primero para empezar.</div>';
+    }
+    people.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      let rows = '';
+      PRODUCTS.forEach(prod => {
+        const c = p.items[prod.id] || 0;
+        rows += `
+          <div class="row ${c===0?'zero':''}">
+            <div class="label">
+              <div class="item-name">${prod.emoji} ${prod.name}</div>
+              <div class="item-price">${peso(prod.price)} c/u</div>
+            </div>
+            <div class="stepper">
+              <button class="minus" data-act="dec" data-p="${p.id}" data-prod="${prod.id}">−</button>
+              <span class="count">${c}</span>
+              <button class="plus" data-act="inc" data-p="${p.id}" data-prod="${prod.id}">+</button>
+            </div>
+            <div class="sub">${c>0?peso(prod.price*c):'—'}</div>
+          </div>`;
+      });
+
+      card.innerHTML = `
+        <div class="card-head">
+          <div class="name">${escapeHtml(p.name)}</div>
+          <button class="del" data-act="del" data-p="${p.id}">✕</button>
+        </div>
+        ${rows}
+        <div class="card-total">
+          <span>Total</span>
+          <span class="t-amt">${peso(personTotal(p))}</span>
+        </div>`;
+      list.appendChild(card);
+    });
+
+    const total = people.reduce((s,p) => s + personTotal(p), 0);
+    grandTotal.textContent = peso(total);
+    grandMeta.textContent = people.length + (people.length===1?' primo':' primos');
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // events
+  list.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if(!b) return;
+    const act = b.dataset.act, pid = b.dataset.p, prod = b.dataset.prod;
+    if(act === 'inc') change(pid, prod, +1);
+    else if(act === 'dec') change(pid, prod, -1);
+    else if(act === 'del') removePerson(pid);
+  });
+
+  const nameInput = document.getElementById('nameInput');
+  function submitName(){
+    const v = nameInput.value.trim();
+    if(v){ addPerson(v); nameInput.value=''; nameInput.focus(); }
+  }
+  document.getElementById('addBtn').addEventListener('click', submitName);
+  nameInput.addEventListener('keydown', e => { if(e.key === 'Enter') submitName(); });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if(people.length && confirm('¿Borrar toda la cuenta?')){ people = []; save(); render(); }
+  });
+
+  // ---------- Toast ----------
+  let toastTimer;
+  const toastEl = document.getElementById('toast');
+  function toast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  }
+
+  // ---------- Copiar como texto (WhatsApp) ----------
+  function buildText(){
+    if(!people.length) return 'La Primada — la cuenta está vacía.';
+    let t = '🍻 LA PRIMADA — La cuenta\n\n';
+    people.forEach(p => {
+      const lines = PRODUCTS
+        .filter(prod => (p.items[prod.id]||0) > 0)
+        .map(prod => `  ${prod.emoji} ${p.items[prod.id]} ${prod.name} = ${peso(prod.price*p.items[prod.id])}`);
+      t += `*${p.name}* — ${peso(personTotal(p))}\n`;
+      t += (lines.length ? lines.join('\n') : '  (nada todavía)') + '\n\n';
+    });
+    const total = people.reduce((s,p) => s + personTotal(p), 0);
+    t += `━━━━━━━━━━━━━━\n*TOTAL: ${peso(total)}*`;
+    return t;
+  }
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    const text = buildText();
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Cuenta copiada ✓');
+    } catch(e) {
+      // respaldo: seleccionar en un textarea temporal
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('Cuenta copiada ✓'); }
+      catch(_){ prompt('Copia el texto:', text); }
+      document.body.removeChild(ta);
+    }
+  });
+
+  // ---------- Respaldo (descargar .json) ----------
+  document.getElementById('backupBtn').addEventListener('click', () => {
+    const data = JSON.stringify({ app:'laPrimada', v:1, fecha:new Date().toISOString(), people }, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const stamp = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    a.href = url; a.download = `la-primada-${stamp}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Respaldo descargado ✓');
+  });
+
+  // ---------- Restaurar (.json) ----------
+  const fileInput = document.getElementById('fileInput');
+  document.getElementById('restoreBtn').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const obj = JSON.parse(reader.result);
+        const incoming = Array.isArray(obj) ? obj : obj.people;
+        if(!Array.isArray(incoming)) throw new Error('formato');
+        if(people.length && !confirm('¿Reemplazar la cuenta actual con el respaldo?')){ fileInput.value=''; return; }
+        people = incoming.map(p => {
+          const items = {};
+          PRODUCTS.forEach(prod => items[prod.id] = (p.items && p.items[prod.id]) || 0);
+          return { id: p.id || (Date.now()+''+Math.random().toString(36).slice(2,6)), name: p.name || 'Primo', items };
+        });
+        save(); render(); toast('Cuenta restaurada ✓');
+      } catch(err){ toast('Archivo no válido ✗'); }
+      fileInput.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  render();
+</script>
+</body>
+</html>
