@@ -135,7 +135,7 @@
   .note{margin-top:var(--space-4);font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.5}
 
   /* ---------- Barra de tabs (placeholder de navegación, se cablea en PASO 2) ---------- */
-  .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:var(--space-1);background:var(--paper-2);padding:var(--space-2) var(--space-2) calc(var(--space-2) + max(env(safe-area-inset-bottom), 20px));box-shadow:0 -10px 30px -20px rgba(0,0,0,.6);z-index:40}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:var(--space-1);background:var(--paper-2);border-top:1px solid var(--line);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);padding:var(--space-2) var(--space-2) calc(var(--space-2) + max(env(safe-area-inset-bottom), 20px));box-shadow:0 -10px 30px -20px rgba(0,0,0,.6);z-index:40}
   .tab{flex:1;max-width:160px;min-height:var(--tap-sec);background:transparent;border:none;cursor:pointer;color:var(--ink-soft);font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:13px;padding:var(--space-2);border-radius:var(--radius-md)}
   .tab.active{background:rgba(255,255,255,.10);color:var(--ink)}
 
@@ -376,13 +376,16 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Orden de carga: config → util → api → auth → store → view → controller -->
-  <script src="js/config.js"></script>
-  <script src="js/util.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/view.js"></script>
-  <script src="js/controller.js"></script>
+  <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
+       En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
+       cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
+  <script src="js/config.js?v=20260601-173511-af3e718"></script>
+  <script src="js/util.js?v=20260601-173511-af3e718"></script>
+  <script src="js/api.js?v=20260601-173511-af3e718"></script>
+  <script src="js/auth.js?v=20260601-173511-af3e718"></script>
+  <script src="js/store.js?v=20260601-173511-af3e718"></script>
+  <script src="js/view.js?v=20260601-173511-af3e718"></script>
+  <script src="js/controller.js?v=20260601-173511-af3e718"></script>
 
   <!-- PWA: registrar el Service Worker (network-first; CACHE_VERSION se estampa en cada commit). -->
   <script>

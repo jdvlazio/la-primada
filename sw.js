@@ -10,7 +10,7 @@
    ============================================================ */
 'use strict';
 
-const CACHE_VERSION = '20260601-171228-a881c37';
+const CACHE_VERSION = '20260601-173511-af3e718';
 const CACHE_NAME = 'primadapp-' + CACHE_VERSION;
 
 // Núcleo a precachear (todo servido por GitHub Pages, rutas relativas al scope).
@@ -37,26 +37,39 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: borrar cachés de versiones viejas (otro CACHE_VERSION) y tomar control.
+// Activate: borrar cachés viejos, reclamar clientes, y NAVEGAR cada cliente abierto.
+// El navigate() es la garantía DURA de que el HTML cacheado se descarta al deploy:
+// controllerchange en iOS WKWebView es flaky, no se puede confiar solo en él.
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => Promise.all(
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(
       keys.filter((k) => k.startsWith('primadapp-') && k !== CACHE_NAME)
           .map((k) => caches.delete(k))
-    )).then(() => self.clients.claim())
-  );
+    );
+    await self.clients.claim();
+    // Refrescar todas las pestañas/PWA abiertas con el SW nuevo ya en control.
+    const wins = await self.clients.matchAll({ type: 'window' });
+    await Promise.all(wins.map((c) => { try { return c.navigate(c.url); } catch (e) { return null; } }));
+  })());
 });
 
-// Fetch: NETWORK-FIRST. Intenta la red; si responde, refresca el caché y devuelve.
-// Si la red falla (offline), sirve la copia cacheada; si es navegación, cae a index.html.
+// Fetch: NETWORK-FIRST. Para HTML y código (documento / scripts), se pide SIEMPRE con
+// cache:'no-store' → así el HTTP cache del navegador (WKWebView en iOS) no devuelve una copia
+// vieja: el código propaga en cada deploy igual que el HTML. Los assets estáticos (íconos,
+// manifest) van network-first normal (se cachean para offline). Fallback a caché si la red falla.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;                 // solo GET (no POST a Supabase, etc.)
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;  // no interceptar CDN/Supabase: que vayan directo a la red
 
+  // HTML (navegación) y scripts del propio origen → red dura, nunca HTTP cache.
+  const esCodigo = req.destination === 'document' || req.destination === 'script' || req.mode === 'navigate';
+  const pedido = esCodigo ? new Request(req, { cache: 'no-store' }) : req;
+
   event.respondWith(
-    fetch(req)
+    fetch(pedido)
       .then((res) => {
         if (res && res.ok) {
           const copy = res.clone();

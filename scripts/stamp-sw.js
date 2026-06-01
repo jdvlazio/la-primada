@@ -16,6 +16,7 @@ const { execSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const SW = path.join(ROOT, 'sw.js');
+const HTML = path.join(ROOT, 'index.html');
 
 function shortRef() {
   try { return execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim(); }
@@ -37,5 +38,19 @@ src = src.replace(re, `const CACHE_VERSION = '${version}';`);
 fs.writeFileSync(SW, src);
 console.log('stamp-sw: CACHE_VERSION =', version);
 
-// Re-stagear sw.js si estamos dentro de un commit (hook).
-try { execSync('git add sw.js', { cwd: ROOT }); } catch (e) {}
+// index.html: estampa el mismo sello en el ?v= de cada <script src="js/...">.
+// El HTML viene con ?v=__BUILD__ (placeholder); cada deploy lo sincroniza con
+// CACHE_VERSION → iOS WKWebView no sirve un .js viejo desde su HTTP cache.
+let html = fs.readFileSync(HTML, 'utf8');
+const reV = /(<script src="js\/[^"?]+)(?:\?v=[^"]*)?(")/g;
+const before = html;
+html = html.replace(reV, `$1?v=${version}$2`);
+if (html !== before) {
+  fs.writeFileSync(HTML, html);
+  console.log('stamp-sw: ?v= en index.html =', version);
+} else {
+  console.error('stamp-sw: no encontré <script src="js/..."> en index.html');
+}
+
+// Re-stagear sw.js e index.html si estamos dentro de un commit (hook).
+try { execSync('git add sw.js index.html', { cwd: ROOT }); } catch (e) {}
