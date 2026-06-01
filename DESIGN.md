@@ -3,8 +3,8 @@
 Este archivo es la **constitución visual** del proyecto: el equivalente del `CLAUDE.md` (dominio + arquitectura),
 pero para lo visual. Toda decisión de apariencia sale de aquí.
 
-> **Estado:** este documento crece **una decisión a la vez**. Hoy define **Tipografía**, **Color** y
-> **Patrones** (acordeón). Faltan (pasadas posteriores): **espaciado** y más **componentes**.
+> **Estado:** este documento crece **una decisión a la vez**. Hoy define **Tipografía**, **Color**,
+> **Iconografía** y **Patrones** (acordeón). Faltan (pasadas posteriores): **espaciado** y más **componentes**.
 > Mientras una sección no exista aquí, **no es una decisión tomada**.
 
 ## Tipografía
@@ -109,3 +109,38 @@ Su primer uso es la **tarjeta de asistente** del tab Primadas (una primada puede
 se muestran **solo los productos consumidos** (cantidad > 0) con su stepper; un **chip-picker "+ Agregar"** revela el
 catálogo de esa primada para sumar lo que falte; bajar a 0 lo retira. Vacío → mensaje ("Aún no ha consumido nada"),
 nunca un bloque en blanco.
+
+## Iconografía
+
+**Librería: [Lucide](https://lucide.dev) (licencia ISC), como SVG inline.** **Sin CDN ni paquete npm:** se copian
+**solo los `<path>`/`<line>`/`<circle>` de cada ícono** a un mapa de constantes en `js/view.js` (`ICON_PATHS`), y un
+helper `icon(name, cls?)` arma el `<svg>`. Para el header, que es markup estático, el SVG va inline en `index.html`
+con los mismos atributos. Es la misma filosofía que las fuentes: dependencia externa adoptada, pero servida por
+nosotros sin librería en runtime.
+
+### Estilo canónico (todos los íconos)
+- **`viewBox="0 0 24 24"`**, **`fill="none"`**, **`stroke="currentColor"`**, **`stroke-width="1.75"`**,
+  `stroke-linecap="round"`, `stroke-linejoin="round"`.
+- **`stroke = currentColor`** → el ícono **hereda el color del botón**: **teal `#2DD4BF`** por defecto (botones de header,
+  acciones), **`--alert`** en botones destructivos (`.mini.danger`), **`--pos`** para el check de "pagado". **Nunca `fill`.**
+- Tamaño base **20×20** (clase `.icon`); **18px** dentro de botones con texto (`.mini`, `.btn`); **16px** para `.xmini`
+  y la variante `.icon.sm`. Coherente con los botones existentes (44px de caja en el header).
+
+### Íconos en uso y su regla
+| Ícono Lucide | Dónde | Regla de uso |
+|--------------|-------|--------------|
+| `settings-2` | botón ⚙ del header | Personas y Ajustes (engranaje). |
+| `user` / `log-in` / `log-out` | botón de cuenta (header, a la derecha del settings) | **Refleja el estado de auth:** `user` = placeholder (backend off); `log-in` = backend on sin sesión; `log-out` = autenticado. |
+| `plus-circle` | "Nueva primada", "Asistente", "Producto", "Agregar" (persona/consumo) | **Toda acción de AGREGAR/crear.** |
+| `trash-2` | "Borrar" primada, "Quitar" asistencia, quitar producto/abono | **Toda acción DESTRUCTIVA.** Va en botón `.danger` (color `--alert`). |
+| `x` | cerrar chip-picker, cerrar overlay | **Cerrar/descartar** un panel (no destructivo). |
+| `check` | ítem de abono registrado | **Pagado/positivo** (color `--pos`). |
+| `chevron-down` | caret del acordeón (asistencias, productos del evento) | Cerrado = rotado −90° (apunta a la derecha); abierto = 0° (apunta abajo). |
+
+### Reglas
+- **Agregar un ícono nuevo:** copiar sus paths de lucide.dev a `ICON_PATHS`, **respetando el estilo canónico**
+  (stroke `currentColor`, sin fill, 1.75). Documentarlo en la tabla de arriba con su regla de uso.
+- **Semántica consistente:** `plus-circle` = agregar, `trash-2` = destruir, `x` = cerrar. No mezclar (`x` no se usa
+  para borrar datos; `trash-2` no se usa para cerrar paneles).
+- **El color sale del contexto** (`currentColor`), no se hardcodea en el SVG: así un mismo ícono sirve en teal o en alert
+  según el botón que lo contiene.

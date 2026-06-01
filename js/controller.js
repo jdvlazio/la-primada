@@ -37,6 +37,12 @@
     const tab = ev.target.closest('[data-tab]');
     if (tab) { ui.tab = tab.dataset.tab; ui.overlay = null; rerender(); return; }
     if (ev.target.closest('#gearBtn')) { ui.overlay = ui.overlay ? null : 'personas'; rerender(); return; }
+    // Botón de cuenta (auth). Con backend habilitado: cerrar sesión. Sin backend: placeholder informativo.
+    if (ev.target.closest('#authBtn')) {
+      if (Auth && Auth.enabled()) { Auth.signOut(); View.toast('Sesión cerrada'); }
+      else View.toast('Cuenta: el inicio de sesión se activa con el backend en la nube');
+      return;
+    }
 
     const b = ev.target.closest('[data-act]'); if (!b) return;
     const act = b.dataset.act;
@@ -189,6 +195,8 @@
     if (appIniciada) { rerender(); return; }
     appIniciada = true;
     if (View.showAppChrome) View.showAppChrome();
+    // Ícono del botón de cuenta: 'in' si hay sesión real; 'user' (placeholder) si el backend está off.
+    if (View.renderAuthButton) View.renderAuthButton(Auth && Auth.enabled() ? 'in' : 'placeholder');
     rerender();                                // "Cargando…" mientras hidrata
     await Store.load();                        // hidrata el AppState desde Api (async)
     rerender();

@@ -26,6 +26,27 @@
   function badge(text, cls) { return `<span class="badge ${cls || ''}">${e(text)}</span>`; }
   function nombrePersona(id) { const p = S().persona(id); return p ? p.nombre : '—'; }
 
+  /* ---------- Iconografía: Lucide, SVG inline (ver DESIGN.md › Iconografía) ----------
+     Solo los <path>/<line> de cada ícono, copiados de lucide.dev (licencia ISC).
+     stroke = currentColor (hereda el color del botón → teal por defecto, --alert en destructivos),
+     sin fill, stroke-width 1.75, viewBox 0 0 24 24. */
+  const ICON_PATHS = {
+    'settings-2': '<path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>',
+    'user':       '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    'log-in':     '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/>',
+    'log-out':    '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+    'plus-circle':'<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/>',
+    'trash-2':    '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+    'check':      '<polyline points="20 6 9 17 4 12"/>',
+    'x':          '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    'chevron-down':'<path d="m6 9 6 6 6-6"/>',
+  };
+  // icon(name, cls?) → <svg> inline. La clase .icon dimensiona; cls extra opcional.
+  function icon(name, cls) {
+    const p = ICON_PATHS[name]; if (!p) return '';
+    return `<svg class="icon ${cls || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  }
+
   /* ============================================================
      TAB PRIMADAS (corazón)
      ============================================================ */
@@ -49,7 +70,7 @@
         ${cerrada
           ? `<button class="mini" data-act="reabrir-primada" data-id="${p.id}">Reabrir</button>`
           : `<button class="mini" data-act="cerrar-primada" data-id="${p.id}">Cerrar cuenta</button>`}
-        <button class="mini danger" data-act="borrar-primada" data-id="${p.id}">Borrar</button>
+        <button class="mini danger" data-act="borrar-primada" data-id="${p.id}">${icon('trash-2')}Borrar</button>
       </div>
     </div>`;
   }
@@ -84,14 +105,14 @@
     if (!disponibles.length) return '';
     const abierto = ui && ui.pickProd === a.personaId;
     if (!abierto) {
-      return `<button class="mini ghost addprod" data-act="open-pickprod" data-pid="${a.personaId}">+ Agregar</button>`;
+      return `<button class="mini ghost addprod" data-act="open-pickprod" data-pid="${a.personaId}">${icon('plus-circle')}Agregar</button>`;
     }
     const chips = disponibles.map(prod =>
       `<button class="chip" data-act="add-item" data-pid="${a.personaId}" data-prod="${prod.id}">${e(prod.emoji)} ${e(prod.nombre)} <i>${$peso(prod.precioVenta)}</i></button>`
     ).join('');
     return `<div class="prodpick">
       <div class="prodpick-head"><span class="muted small">¿Qué pidió?</span>
-        <button class="xmini" data-act="close-pickprod" data-pid="${a.personaId}" aria-label="cerrar">✕</button></div>
+        <button class="xmini" data-act="close-pickprod" data-pid="${a.personaId}" aria-label="cerrar">${icon('x')}</button></div>
       <div class="chips">${chips}</div>
     </div>`;
   }
@@ -143,7 +164,7 @@
       : (debe ? `<span class="acc-amt"><b class="owe">${$peso(saldo)}</b><i class="muted">de ${$peso(total)}</i></span>`
               : `<span class="acc-amt">${$peso(total)}</span>`);
     const cabecera = `<button class="acc-head" data-act="toggle-asis" data-pid="${a.personaId}" aria-expanded="${abierto ? 'true' : 'false'}">
-        <span class="acc-caret ${abierto ? 'open' : ''}">▸</span>
+        <span class="acc-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
         <span class="acc-id"><b>${e(nombrePersona(a.personaId))}</b> ${snapBadge}${esPrin ? ' ' + badge('principal', 'red') : ''}</span>
         ${resumenDer}
       </button>`;
@@ -156,7 +177,7 @@
       <div class="acc-body">
         <div class="asis-ctl">
           ${rolSelect(p, a)}
-          <button class="mini danger" data-act="remove-asistencia" data-pid="${a.personaId}" ${cerrada ? 'disabled' : ''} aria-label="quitar">Quitar</button>
+          <button class="mini danger" data-act="remove-asistencia" data-pid="${a.personaId}" ${cerrada ? 'disabled' : ''} aria-label="quitar">${icon('trash-2')}Quitar</button>
         </div>
         ${coverLinea(p, a)}
         <div class="sub">Consumo</div>
@@ -181,7 +202,7 @@
     const abonado = S().abonadoDe(a);
     const lista = abonos.length
       ? `<div class="abonos">${abonos.map(b =>
-          `<div class="abono"><span>${e(b.fecha)}</span><b>${$peso(b.monto)}</b><button class="xmini" data-act="remove-abono" data-pid="${a.personaId}" data-abono="${b.id}" aria-label="quitar abono">✕</button></div>`).join('')}</div>`
+          `<div class="abono">${icon('check', 'sm')}<span>${e(b.fecha)}</span><b>${$peso(b.monto)}</b><button class="xmini" data-act="remove-abono" data-pid="${a.personaId}" data-abono="${b.id}" aria-label="quitar abono">${icon('trash-2', 'sm')}</button></div>`).join('')}</div>`
       : '';
     return `<div class="pay">
       <div class="pay-form">
@@ -204,7 +225,7 @@
       <select class="sel" id="as-pick" ${fuera.length ? '' : 'disabled'}>
         ${fuera.length ? opts : '<option>— directorio vacío —</option>'}
       </select>
-      <button class="mini" data-act="add-asistencia" ${fuera.length ? '' : 'disabled'}>+ Asistente</button>
+      <button class="mini" data-act="add-asistencia" ${fuera.length ? '' : 'disabled'}>${icon('plus-circle')}Asistente</button>
       <button class="mini ghost" data-act="open-personas">Nueva persona</button>
     </div>`;
   }
@@ -281,7 +302,7 @@
     const cerrada = p.estado === 'cerrada';
     const abierto = ui && ui.panelProductos;
     const head = `<button class="h2 acc-h2" data-act="toggle-panel-productos" aria-expanded="${abierto ? 'true' : 'false'}">
-      <span class="acc-caret ${abierto ? 'open' : ''}">▸</span> Productos del evento <span class="muted">(${p.productos.length})</span></button>`;
+      <span class="acc-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span> Productos del evento <span class="muted">(${p.productos.length})</span></button>`;
     if (!abierto) return head;
     const ro = cerrada ? 'disabled' : '';
     const filas = p.productos.map(prod => `<div class="prodrow">
@@ -290,14 +311,14 @@
         <input class="ti num" type="number" min="0" step="500" inputmode="numeric" value="${prod.costoNeto}" data-ch="costo-producto" data-id="${prod.id}" ${ro}></label>
       <label class="prodrow-f"><span>venta</span>
         <input class="ti num" type="number" min="0" step="500" inputmode="numeric" value="${prod.precioVenta}" data-ch="venta-producto" data-id="${prod.id}" ${ro}></label>
-      <button class="xmini" data-act="remove-producto" data-id="${prod.id}" ${ro} aria-label="quitar producto">✕</button>
+      <button class="xmini" data-act="remove-producto" data-id="${prod.id}" ${ro} aria-label="quitar producto">${icon('trash-2', 'sm')}</button>
     </div>`).join('');
     const alta = cerrada ? '' : `<div class="prodnew">
       <input class="ti" id="pn-emoji" maxlength="2" placeholder="🍹" aria-label="Emoji" style="width:48px;text-align:center">
       <input class="ti" id="pn-nombre" maxlength="40" placeholder="Nombre (ej. Cóctel)" aria-label="Nombre">
       <input class="ti num" id="pn-costo" type="number" min="0" step="500" inputmode="numeric" placeholder="costo" aria-label="Costo neto">
       <input class="ti num" id="pn-venta" type="number" min="0" step="500" inputmode="numeric" placeholder="venta" aria-label="Precio de venta">
-      <button class="mini" data-act="add-producto">+ Producto</button>
+      <button class="mini" data-act="add-producto">${icon('plus-circle')}Producto</button>
     </div>`;
     return `${head}
       <div class="card prodmgmt">
@@ -334,7 +355,7 @@
       .sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0));
     return `
       <div class="bar">
-        <button class="btn" data-act="new-primada">+ Nueva primada</button>
+        <button class="btn" data-act="new-primada">${icon('plus-circle')}Nueva primada</button>
       </div>
       ${activa ? primadaDetalle(activa, ui)
                : '<div class="empty">No hay primada activa.<br>Crea una con “+ Nueva primada”.</div>'}
@@ -382,7 +403,7 @@
           <option value="ahorrador">ahorrador</option>
           <option value="invitado">invitado</option>
         </select>
-        <button class="mini" data-act="add-persona">+ Agregar</button>
+        <button class="mini" data-act="add-persona">${icon('plus-circle')}Agregar</button>
       </div>
       <div class="muted small" style="margin-top:10px">Cambiar el estado aplica <b>de aquí en adelante</b>: las asistencias ya registradas conservan su snapshot — la historia no se reescribe.</div>`;
   }
@@ -406,7 +427,7 @@
     return `<div class="sheet full">
       <div class="sheet-head">
         <div class="seg-nav">${seg('personas', 'Personas')}${seg('ajustes', 'Ajustes')}</div>
-        <button class="gear" data-act="close-overlay" aria-label="Cerrar">✕</button>
+        <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button>
       </div>
       <div class="sheet-body">${body}</div>
     </div>`;
@@ -478,6 +499,15 @@
       </div>`;
   }
 
+  // Actualiza el ícono del botón de cuenta según el estado de auth:
+  // 'user' (backend off, placeholder) · 'log-in' (backend on, sin sesión) · 'log-out' (autenticado).
+  function renderAuthButton(estado) {
+    const btn = document.getElementById('authBtn'); if (!btn) return;
+    const name = estado === 'in' ? 'log-out' : (estado === 'out' ? 'log-in' : 'user');
+    btn.innerHTML = icon(name);
+    btn.setAttribute('title', estado === 'in' ? 'Cerrar sesión' : (estado === 'out' ? 'Iniciar sesión' : 'Cuenta'));
+  }
+
   // Restaura topbar/tabbar/engranaje al entrar autenticado (tras el login).
   function showAppChrome() {
     if (els.tabbar) els.tabbar.style.display = '';
@@ -499,6 +529,6 @@
     if (hayError) toast(s.error);
   }
 
-  root.View = { cache, render, renderLogin, showAppChrome, renderSync, toast };
+  root.View = { cache, render, renderLogin, showAppChrome, renderAuthButton, renderSync, toast };
   if (typeof module !== 'undefined' && module.exports) module.exports = { View: root.View };
 })(typeof window !== 'undefined' ? window : globalThis);

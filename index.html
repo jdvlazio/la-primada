@@ -35,8 +35,18 @@
   /* tagline: subtítulo que cabe EXACTO bajo el wordmark (no lo sobrepasa). Tamaño y tracking
      ajustados para igualar el ancho de "Primadapp" (~174px); mayúsculas con tracking leve. */
   .brand .tagline{margin-top:7px;font-weight:400;font-size:10px;letter-spacing:.3px;color:var(--ink-soft);white-space:nowrap}
-  .gear{background:var(--paper-2);border:2px solid var(--line);border-radius:12px;width:44px;height:44px;font-size:20px;cursor:pointer;color:var(--ink)}
+  .header-actions{display:flex;gap:8px}
+  .gear{display:flex;align-items:center;justify-content:center;background:var(--paper-2);border:2px solid var(--line);border-radius:12px;width:44px;height:44px;font-size:20px;cursor:pointer;color:var(--accent)}
   .gear:active{transform:scale(.94)}
+  .gear:hover{border-color:var(--accent)}
+
+  /* Iconografía Lucide (SVG inline). .icon hereda el color del botón vía currentColor (teal por
+     defecto; --alert en destructivos). Ver DESIGN.md › Iconografía. */
+  .icon{width:20px;height:20px;flex:none;vertical-align:middle}
+  .icon.sm{width:16px;height:16px}
+  .mini .icon,.btn .icon{width:18px;height:18px;margin-right:6px;margin-top:-2px}
+  .mini.danger{color:var(--alert)}
+  .xmini .icon{width:16px;height:16px}
 
   /* ---------- Bloques ---------- */
   .status{font-size:12px;color:var(--ink-soft);background:var(--paper-2);border:2px solid var(--line);border-radius:11px;padding:9px 12px;margin-bottom:12px}
@@ -152,8 +162,10 @@
   .asis.debe{border-color:var(--alert)}
   /* ---- Patrón ACORDEÓN (ver DESIGN.md › Patrones) ---- */
   .acc-head{display:flex;align-items:center;gap:10px;width:100%;background:transparent;border:none;cursor:pointer;color:var(--ink);font-family:inherit;text-align:left;padding:12px}
-  .acc-caret{color:var(--ink-soft);font-size:12px;transition:transform .18s ease;flex:none}
-  .acc-caret.open{transform:rotate(90deg)}
+  /* caret = chevron-down: cerrado apunta a la derecha (-90°), abierto hacia abajo (0°) */
+  .acc-caret{display:inline-flex;align-items:center;color:var(--ink-soft);transition:transform .18s ease;flex:none;transform:rotate(-90deg)}
+  .acc-caret .icon{width:18px;height:18px}
+  .acc-caret.open{transform:rotate(0deg)}
   .acc-id{flex:1;min-width:0;font-size:15px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
   .acc-amt{flex:none;font-weight:700;font-size:14px;display:flex;flex-direction:column;align-items:flex-end;line-height:1.15}
   .acc-amt i{font-style:normal;font-weight:400;font-size:11px}
@@ -207,6 +219,7 @@
   .abono{display:flex;align-items:center;gap:8px;font-size:12px;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:5px 9px}
   .abono span{color:var(--ink-soft)}
   .abono b{margin-left:auto;font-weight:700}
+  .abono .icon{color:var(--pos)}   /* check = pagado/positivo */
   .xmini{border:none;background:none;cursor:pointer;color:var(--ink-soft);font-size:13px;padding:2px 4px;border-radius:6px}
   .xmini:active{transform:scale(.85)}
 
@@ -243,7 +256,14 @@
         <h1>Primad<span class="accent">app</span></h1>
         <div class="tagline">AHORRO · ENCUENTRO · BALANCE</div>
       </div>
-      <button class="gear" id="gearBtn" title="Personas y ajustes" aria-label="Personas y ajustes">⚙</button>
+      <div class="header-actions">
+        <button class="gear" id="authBtn" title="Cuenta" aria-label="Cuenta">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
+        <button class="gear" id="gearBtn" title="Personas y ajustes" aria-label="Personas y ajustes">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+        </button>
+      </div>
     </header>
 
     <main id="screen"><!-- la Vista renderiza aquí --></main>
