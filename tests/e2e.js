@@ -43,6 +43,9 @@ function ready() {
 
 ready().then(async () => {
   window.localStorage.clear();   // arrancar de cero (defaultState)
+  // jsdom no implementa window.confirm; las acciones destructivas (cerrar/borrar) lo usan.
+  // Stub que confirma siempre (simula que el usuario acepta el diálogo).
+  window.confirm = () => true;
   // Orden real de carga (incluye el adaptador): config → util → api → store → view → controller.
   ['js/config.js', 'js/util.js', 'js/api.js', 'js/auth.js', 'js/store.js', 'js/view.js', 'js/controller.js'].forEach(rel => {
     const s = document.createElement('script');
@@ -159,7 +162,11 @@ eq('Ana (principal) sin cover', Store.select.coverDe(prm(), anaAsis()), 0);
 
 // Ganancia ANTES de exonerar: cover 10000 + margen 2*(3500-2500)=2000 → 12000
 eq('Ganancia = cover + margen (12.000)', Store.select.ganancia(prm()), 12000);
-check('Reparto visible en la UI', /Ganancia de la primada/.test(q('#screen').innerHTML));
+// El reparto YA NO vive en el tab Primadas (operar) → ahora en el tab Resumen (ver la plata).
+check('Reparto NO está en el tab Primadas', !/Ganancia de la primada/.test(q('#screen').innerHTML));
+click('[data-tab="resumen"]');
+check('Reparto visible en el tab Resumen', /Ganancia de la primada/.test(q('#screen').innerHTML));
+click('[data-tab="primadas"]');   // volver a operar
 
 click(`[data-act="toggle-exonerado"][data-pid="${beto.id}"]`);
 check('Beto exonerado', betoAsis().coverExonerado === true);
@@ -173,12 +180,19 @@ check('Informe completo (ya hay principal)', inf.incompleta === false);
 eq('Entrega al Tesorero = ganancia', inf.entregaTesorero, Store.select.ganancia(prm()));
 eq('Parte igual a la única ahorradora (Ana) = ganancia', Store.select.parteIgual(prm()), 2000);
 eq('Sobrante indivisible = 0', Store.select.sobranteFondo(prm()), 0);
-check('Informe del principal renderizado con el nombre', /Informe del principal — Ana/.test(q('#screen').innerHTML));
+// El informe también vive ahora en el tab Resumen (no en Primadas).
+click('[data-tab="resumen"]');
+check('Informe del principal renderizado con el nombre (tab Resumen)', /Informe del principal — Ana/.test(q('#screen').innerHTML));
+click('[data-tab="primadas"]');
 
 /* ---------- 8. Cerrar congela consumos pero la UI sigue viva ---------- */
-section('Cerrar cuenta (INVARIANTE #4) vía UI');
+section('Cerrar cuenta (INVARIANTE #4) vía config escondida');
+// Cerrar/borrar viven detrás del engranaje de la cabecera, con confirmación (confirm=true en jsdom).
+click(`[data-act="open-config-primada"][data-id="${prm().id}"]`);
+check('Overlay de config abierto', !q('#overlay').hidden && /Configurar primada/.test(q('#overlay').innerHTML));
 click(`[data-act="cerrar-primada"][data-id="${prm().id}"]`);
 eq('Primada cerrada', prm().estado, 'cerrada');
+click('[data-act="close-overlay"]');
 const before = betoAsis().items.cerveza;
 const plus = q(`[data-act="item-plus"][data-pid="${beto.id}"][data-prod="cerveza"]`);
 check('Steppers deshabilitados al cerrar', !!plus && plus.disabled === true);

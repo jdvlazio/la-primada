@@ -50,27 +50,52 @@
   /* ============================================================
      TAB PRIMADAS (corazón)
      ============================================================ */
+  // Cabecera COMPACTA de la primada activa (operar): nombre + estado + acceso a config (engranaje).
+  // La configuración (fecha, mes, cerrar, borrar) vive detrás del engranaje, NO expuesta aquí.
   function primadaCabecera(p) {
     const cerrada = p.estado === 'cerrada';
     const inc = S().primadaIncompleta(p) ? ' ' + badge('sin principal', 'warn') : '';
+    return `<div class="prm-head">
+      <div class="prm-head-main">
+        <div class="prm-name">${e(p.nombre)}${inc}</div>
+        <div class="prm-meta"><span class="state ${cerrada ? 'closed' : 'open'}">${cerrada ? '🔒 Cerrada' : '🟢 Abierta'}</span>
+          <span class="muted small">${e(Util.monthLabel(p.mesContable))}</span></div>
+      </div>
+      <button class="gear" data-act="open-config-primada" data-id="${p.id}" title="Configurar primada" aria-label="Configurar primada">${icon('settings-2')}</button>
+    </div>`;
+  }
+
+  // Overlay de CONFIGURACIÓN de la primada (escondido tras el engranaje de la cabecera).
+  // Edición de una sola vez + acciones destructivas (cerrar/reabrir, borrar) con confirmación.
+  function configPrimadaSheet(state) {
+    const p = S().activePrimada();
+    if (!p) return `<div class="sheet full"><div class="sheet-head"><div class="sheet-title">Configurar</div>
+      <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button></div>
+      <div class="empty">No hay primada activa.</div></div>`;
+    const cerrada = p.estado === 'cerrada';
     const ro = cerrada ? 'disabled' : '';
-    return `<div class="card">
-      <div class="card-head">
-        <input class="ti name" data-ch="rename-primada" data-id="${p.id}" value="${e(p.nombre)}" ${ro} maxlength="40" aria-label="Nombre de la primada">
-        ${inc}
+    return `<div class="sheet full">
+      <div class="sheet-head">
+        <div class="sheet-title">Configurar primada</div>
+        <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button>
       </div>
-      <div class="grid2">
-        <label class="fld"><span>Fecha</span>
-          <input class="ti" type="date" data-ch="fecha-primada" data-id="${p.id}" value="${e(p.fecha)}" ${ro}></label>
-        <label class="fld"><span>Mes contable</span>
-          <input class="ti" type="month" data-ch="mes-primada" data-id="${p.id}" value="${e(p.mesContable)}" ${ro}></label>
-      </div>
-      <div class="row gap end">
-        <span class="state ${cerrada ? 'closed' : 'open'}">${cerrada ? '🔒 Cerrada' : '🟢 Abierta'}</span>
+      <div class="sheet-body">
+        <label class="fld"><span>Nombre</span>
+          <input class="ti name" data-ch="rename-primada" data-id="${p.id}" value="${e(p.nombre)}" ${ro} maxlength="40" aria-label="Nombre de la primada"></label>
+        <div class="grid2">
+          <label class="fld"><span>Fecha</span>
+            <input class="ti" type="date" data-ch="fecha-primada" data-id="${p.id}" value="${e(p.fecha)}" ${ro}></label>
+          <label class="fld"><span>Mes contable</span>
+            <input class="ti" type="month" data-ch="mes-primada" data-id="${p.id}" value="${e(p.mesContable)}" ${ro}></label>
+        </div>
+        <div class="sub">Estado de la cuenta</div>
+        <div class="muted small" style="margin:-2px 2px 8px">Cerrar congela consumos pero sigue aceptando abonos.</div>
         ${cerrada
-          ? `<button class="mini" data-act="reabrir-primada" data-id="${p.id}">Reabrir</button>`
+          ? `<button class="mini" data-act="reabrir-primada" data-id="${p.id}">Reabrir cuenta</button>`
           : `<button class="mini" data-act="cerrar-primada" data-id="${p.id}">Cerrar cuenta</button>`}
-        <button class="mini danger" data-act="borrar-primada" data-id="${p.id}">${icon('trash-2')}Borrar</button>
+        <div class="sub danger-sub">Zona peligrosa</div>
+        <div class="muted small" style="margin:-2px 2px 8px">Borrar elimina la primada y todo su registro. No se puede deshacer.</div>
+        <button class="mini danger" data-act="borrar-primada" data-id="${p.id}">${icon('trash-2')}Borrar primada</button>
       </div>
     </div>`;
   }
@@ -157,19 +182,15 @@
     const abierto = ui && ui.abiertos && ui.abiertos.has(a.personaId);
     const snapBadge = badge(a.estadoEnEseMomento, a.estadoEnEseMomento === 'ahorrador' ? 'good' : '');
 
-    // Cabecera-resumen: es el botón que togglea el acordeón (toda la fila es tappable).
-    const debe = !esPrin && saldo > 0;
-    const resumenDer = esPrin
-      ? `<span class="acc-amt">${$peso(total)}</span>`
-      : (debe ? `<span class="acc-amt"><b class="owe">${$peso(saldo)}</b><i class="muted">de ${$peso(total)}</i></span>`
-              : `<span class="acc-amt">${$peso(total)}</span>`);
+    // Cabecera-resumen (operar): el total visible es SOLO consumo + cover (el dato de un vistazo).
+    // El saldo/deuda es "ver la plata" → vive en el tab Resumen, no aquí.
     const cabecera = `<button class="acc-head" data-act="toggle-asis" data-pid="${a.personaId}" aria-expanded="${abierto ? 'true' : 'false'}">
         <span class="acc-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
         <span class="acc-id"><b>${e(nombrePersona(a.personaId))}</b> ${snapBadge}${esPrin ? ' ' + badge('principal', 'red') : ''}</span>
-        ${resumenDer}
+        <span class="acc-amt">${$peso(total)}</span>
       </button>`;
 
-    if (!abierto) return `<div class="asis ${esPrin ? 'is-principal' : ''} ${debe ? 'debe' : ''}">${cabecera}</div>`;
+    if (!abierto) return `<div class="asis ${esPrin ? 'is-principal' : ''}">${cabecera}</div>`;
 
     const cerrada = p.estado === 'cerrada';
     return `<div class="asis open ${esPrin ? 'is-principal' : ''}">
@@ -281,6 +302,8 @@
     </div>`;
   }
 
+  // Tab Primadas = solo OPERAR: cabecera compacta + asistencias (registrar consumo) + productos.
+  // La plata (reparto, informe, quién debe) vive en el tab RESUMEN. La config, tras el engranaje.
   function primadaDetalle(p, ui) {
     return `${primadaCabecera(p)}
       <h2 class="h2">Asistencias <span class="muted">(${p.asistencias.length})</span></h2>
@@ -290,9 +313,7 @@
           ? p.asistencias.map(a => asistenciaCard(p, a, ui)).join('')
           : '<div class="empty">Aún no hay asistencias. Agrega personas del directorio.</div>'}
       </div>
-      ${productosEvento(p, ui)}
-      ${reparto(p)}
-      ${informe(p)}`;
+      ${productosEvento(p, ui)}`;
   }
 
   // Gestión de productos PROPIOS de la primada (sección plegable). Editar precio / quitar / añadir.
@@ -365,7 +386,24 @@
   }
 
   /* ============================================================
-     TABS Resumen / Fondo (placeholders)
+     TAB RESUMEN — dashboard de la plata de la primada activa
+     (reparto del fondo + informe del principal + quién debe).
+     Separar "ver la plata" de "operar" (patrón Tricount).
+     ============================================================ */
+  function tabResumen(state, ui) {
+    const p = S().activePrimada();
+    if (!p) return `<div class="empty big"><div class="ph-title">Resumen</div>
+      <div>Abre o crea una primada en el tab <b>Primadas</b> para ver su reparto e informe.</div></div>`;
+    return `<div class="resumen-head">
+        <div class="prm-name">${e(p.nombre)}</div>
+        <div class="muted small">${e(Util.monthLabel(p.mesContable))} · ${p.estado}</div>
+      </div>
+      ${reparto(p)}
+      ${informe(p)}`;
+  }
+
+  /* ============================================================
+     TAB Fondo (placeholder — tesorería futura)
      ============================================================ */
   function placeholder(titulo, txt) {
     return `<div class="empty big"><div class="ph-title">${e(titulo)}</div><div>${txt}</div>
@@ -532,13 +570,14 @@
     // 2) contenido del tab
     let html;
     if (!state)                    html = '<div class="empty">Cargando…</div>';   // primer pintado: aún hidratando (load async)
-    else if (ui.tab === 'resumen') html = placeholder('Resumen', 'El dashboard del fondo (totales y estado) se construye luego de Primadas.');
+    else if (ui.tab === 'resumen') html = tabResumen(state, ui);                  // dashboard de la plata
     else if (ui.tab === 'fondo')   html = placeholder('Fondo', 'Tesorería: aportes, retiros, préstamos y actividades extra.');
     else                           html = tabPrimadas(state, ui);
     els.screen.innerHTML = html;
 
-    // 3) overlay: wizard "Nueva primada" (prioridad) o pantalla del engranaje (Personas / Ajustes)
+    // 3) overlay: wizard (prioridad) · config de primada · pantalla del engranaje (Personas / Ajustes)
     if (ui.wizard)                                              els.overlay.innerHTML = wizardSheet(state, ui);
+    else if (ui.overlay === 'config-primada')                  els.overlay.innerHTML = configPrimadaSheet(state);
     else if (ui.overlay === 'personas' || ui.overlay === 'ajustes') els.overlay.innerHTML = overlaySheet(ui.overlay, state);
     else                                                        els.overlay.innerHTML = '';
     els.overlay.hidden = !(ui.wizard || ui.overlay);

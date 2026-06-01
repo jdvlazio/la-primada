@@ -134,10 +134,19 @@
         return;
       }
       case 'select-primada':   A.seleccionarPrimada(id); break;
-      case 'cerrar-primada':   A.cerrarPrimada(id);  View.toast('Cuenta cerrada (sigue aceptando abonos)'); break;
-      case 'reabrir-primada':  A.reabrirPrimada(id); break;
+      // Config de la primada (escondida tras el engranaje de la cabecera).
+      case 'open-config-primada': ui.overlay = 'config-primada'; rerender(); return;
+      // Acciones destructivas: con confirmación (la cuenta cerrada congela consumos).
+      case 'cerrar-primada':
+        if (!root.confirm || root.confirm('¿Cerrar la cuenta? Congela consumos; los abonos siguen.')) {
+          A.cerrarPrimada(id); View.toast('Cuenta cerrada (sigue aceptando abonos)');
+        }
+        break;
+      case 'reabrir-primada':  A.reabrirPrimada(id); View.toast('Cuenta reabierta'); break;
       case 'borrar-primada':
-        if (root.confirm ? root.confirm('¿Borrar esta primada? No se puede deshacer.') : true) A.borrarPrimada(id);
+        if (!root.confirm || root.confirm('¿Borrar esta primada y todo su registro? No se puede deshacer.')) {
+          A.borrarPrimada(id); ui.overlay = null; View.toast('Primada borrada'); rerender(); return;
+        }
         break;
 
       // ----- asistencias -----

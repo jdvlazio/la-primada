@@ -259,6 +259,16 @@
   .sheet.full{min-height:86vh}
   .sheet-body{display:block}
 
+  /* Cabecera compacta de la primada activa (tab Primadas = operar) + dashboard Resumen */
+  .prm-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-4)}
+  .prm-head-main{min-width:0}
+  .prm-name{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:22px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .prm-meta{display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-1)}
+  .resumen-head{margin-bottom:var(--space-4)}
+  .resumen-head .prm-name{white-space:normal}
+  /* "Zona peligrosa" en el sheet de config */
+  .danger-sub{color:var(--alert);border-top-color:var(--alert)}
+
   /* Wizard "Nueva primada" (3 pasos) */
   .wz .wz-steps{display:flex;align-items:center;gap:0;flex:1}
   .wz-dot{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);color:var(--ink-soft);font-size:13px;font-weight:700;flex:none;background:var(--paper)}
