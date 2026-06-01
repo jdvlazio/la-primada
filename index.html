@@ -30,8 +30,10 @@
 
   /* ---------- Encabezado ---------- */
   .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 2px 14px;border-bottom:2px dashed var(--line);margin-bottom:14px}
-  .brand .kicker{font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:var(--red-deep);font-weight:700}
-  .brand h1{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:34px;line-height:.95;letter-spacing:-.02em}
+  .brand h1{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:34px;line-height:.95;letter-spacing:-.02em;color:var(--ink)}
+  .brand h1 .accent{color:var(--accent)}
+  /* tagline: misma familia, peso ligero y tamaño menor → subtítulo que acompaña, no compite con el nombre */
+  .brand .tagline{margin-top:7px;font-weight:400;font-size:14px;letter-spacing:0;color:var(--ink-soft)}
   .gear{background:var(--paper-2);border:2px solid var(--line);border-radius:12px;width:44px;height:44px;font-size:20px;cursor:pointer;color:var(--ink)}
   .gear:active{transform:scale(.94)}
 
@@ -223,8 +225,8 @@
   <div class="wrap">
     <header class="topbar">
       <div class="brand">
-        <div class="kicker">Natillera familiar</div>
-        <h1>La Primada</h1>
+        <h1>Primad<span class="accent">app</span></h1>
+        <div class="tagline">El balance, primo.</div>
       </div>
       <button class="gear" id="gearBtn" title="Personas y ajustes" aria-label="Personas y ajustes">⚙</button>
     </header>
