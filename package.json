@@ -4,9 +4,13 @@
   "private": true,
   "description": "Núcleo de eventos de La Primada — natillera familiar, vanilla JS servido por GitHub Pages",
   "scripts": {
-    "test": "node tests/run.js && node tests/api.js && node tests/e2e.js"
+    "test": "node tests/run.js && node tests/api.js && node tests/e2e.js",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "serve": "python3 -m http.server 4178"
   },
   "devDependencies": {
-    "jsdom": "^24.0.0"
+    "jsdom": "^24.0.0",
+    "@playwright/test": "^1.60.0"
   }
 }

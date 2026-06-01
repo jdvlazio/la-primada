@@ -5,3 +5,8 @@
 
 # Node (solo para `npm test`, no producción)
 node_modules/
+
+# Playwright (artefactos de test, no entran al repo)
+test-results/
+playwright-report/
+test-results.json
