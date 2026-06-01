@@ -98,15 +98,15 @@ Una escala fija; **todo valor de espaciado sale de aquí**. Nada de números sue
 | `--space-6` | `40px` | margen mayor entre bloques |
 | `--space-safe` | `86px` | **padding inferior** del contenido (deja espacio a la tabbar fija) |
 
-### Alturas mínimas de toque
-Mobile-first, **pulgar cómodo**. Todo elemento interactivo respeta su mínimo:
+### Alturas mínimas de toque (tokens CSS)
+Mobile-first, **pulgar cómodo**. Todo elemento interactivo respeta su mínimo (vía `min-height`):
 
-| Elemento | Altura mínima |
-|----------|---------------|
-| Botón principal | **52px** |
-| Botón secundario / chip | **40px** |
-| Fila de lista | **56px** |
-| Input | **52px** |
+| Token | Valor | Elemento |
+|-------|-------|----------|
+| `--tap-btn`   | `52px` | Botón principal |
+| `--tap-sec`   | `40px` | Botón secundario / chip |
+| `--tap-row`   | `56px` | Fila de lista |
+| `--tap-input` | `52px` | Input |
 
 ### Radios de borde (tokens CSS)
 | Token | Valor | Uso |
@@ -117,9 +117,14 @@ Mobile-first, **pulgar cómodo**. Todo elemento interactivo respeta su mínimo:
 | `--radius-xl` | `28px` | modales, wizard |
 
 ### Layout
-- **Ancho máximo de contenido: `480px`, centrado.** **Sin** breakpoints desktop — la app vive en una columna mobile.
+- **Ancho máximo de contenido: `--content-max` (`480px`), centrado.** **Sin** breakpoints desktop — la app vive
+  en una columna mobile.
 - **Padding interno de tarjeta:** `--space-4` (20px) en **todos** los lados.
 - **Gap entre secciones** de la misma pantalla: `--space-5` (28px).
+
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--content-max` | `480px` | ancho máximo del contenido (`.wrap`, sheets), centrado |
 
 ### Reglas
 - **Todo valor de espaciado sale de estas variables.** Nunca valores sueltos en el CSS (ni `padding:14px`, ni `gap:10px`).
@@ -128,8 +133,8 @@ Mobile-first, **pulgar cómodo**. Todo elemento interactivo respeta su mínimo:
 - Densidad baja: cuando dudes entre apretar o airear, **airea**. Una acción/idea principal por bloque.
 - Agregar/cambiar un token = editar **este documento primero**, y luego reflejarlo en `:root` de `index.html`.
 
-> **Nota:** esta sección **documenta** los tokens; la aplicación al CSS (`:root` + reemplazo de valores sueltos)
-> es una pasada **aparte**, aún no ejecutada.
+> **Estado:** estos tokens **ya están aplicados** en el `:root` de `index.html` (espaciado, radios, alturas de toque
+> y `--content-max`), con todos los valores de espaciado del CSS referenciando las variables.
 
 ## Patrones
 
