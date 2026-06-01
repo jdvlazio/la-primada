@@ -133,8 +133,24 @@ Mobile-first, **pulgar cómodo**. Todo elemento interactivo respeta su mínimo (
 - Densidad baja: cuando dudes entre apretar o airear, **airea**. Una acción/idea principal por bloque.
 - Agregar/cambiar un token = editar **este documento primero**, y luego reflejarlo en `:root` de `index.html`.
 
+### Safe areas (iOS / Dynamic Island)
+La app corre como **PWA standalone** en iPhone; debe respetar las áreas seguras (notch / Dynamic Island arriba,
+barra de gestos abajo). El patrón, en cuatro partes:
+1. **`viewport-fit=cover`** en el `<meta viewport>` — **requisito**: sin esto, `env(safe-area-inset-*)` devuelve `0` y
+   nada más funciona.
+2. **Header bajo el Island:** `padding-top: env(safe-area-inset-top)` en `.topbar`, **dentro de
+   `@supports (padding-top: env(safe-area-inset-top))`** — así solo aplica donde el inset existe (standalone/nativo) y
+   no agrega espacio de más en Safari normal.
+3. **Fondo hasta el borde:** el contenedor de fondo (`body`) usa **`min-height: 100dvh`** (dynamic viewport height,
+   **no `vh`**) — el background llega al borde físico inferior, sin la línea de corte antes de la barra de gestos.
+   Fallback `100vh` para navegadores sin `dvh`.
+4. **Mínimo inferior:** navs fijas y contenido inferior (`.tabbar`, `.sheet`, padding del `body`) usan
+   **`max(env(safe-area-inset-bottom), 20px)`** (no `env(...)` solo) — garantiza ≥20px en dispositivos sin barra de
+   gestos y usa el inset real cuando es mayor. Se ve bien en 15 Pro y en modelos viejos por igual.
+
 > **Estado:** estos tokens **ya están aplicados** en el `:root` de `index.html` (espaciado, radios, alturas de toque
-> y `--content-max`), con todos los valores de espaciado del CSS referenciando las variables.
+> y `--content-max`), con todos los valores de espaciado del CSS referenciando las variables. El patrón de safe areas
+> está aplicado en `body`, `.topbar`, `.tabbar` y `.sheet`.
 
 ## Patrones
 

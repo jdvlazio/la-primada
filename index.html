@@ -42,19 +42,27 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html{height:100%}
-  /* min-height (no height:100%): el body crece con el contenido, así el padding inferior queda
-     DEBAJO de todo el scroll y la tabbar fija no tapa el último contenido. */
+  /* El body es el contenedor de fondo. min-height 100dvh (dynamic viewport height) hace que el
+     background llegue al BORDE FÍSICO inferior — sin la línea de corte antes de la barra de gestos.
+     Fallback 100vh para navegadores sin dvh. min-height (no height) deja que crezca con el contenido,
+     así el padding inferior queda debajo de todo el scroll y la tabbar fija no tapa el último contenido. */
   body{
-    min-height:100%;
+    min-height:100vh;
+    min-height:100dvh;
     font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--paper);
     background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0);
     background-size:14px 14px;line-height:1.4;-webkit-font-smoothing:antialiased;
-    padding:0 0 calc(var(--space-safe) + env(safe-area-inset-bottom));
+    padding:0 0 calc(var(--space-safe) + max(env(safe-area-inset-bottom), 20px));
   }
   .wrap{max-width:var(--content-max);margin:0 auto;padding:var(--space-3)}
 
   /* ---------- Encabezado ---------- */
   .topbar{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) var(--space-1) var(--space-3);border-bottom:2px dashed var(--line);margin-bottom:var(--space-3)}
+  /* Header bajo el Dynamic Island: suma el safe-area-inset-top SOLO donde el inset existe
+     (PWA standalone / nativo). El @supports evita agregar espacio de más en Safari normal. */
+  @supports (padding-top: env(safe-area-inset-top)){
+    .topbar{padding-top:calc(var(--space-2) + env(safe-area-inset-top))}
+  }
   .brand h1{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:34px;line-height:.95;letter-spacing:-.02em;color:var(--ink)}
   .brand h1 .accent{color:var(--accent)}
   /* tagline: subtítulo que cabe EXACTO bajo el wordmark (no lo sobrepasa). Tamaño y tracking
@@ -109,7 +117,7 @@
   .note{margin-top:var(--space-4);font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.5}
 
   /* ---------- Barra de tabs (placeholder de navegación, se cablea en PASO 2) ---------- */
-  .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:var(--space-1);background:var(--paper-2);padding:var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));box-shadow:0 -10px 30px -20px rgba(0,0,0,.6);z-index:40}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:var(--space-1);background:var(--paper-2);padding:var(--space-2) var(--space-2) calc(var(--space-2) + max(env(safe-area-inset-bottom), 20px));box-shadow:0 -10px 30px -20px rgba(0,0,0,.6);z-index:40}
   .tab{flex:1;max-width:160px;min-height:var(--tap-sec);background:transparent;border:none;cursor:pointer;color:var(--ink-soft);font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:13px;padding:var(--space-2);border-radius:var(--radius-md)}
   .tab.active{background:rgba(255,255,255,.10);color:var(--ink)}
 
@@ -260,7 +268,7 @@
 
   /* overlay (sheet detrás del engranaje) */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;justify-content:center;align-items:flex-end;padding:var(--space-3) var(--space-3) 0}
-  .sheet{background:var(--paper);width:100%;max-width:var(--content-max);max-height:92vh;overflow:auto;border-radius:var(--radius-xl);border:2px solid var(--line);padding:var(--space-4) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom));box-shadow:0 -16px 40px -18px rgba(0,0,0,.5)}
+  .sheet{background:var(--paper);width:100%;max-width:var(--content-max);max-height:92vh;overflow:auto;border-radius:var(--radius-xl);border:2px solid var(--line);padding:var(--space-4) var(--space-4) calc(var(--space-5) + max(env(safe-area-inset-bottom), 20px));box-shadow:0 -16px 40px -18px rgba(0,0,0,.5)}
   .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-5)}
   .sheet-title{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:22px}
   .sheet.full{min-height:86vh}
