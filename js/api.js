@@ -150,6 +150,7 @@
   const Api = {
     init, load, commit,
     mode: function () { return mode; },
+    client: function () { return client; },   // el módulo Auth reusa ESTE client (un solo GoTrueClient)
     // expuestos para tests (round-trip / serialización):
     _ser: { personaToRow, rowToPersona, primadaToRow, rowToPrimada, settingsToRow, fromRows },
     _cacheRead: cacheRead, _cacheWrite: cacheWrite,

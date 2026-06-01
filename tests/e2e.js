@@ -44,7 +44,7 @@ function ready() {
 ready().then(async () => {
   window.localStorage.clear();   // arrancar de cero (defaultState)
   // Orden real de carga (incluye el adaptador): config → util → api → store → view → controller.
-  ['js/config.js', 'js/util.js', 'js/api.js', 'js/store.js', 'js/view.js', 'js/controller.js'].forEach(rel => {
+  ['js/config.js', 'js/util.js', 'js/api.js', 'js/auth.js', 'js/store.js', 'js/view.js', 'js/controller.js'].forEach(rel => {
     const s = document.createElement('script');
     s.textContent = fs.readFileSync(path.join(ROOT, rel), 'utf8');
     document.body.appendChild(s);   // ejecuta sincrónicamente (runScripts:'dangerously')

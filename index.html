@@ -85,6 +85,16 @@
   .sync-indicator{position:fixed;top:8px;right:8px;z-index:70;font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;background:var(--paper-3);color:var(--ink-soft);border:1px solid var(--line);box-shadow:0 6px 18px -10px rgba(0,0,0,.6)}
   .sync-indicator.err{background:var(--alert-bg);color:var(--alert);border-color:var(--alert)}
 
+  /* Pantalla de login (auth gate, magic link) */
+  .login{max-width:360px;margin:0 auto;padding:48px 20px 0;display:flex;flex-direction:column;gap:24px;text-align:center}
+  .login-brand h1{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:40px;line-height:.95;letter-spacing:-.02em;color:var(--ink)}
+  .login-brand h1 .accent{color:var(--accent)}
+  .login-brand .tagline{margin-top:7px;font-weight:400;font-size:10px;letter-spacing:.3px;color:var(--ink-soft)}
+  .login-form,.login-sent{display:flex;flex-direction:column;gap:14px}
+  .login-form .ti{text-align:center;font-size:16px}
+  .login-emoji{font-size:40px}
+  .login-sent p{font-size:14px;line-height:1.5}
+
   /* ============================================================
      PASO 2 — componentes del tab Primadas + overlays
      ============================================================ */
@@ -254,10 +264,11 @@
   <!-- SDK de Supabase por CDN (UMD → window.supabase), igual que las fuentes: sin npm en producción. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Orden de carga: config → util → api → store → view → controller -->
+  <!-- Orden de carga: config → util → api → auth → store → view → controller -->
   <script src="js/config.js"></script>
   <script src="js/util.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/store.js"></script>
   <script src="js/view.js"></script>
   <script src="js/controller.js"></script>

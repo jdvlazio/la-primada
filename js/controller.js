@@ -13,6 +13,7 @@
 
   const Store = root.Store;
   const View  = root.View;
+  const Auth  = root.Auth || null;
 
   // ui = estado EFÍMERO (no dominio, no se persiste):
   // - abiertos: Set de personaId con tarjeta-acordeón expandida (multiabierto)
@@ -45,6 +46,19 @@
     const A = Store.actions;
 
     switch (act) {
+      // ----- auth (pantalla de login) -----
+      case 'login-enviar': {
+        const inp = document.getElementById('login-email');
+        const email = (inp && inp.value || '').trim();
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { View.toast('Escribe un correo válido'); return; }
+        b.disabled = true;
+        Promise.resolve(Auth && Auth.signIn(email))
+          .then(() => View.renderLogin('sent', email))
+          .catch((err) => { View.toast(err && err.message ? err.message : 'No se pudo enviar el link'); View.renderLogin('form', email); });
+        return;
+      }
+      case 'login-reset': View.renderLogin('form'); return;
+
       // ----- ciclo de primada -----
       case 'new-primada': {
         A.createPrimada({});            // incompleta: el principal se asigna asignando rol
@@ -168,21 +182,42 @@
     }, true);
   }
 
-  // Bootstrap único (async): auth gate va antes en el PASO 3. Hoy: hidrata desde Api (Supabase/espejo).
-  // evento → acción → commit (render optimista + upsert async) → notifica → render.
+  let appIniciada = false;
+
+  // Hidrata y muestra la app autenticada (una sola vez).
+  async function iniciarApp() {
+    if (appIniciada) { rerender(); return; }
+    appIniciada = true;
+    if (View.showAppChrome) View.showAppChrome();
+    rerender();                                // "Cargando…" mientras hidrata
+    await Store.load();                        // hidrata el AppState desde Api (async)
+    rerender();
+  }
+
+  // Auth gate: con auth habilitada (modo supabase), exige sesión antes de mostrar datos.
+  // Sin auth (tests/offline, modo local) → entra directo (los 216 tests no tienen gate).
+  async function gate() {
+    if (!Auth || !Auth.enabled()) { await iniciarApp(); return; }
+    Auth.cleanUrl();                           // limpia el token del magic link de la URL
+    Auth.onChange((session) => { if (session) iniciarApp(); else { appIniciada = false; View.renderLogin('form'); } });
+    const session = await Auth.getSession();
+    if (session) await iniciarApp();
+    else View.renderLogin('form');
+  }
+
+  // Bootstrap único (async). evento → acción → commit (render optimista + upsert async) → notifica → render.
   async function start() {
     View.cache();
-    // Inicializa el adaptador con las credenciales públicas. Con SDK presente (CDN) → modo 'supabase';
-    // sin SDK (tests/offline) → modo 'local'. El Store nunca toca el SDK directo.
-    if (root.Api && root.CONFIG && root.CONFIG.supabase) {
+    // Inicializa el adaptador con las credenciales públicas SOLO si el backend está habilitado
+    // (CONFIG.backendEnabled). Con backend → modo 'supabase' + auth gate. Sin backend (flag false, o
+    // sin SDK en tests/offline) → modo 'local': la app corre sobre localStorage, sin login, usable ya.
+    if (root.CONFIG && root.CONFIG.backendEnabled && root.Api && root.CONFIG.supabase) {
       root.Api.init({ url: root.CONFIG.supabase.url, anonKey: root.CONFIG.supabase.anonKey });
     }
     Store.subscribe(rerender);                 // re-render completo en cada commit del Store
     if (Store.subscribeSync) Store.subscribeSync(s => View.renderSync && View.renderSync(s));
     init();
-    rerender();                                // primer pintado (estado en blanco / "Cargando…")
-    await Store.load();                        // hidrata el AppState desde Api (async)
-    rerender();
+    await gate();                              // auth gate: login o app
   }
 
   root.Controller = { init, start, _ui: ui };

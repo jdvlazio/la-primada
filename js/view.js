@@ -450,6 +450,41 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => els.toast.classList.remove('show'), 2400);
   }
 
+  // Pantalla de LOGIN (auth gate). Magic link: email + "Entrar". Estados: 'form' | 'sent' | 'error'.
+  // Se renderiza en #screen; oculta tabbar/engranaje mientras no haya sesión.
+  function renderLogin(estado, detalle) {
+    if (els.tabbar) els.tabbar.style.display = 'none';
+    const topbar = document.querySelector('.topbar'); if (topbar) topbar.style.display = 'none';  // la pantalla de login trae su propia marca
+    const gear = document.getElementById('gearBtn'); if (gear) gear.style.display = 'none';
+    if (els.overlay) { els.overlay.innerHTML = ''; els.overlay.hidden = true; }
+    const enviado = estado === 'sent';
+    const cuerpo = enviado
+      ? `<div class="login-sent">
+           <div class="login-emoji">📧</div>
+           <p>Te enviamos un enlace a<br><b>${e(detalle || 'tu correo')}</b></p>
+           <p class="muted small">Ábrelo en este dispositivo para entrar. Puedes cerrar esta pestaña.</p>
+           <button class="btn ghost" data-act="login-reset">Usar otro correo</button>
+         </div>`
+      : `<div class="login-form">
+           <p class="muted small">Ingresa con tu correo. Te enviamos un enlace mágico — sin contraseñas.</p>
+           <input class="ti" id="login-email" type="email" inputmode="email" autocomplete="email"
+                  placeholder="tu@correo.com" value="${e(detalle || '')}" aria-label="Correo">
+           <button class="btn" data-act="login-enviar">Entrar</button>
+         </div>`;
+    els.screen.innerHTML = `<div class="login">
+        <div class="login-brand"><h1>Primad<span class="accent">app</span></h1>
+          <div class="tagline">AHORRO · ENCUENTRO · BALANCE</div></div>
+        ${cuerpo}
+      </div>`;
+  }
+
+  // Restaura topbar/tabbar/engranaje al entrar autenticado (tras el login).
+  function showAppChrome() {
+    if (els.tabbar) els.tabbar.style.display = '';
+    const topbar = document.querySelector('.topbar'); if (topbar) topbar.style.display = '';
+    const gear = document.getElementById('gearBtn'); if (gear) gear.style.display = '';
+  }
+
   // Indicador de sincronización con la nube. Crea/actualiza un chip flotante (no depende del
   // markup de index.html). { pendientes, error } viene del Store.subscribeSync.
   function renderSync(s) {
@@ -464,6 +499,6 @@
     if (hayError) toast(s.error);
   }
 
-  root.View = { cache, render, renderSync, toast };
+  root.View = { cache, render, renderLogin, showAppChrome, renderSync, toast };
   if (typeof module !== 'undefined' && module.exports) module.exports = { View: root.View };
 })(typeof window !== 'undefined' ? window : globalThis);
