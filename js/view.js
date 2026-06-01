@@ -89,12 +89,12 @@
             <input class="ti" type="month" data-ch="mes-primada" data-id="${p.id}" value="${e(p.mesContable)}" ${ro}></label>
         </div>
         <div class="sub">Estado de la cuenta</div>
-        <div class="muted small" style="margin:-2px 2px 8px">Cerrar congela consumos pero sigue aceptando abonos.</div>
+        <div class="hint">Cerrar congela consumos pero sigue aceptando abonos.</div>
         ${cerrada
           ? `<button class="mini" data-act="reabrir-primada" data-id="${p.id}">Reabrir cuenta</button>`
           : `<button class="mini" data-act="cerrar-primada" data-id="${p.id}">Cerrar cuenta</button>`}
         <div class="sub danger-sub">Zona peligrosa</div>
-        <div class="muted small" style="margin:-2px 2px 8px">Borrar elimina la primada y todo su registro. No se puede deshacer.</div>
+        <div class="hint">Borrar elimina la primada y todo su registro. No se puede deshacer.</div>
         <button class="mini danger" data-act="borrar-primada" data-id="${p.id}">${icon('trash-2')}Borrar primada</button>
       </div>
     </div>`;
@@ -335,7 +335,7 @@
       <button class="xmini" data-act="remove-producto" data-id="${prod.id}" ${ro} aria-label="quitar producto">${icon('trash-2', 'sm')}</button>
     </div>`).join('');
     const alta = cerrada ? '' : `<div class="prodnew">
-      <input class="ti" id="pn-emoji" maxlength="2" placeholder="🍹" aria-label="Emoji" style="width:48px;text-align:center">
+      <input class="ti emoji" id="pn-emoji" maxlength="2" placeholder="🍹" aria-label="Emoji">
       <input class="ti" id="pn-nombre" maxlength="40" placeholder="Nombre (ej. Cóctel)" aria-label="Nombre">
       <input class="ti num" id="pn-costo" type="number" min="0" step="500" inputmode="numeric" placeholder="costo" aria-label="Costo neto">
       <input class="ti num" id="pn-venta" type="number" min="0" step="500" inputmode="numeric" placeholder="venta" aria-label="Precio de venta">
@@ -345,7 +345,7 @@
       <div class="card prodmgmt">
         ${p.productos.length ? filas : '<div class="muted small">Esta primada no tiene productos. Agrega abajo.</div>'}
         ${alta}
-        <div class="muted small" style="margin-top:8px">Editar precios o productos aquí afecta SOLO a esta primada — no toca el catálogo por defecto ni las primadas pasadas.</div>
+        <div class="hint">Editar precios o productos aquí afecta SOLO a esta primada — no toca el catálogo por defecto ni las primadas pasadas.</div>
       </div>`;
   }
 
@@ -381,7 +381,7 @@
       ${activa ? primadaDetalle(activa, ui)
                : '<div class="empty">No hay primada activa.<br>Crea una con “+ Nueva primada”.</div>'}
       ${otras.length ? `<h2 class="h2">Historial <span class="muted">(${otras.length})</span></h2>
-        <div class="muted small" style="margin:-4px 2px 8px">Toca una para abrirla. Cada una muestra sus valores congelados (cover y precios de cuando se creó).</div>
+        <div class="hint">Toca una para abrirla. Cada una muestra sus valores congelados (cover y precios de cuando se creó).</div>
         <div class="plist">${otras.map(p => primadaItem(state, p)).join('')}</div>` : ''}`;
   }
 
@@ -407,7 +407,7 @@
      ============================================================ */
   function placeholder(titulo, txt) {
     return `<div class="empty big"><div class="ph-title">${e(titulo)}</div><div>${txt}</div>
-      <div class="badge warn" style="margin-top:10px">Próximamente</div></div>`;
+      <div class="badge warn mt-3">Próximamente</div></div>`;
   }
 
   /* ============================================================
@@ -443,7 +443,7 @@
         </select>
         <button class="mini" data-act="add-persona">${icon('plus-circle')}Agregar</button>
       </div>
-      <div class="muted small" style="margin-top:10px">Cambiar el estado aplica <b>de aquí en adelante</b>: las asistencias ya registradas conservan su snapshot — la historia no se reescribe.</div>`;
+      <div class="hint">Cambiar el estado aplica <b>de aquí en adelante</b>: las asistencias ya registradas conservan su snapshot — la historia no se reescribe.</div>`;
   }
 
   function ajustesBody(state) {
@@ -455,7 +455,7 @@
         <label class="fld"><span>Invitado</span>
           <input class="ti" type="number" min="0" step="500" data-ch="cover-invitado" value="${c.invitado}"></label>
       </div>
-      <div class="muted small" style="margin-top:8px">Editar el cover NO reescribe el snapshot de primadas ya creadas.</div>`;
+      <div class="hint">Editar el cover NO reescribe el snapshot de primadas ya creadas.</div>`;
   }
 
   // Sheet a pantalla completa con seg-nav Personas | Ajustes.
@@ -481,23 +481,29 @@
     return `<div class="wz-step">
       <label class="fld"><span>Organizador principal (ahorrador)</span>${opcionPrincipal}</label>
       <div class="sub">Co-organizadores <span class="muted">(opcional)</span></div>
-      <div class="muted small" style="margin:-2px 2px 8px">Entran como organizadores: sin cover, consumen normal. Su margen sí va al fondo.</div>
+      <div class="hint">Entran como organizadores: sin cover, consumen normal. Su margen sí va al fondo.</div>
       <div class="chips wz-chips">${chips || '<span class="muted small">No hay más personas.</span>'}</div>
     </div>`;
   }
 
   function wizardPaso2(state, w) {
-    const filas = w.productos.map((prod, i) => `<div class="prodrow">
-      <input class="ti" style="width:48px;text-align:center" maxlength="2" value="${e(prod.emoji || '')}" data-wz="emoji" data-i="${i}" aria-label="Emoji">
-      <input class="ti" value="${e(prod.nombre || '')}" maxlength="40" placeholder="Nombre" data-wz="nombre" data-i="${i}" aria-label="Nombre">
-      <label class="prodrow-f"><span>costo</span><input class="ti num" type="number" min="0" step="500" inputmode="numeric" value="${prod.costoNeto}" data-wz="costoNeto" data-i="${i}"></label>
-      <label class="prodrow-f"><span>venta</span><input class="ti num" type="number" min="0" step="500" inputmode="numeric" value="${prod.precioVenta}" data-wz="precioVenta" data-i="${i}"></label>
-      <button class="xmini" data-act="wz-prod-remove" data-i="${i}" aria-label="quitar">${icon('trash-2', 'sm')}</button>
+    // Fila de producto del wizard: emoji + nombre (ancho completo) arriba; costo/venta/quitar abajo.
+    // Evita apretar 5 controles en una sola línea en el ancho angosto del sheet.
+    const filas = w.productos.map((prod, i) => `<div class="wz-prodrow">
+      <div class="wz-prodrow-top">
+        <input class="ti emoji" maxlength="2" value="${e(prod.emoji || '')}" data-wz="emoji" data-i="${i}" aria-label="Emoji">
+        <input class="ti wz-prodname" value="${e(prod.nombre || '')}" maxlength="40" placeholder="Nombre del producto" data-wz="nombre" data-i="${i}" aria-label="Nombre">
+      </div>
+      <div class="wz-prodrow-bot">
+        <label class="prodrow-f"><span>costo</span><input class="ti num" type="number" min="0" step="500" inputmode="numeric" value="${prod.costoNeto}" data-wz="costoNeto" data-i="${i}"></label>
+        <label class="prodrow-f"><span>venta</span><input class="ti num" type="number" min="0" step="500" inputmode="numeric" value="${prod.precioVenta}" data-wz="precioVenta" data-i="${i}"></label>
+        <button class="xmini" data-act="wz-prod-remove" data-i="${i}" aria-label="quitar">${icon('trash-2', 'sm')}</button>
+      </div>
     </div>`).join('');
     return `<div class="wz-step">
-      <div class="muted small" style="margin:2px 2px 8px">Parte del catálogo por defecto, editable. Quita lo que no haya y agrega lo del evento (rifa, cóctel…).</div>
+      <div class="hint">Parte del catálogo por defecto, editable. Quita lo que no haya y agrega lo del evento (rifa, cóctel…).</div>
       <div class="prodlist">${filas || '<div class="empty">Sin productos. Agrega al menos uno.</div>'}</div>
-      <button class="mini ghost" data-act="wz-prod-add" style="margin-top:10px">${icon('plus-circle')}Producto</button>
+      <button class="mini ghost mt-3" data-act="wz-prod-add">${icon('plus-circle')}Producto</button>
     </div>`;
   }
 
@@ -509,7 +515,7 @@
         <label class="fld"><span>Mes contable</span>
           <input class="ti" type="month" id="wz-mes" value="${e(w.mesContable)}"></label>
       </div>
-      <div class="muted small" style="margin-top:8px">El mes contable se sugiere de la fecha, pero puede contar para otro mes (ej. la del 31 de mayo cuenta como junio).</div>
+      <div class="hint">El mes contable se sugiere de la fecha, pero puede contar para otro mes (ej. la del 31 de mayo cuenta como junio).</div>
       <div class="sub">Resumen</div>
       <div class="kv"><span>Principal</span><b>${w.principalId ? e(nombrePersona(w.principalId)) : '— falta —'}</b></div>
       <div class="kv"><span>Organizadores</span><b>${1 + w.coorg.length}</b></div>

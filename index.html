@@ -138,6 +138,10 @@
   .muted{color:var(--ink-soft)}
   .small{font-size:12px}
   .owe{color:var(--alert)}
+  /* nota explicativa: texto auxiliar que acompaña al control de arriba (espaciado por token) */
+  .hint{color:var(--ink-soft);font-size:12px;line-height:1.5;margin:var(--space-1) 0 var(--space-3)}
+  /* utilitario de separación superior por token */
+  .mt-3{margin-top:var(--space-3)}
 
   /* inputs base */
   .ti{font-family:inherit;font-size:14px;min-height:var(--tap-input);padding:var(--space-3);border:2px solid var(--line);border-radius:var(--radius-md);background:var(--paper);color:var(--ink);width:100%}
@@ -220,7 +224,7 @@
   .prodpick{margin-top:var(--space-2);background:var(--paper);border:2px dashed var(--line);border-radius:var(--radius-md);padding:var(--space-2)}
   .prodpick-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-2)}
   .chips{display:flex;flex-wrap:wrap;gap:var(--space-2)}
-  .chip{display:inline-flex;align-items:center;min-height:var(--tap-sec);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--line);background:var(--paper-2);color:var(--ink);border-radius:var(--radius-sm);padding:var(--space-2) var(--space-3)}
+  .chip{display:inline-flex;align-items:center;gap:var(--space-2);min-height:var(--tap-sec);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--line);background:var(--paper-2);color:var(--ink);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3)}
   .chip:active{transform:scale(.95)}
   .chip:hover{border-color:var(--accent)}
   .chip i{color:var(--ink-soft);font-style:normal;font-weight:400;font-size:11px}
@@ -231,6 +235,7 @@
   .prodrow-name{flex:1;min-width:0;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .prodrow-f{display:flex;flex-direction:column;gap:var(--space-1);font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
   .ti.num{width:74px;padding:var(--space-2);font-size:13px}
+  .ti.emoji{width:var(--tap-input);text-align:center;padding:var(--space-2)}
   .prodnew{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px dashed var(--line)}
   .prodnew .ti:not(.num):not(#pn-emoji){flex:1;min-width:120px}
   .prodrow .xmini,.prodpick-head .xmini{display:flex;align-items:center;justify-content:center;border:2px solid var(--line);background:var(--paper);color:var(--alert);border-radius:var(--radius-sm);width:var(--tap-sec);height:var(--tap-sec);font-weight:700;flex:none}
@@ -252,9 +257,9 @@
   .ph-title{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:24px;color:var(--ink);margin-bottom:var(--space-1)}
 
   /* overlay (sheet detrás del engranaje) */
-  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;justify-content:center;align-items:flex-end;padding:0}
-  .sheet{background:var(--paper);width:100%;max-width:var(--content-max);max-height:92vh;overflow:auto;border-radius:var(--radius-xl) var(--radius-xl) 0 0;border:2px solid var(--line);border-bottom:none;padding:var(--space-3) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));box-shadow:0 -16px 40px -18px rgba(0,0,0,.5)}
-  .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;justify-content:center;align-items:flex-end;padding:var(--space-3) var(--space-3) 0}
+  .sheet{background:var(--paper);width:100%;max-width:var(--content-max);max-height:92vh;overflow:auto;border-radius:var(--radius-xl);border:2px solid var(--line);padding:var(--space-4) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom));box-shadow:0 -16px 40px -18px rgba(0,0,0,.5)}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-5)}
   .sheet-title{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:22px}
   .sheet.full{min-height:86vh}
   .sheet-body{display:block}
@@ -271,17 +276,24 @@
 
   /* Wizard "Nueva primada" (3 pasos) */
   .wz .wz-steps{display:flex;align-items:center;gap:0;flex:1}
-  .wz-dot{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);color:var(--ink-soft);font-size:13px;font-weight:700;flex:none;background:var(--paper)}
+  .wz-dot{display:flex;align-items:center;justify-content:center;width:var(--space-5);height:var(--space-5);border-radius:50%;border:2px solid var(--line);color:var(--ink-soft);font-size:14px;font-weight:700;flex:none;background:var(--paper)}
   .wz-dot.on{border-color:var(--accent);color:var(--accent)}
   .wz-dot.done{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-  .wz-line{flex:1;height:2px;background:var(--line);margin:0 var(--space-1)}
-  .wz-title{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:20px;margin:var(--space-1) 0 var(--space-3)}
+  .wz-line{flex:1;height:2px;background:var(--line);margin:0 var(--space-2)}
+  .wz-title{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:20px;margin:var(--space-2) 0 var(--space-5)}
   .wz-step{display:block;animation:pop .22s ease}
   @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   .wz-chips{display:flex;flex-wrap:wrap;gap:var(--space-2)}
   .wz-chips .chip i{color:var(--ink-soft);font-style:normal;font-size:10px;text-transform:uppercase}
   .wz-chips .chip.on{border-color:var(--accent);color:var(--accent)}
-  .wz .prodlist{display:flex;flex-direction:column;gap:var(--space-2)}
+  .wz .prodlist{display:flex;flex-direction:column;gap:var(--space-3)}
+  .wz-prodrow{display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-3) 0;border-top:1px dashed var(--line)}
+  .wz-prodrow:first-child{border-top:none;padding-top:0}
+  .wz-prodrow-top{display:flex;gap:var(--space-2)}
+  .wz-prodname{flex:1;min-width:0}
+  .wz-prodrow-bot{display:flex;gap:var(--space-2);align-items:flex-end}
+  .wz-prodrow-bot .prodrow-f{flex:1}
+  .wz-prodrow-bot .ti.num{width:100%}
   .wz-nav{display:flex;gap:var(--space-2);margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px dashed var(--line)}
   .wz-nav .mini,.wz-nav .btn{flex:1}
 
