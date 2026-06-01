@@ -4,8 +4,8 @@ Este archivo es la **constitución visual** del proyecto: el equivalente del `CL
 pero para lo visual. Toda decisión de apariencia sale de aquí.
 
 > **Estado:** este documento crece **una decisión a la vez**. Hoy define **Tipografía**, **Color**,
-> **Iconografía**, **Espaciado y layout** y **Patrones** (acordeón). Faltan (pasadas posteriores): más **componentes**.
-> Mientras una sección no exista aquí, **no es una decisión tomada**.
+> **Iconografía**, **Espaciado y layout**, **Patrones** (acordeón) y **Voz y tono**. Faltan (pasadas posteriores):
+> más **componentes**. Mientras una sección no exista aquí, **no es una decisión tomada**.
 
 ## Tipografía
 
@@ -200,3 +200,43 @@ nosotros sin librería en runtime.
   para borrar datos; `trash-2` no se usa para cerrar paneles).
 - **El color sale del contexto** (`currentColor`), no se hardcodea en el SVG: así un mismo ícono sirve en teal o en alert
   según el botón que lo contiene.
+
+## Voz y tono
+
+**Neutro y funcional.** La interfaz **etiqueta, no explica**. Las reglas del sistema las aplica el código; no se narran
+en pantalla. Texto mínimo, una idea por elemento.
+
+### Las tres reglas
+1. **Etiquetar, no explicar.** La interfaz **nombra**; no enseña. Lo que el sistema garantiza (el principal es ahorrador,
+   los organizadores no pagan cover, etc.) lo aplica el código — **no se cuenta en pantalla**.
+2. **Tono neutro y funcional.** Acciones en **infinitivo** (Agregar, Crear, Cerrar, Borrar). Estados en **forma corta y
+   neutra** (Sin asistentes, Sin productos). Segunda persona **solo si hace falta**. Nada de frases que enseñan.
+3. **Una idea por texto.** Si un texto une dos ideas con coma, **pártelo o bórralo**.
+
+### Glosario (una palabra por concepto, igual en toda la app)
+**Primada · Principal · Organizador · Co-organizador · Cover · Consumo · Ganancia · Fondo · Debe · Pagó · Asistente ·
+Persona · Producto · Tesorero.**
+Usar siempre el mismo término; no mezclar sinónimos (p. ej. "asistencia" en UI → **Asistente**; "comprador/aportante" → según el rol).
+
+### Patrones
+- **Botones de acción:** verbo en infinitivo, sin artículos (`Agregar`, `Crear primada`, `Borrar`). El ícono acompaña, no sustituye.
+- **Estados vacíos:** `Sin <cosa>` (`Sin asistentes`, `Sin productos`, `Sin ahorradores`). Nada de "Aún no hay…".
+- **Títulos de sección:** el sustantivo + conteo entre paréntesis (`Asistentes (0)`, `Productos (4)`). Sin adjetivos ni contexto.
+- **Toasts:** confirmación corta en pasado o sustantivo (`Primada creada`, `Abono registrado`, `Persona agregada`). Una línea.
+- **Confirmaciones (destructivas):** pregunta corta de una idea (`¿Borrar la primada?`). Sin explicar consecuencias en la pregunta.
+- **Placeholders:** ejemplo o nombre del campo (`tu@correo.com`, `Nombre`). No instrucciones.
+- **Números:** el dígito ya es visual; no narrar el total ("paso 2 de 3" → el stepper visual basta).
+- **Sin emoji decorativo en texto de estado** (los estados usan color/badge, no 🟢/🔒 en copy nuevo).
+
+### Antiejemplos → corrección (muestra del criterio)
+| Antes | Después |
+|-------|---------|
+| `ORGANIZADOR PRINCIPAL (AHORRADOR)` | `Principal` |
+| `CO-ORGANIZADORES (OPCIONAL)` + párrafo | `Co-organizadores` |
+| `Aún no hay asistencias. Agrega personas del directorio.` | `Sin asistentes` |
+| `ASISTENCIAS (0)` | `Asistentes (0)` |
+| `PRODUCTOS DEL EVENTO (4)` | `Productos (4)` |
+| `No hay ahorradores en el directorio. Crea uno desde el engranaje ⚙ › Personas.` | `Sin ahorradores. Agregar en Personas.` |
+| `Entran como organizadores: sin cover, consumen normal. Su margen sí va al fondo.` | *(borrar — es regla del sistema)* |
+
+> **Regla de oro:** ante un texto que explica una regla del dominio, **bórralo** — el código ya la hace cumplir.

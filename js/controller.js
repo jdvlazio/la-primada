@@ -65,7 +65,7 @@
     // Botón de cuenta (auth). Con backend habilitado: cerrar sesión. Sin backend: placeholder informativo.
     if (ev.target.closest('#authBtn')) {
       if (Auth && Auth.enabled()) { Auth.signOut(); View.toast('Sesión cerrada'); }
-      else View.toast('Cuenta: el inicio de sesión se activa con el backend en la nube');
+      else View.toast('Sesión no disponible');
       return;
     }
 
@@ -81,7 +81,7 @@
       case 'login-enviar': {
         const inp = document.getElementById('login-email');
         const email = (inp && inp.value || '').trim();
-        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { View.toast('Escribe un correo válido'); return; }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { View.toast('Correo no válido'); return; }
         b.disabled = true;
         Promise.resolve(Auth && Auth.signIn(email))
           .then(() => View.renderLogin('sent', email))
@@ -107,13 +107,13 @@
         // sincronizar inputs del paso actual antes de avanzar (los selects/date no disparan change si no se tocaron)
         wzSync();
         if (w.paso === 1) {
-          if (!w.principalId) { View.toast('Elige el organizador principal'); return; }
+          if (!w.principalId) { View.toast('Falta el principal'); return; }
           const per = Store.select.persona(w.principalId);
           if (!per || per.estado !== 'ahorrador') { View.toast('El principal debe ser ahorrador'); return; }
         }
         if (w.paso === 2) {
           w.productos = w.productos.filter(p => (p.nombre || '').trim());   // descarta filas vacías
-          if (!w.productos.length) { View.toast('Agrega al menos un producto con nombre'); return; }
+          if (!w.productos.length) { View.toast('Falta un producto'); return; }
         }
         w.paso++; rerender(); return;
       }
@@ -138,13 +138,13 @@
       case 'open-config-primada': ui.overlay = 'config-primada'; rerender(); return;
       // Acciones destructivas: con confirmación (la cuenta cerrada congela consumos).
       case 'cerrar-primada':
-        if (!root.confirm || root.confirm('¿Cerrar la cuenta? Congela consumos; los abonos siguen.')) {
-          A.cerrarPrimada(id); View.toast('Cuenta cerrada (sigue aceptando abonos)');
+        if (!root.confirm || root.confirm('¿Cerrar la cuenta?')) {
+          A.cerrarPrimada(id); View.toast('Cuenta cerrada');
         }
         break;
       case 'reabrir-primada':  A.reabrirPrimada(id); View.toast('Cuenta reabierta'); break;
       case 'borrar-primada':
-        if (!root.confirm || root.confirm('¿Borrar esta primada y todo su registro? No se puede deshacer.')) {
+        if (!root.confirm || root.confirm('¿Borrar la primada?')) {
           A.borrarPrimada(id); ui.overlay = null; View.toast('Primada borrada'); rerender(); return;
         }
         break;
@@ -186,9 +186,9 @@
         const nombre = ((document.getElementById('pn-nombre') || {}).value || '').trim();
         const costoNeto = Number((document.getElementById('pn-costo') || {}).value) || 0;
         const precioVenta = Number((document.getElementById('pn-venta') || {}).value) || 0;
-        if (!nombre) { View.toast('Escribe el nombre del producto'); return; }
+        if (!nombre) { View.toast('Falta el nombre'); return; }
         A.addProducto(prm, { nombre, emoji: emoji || '•', costoNeto, precioVenta });
-        View.toast('Producto agregado a esta primada');
+        View.toast('Producto agregado');
         break;
       }
 
@@ -196,7 +196,7 @@
       case 'abonar': {
         const inp = document.getElementById('abono-' + pid);
         const monto = inp ? Number(inp.value) : 0;
-        if (!monto || monto <= 0) { View.toast('Escribe un monto mayor a 0'); return; }
+        if (!monto || monto <= 0) { View.toast('Monto no válido'); return; }
         A.registrarAbono(prm, pid, monto);
         View.toast('Abono registrado');
         break;
@@ -212,9 +212,9 @@
         const n = document.getElementById('np-nombre');
         const es = document.getElementById('np-estado');
         const nombre = (n && n.value || '').trim();
-        if (!nombre) { View.toast('Escribe un nombre'); return; }
+        if (!nombre) { View.toast('Falta el nombre'); return; }
         A.addPersona({ nombre, estado: es ? es.value : 'ahorrador' });
-        View.toast('Persona agregada al directorio');
+        View.toast('Persona agregada');
         break;
       }
       // INVARIANTE #1: solo cambia el estado VIGENTE; NUNCA toca estadoEnEseMomento de asistencias pasadas.

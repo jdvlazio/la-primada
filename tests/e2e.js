@@ -89,7 +89,7 @@ function abrir(pid) {
 /* ============================================================ */
 section('Arranque (bootstrap cableó la Vista sobre el modelo v4)');
 check('Store, View y Controller existen en window', !!window.Store && !!window.View && !!window.Controller);
-check('Render inicial: tab Primadas con estado vacío', /No hay primada activa/.test(q('#screen').innerHTML));
+check('Render inicial: tab Primadas con estado vacío', /Sin primada/.test(q('#screen').innerHTML));
 eq('localStorage limpio → 0 personas', st().personas.length, 0);
 
 /* ---------- 1. Directorio de personas (overlay del engranaje) ---------- */
@@ -163,9 +163,9 @@ eq('Ana (principal) sin cover', Store.select.coverDe(prm(), anaAsis()), 0);
 // Ganancia ANTES de exonerar: cover 10000 + margen 2*(3500-2500)=2000 → 12000
 eq('Ganancia = cover + margen (12.000)', Store.select.ganancia(prm()), 12000);
 // El reparto YA NO vive en el tab Primadas (operar) → ahora en el tab Resumen (ver la plata).
-check('Reparto NO está en el tab Primadas', !/Ganancia de la primada/.test(q('#screen').innerHTML));
+check('Reparto NO está en el tab Primadas', !/Ganancia/.test(q('#screen').innerHTML));
 click('[data-tab="resumen"]');
-check('Reparto visible en el tab Resumen', /Ganancia de la primada/.test(q('#screen').innerHTML));
+check('Reparto visible en el tab Resumen', /Ganancia/.test(q('#screen').innerHTML));
 click('[data-tab="primadas"]');   // volver a operar
 
 click(`[data-act="toggle-exonerado"][data-pid="${beto.id}"]`);
@@ -182,7 +182,7 @@ eq('Parte igual a la única ahorradora (Ana) = ganancia', Store.select.parteIgua
 eq('Sobrante indivisible = 0', Store.select.sobranteFondo(prm()), 0);
 // El informe también vive ahora en el tab Resumen (no en Primadas).
 click('[data-tab="resumen"]');
-check('Informe del principal renderizado con el nombre (tab Resumen)', /Informe del principal — Ana/.test(q('#screen').innerHTML));
+check('Informe del principal renderizado con el nombre (tab Resumen)', /Principal — Ana/.test(q('#screen').innerHTML));
 click('[data-tab="primadas"]');
 
 /* ---------- 8. Cerrar congela consumos pero la UI sigue viva ---------- */
@@ -227,7 +227,7 @@ check('Reparto no cambió: Beto sigue sin contar como ahorradora (snapshot)',
   Store.select.asistenciasAhorradoras(prm()).every(a => a.personaId !== beto.id));
 // Editar la llave Bre-B desde el directorio
 click('[data-act="overlay-tab"][data-overlay="ajustes"]');
-check('Seg-nav cambia a Ajustes (cover)', /Cover vigente/.test(q('#overlay').innerHTML));
+check('Seg-nav cambia a Ajustes (cover)', /Cover/.test(q('#overlay').innerHTML));
 click('[data-act="overlay-tab"][data-overlay="personas"]');
 click('[data-act="close-overlay"]');
 check('Pantalla cerrada', q('#overlay').hidden);
@@ -237,7 +237,7 @@ section('Navegación: tabs Resumen/Fondo (Próximamente)');
 click('[data-tab="fondo"]');
 check('Tab Fondo muestra Próximamente', /Próximamente/.test(q('#screen').innerHTML));
 click('[data-tab="primadas"]');
-check('Vuelve a Primadas', /Asistencias/.test(q('#screen').innerHTML));
+check('Vuelve a Primadas', /Asistentes/.test(q('#screen').innerHTML));
 
 /* ---------- 10. Persistencia (lo escrito quedó en localStorage v4) ---------- */
 section('Persistencia');
@@ -272,17 +272,17 @@ eq('Snapshot del cover idéntico al original', JSON.stringify(Store.select.activ
 section('Wizard Nueva primada: organizadores → productos → fecha → crear');
 const primadasAntes = st().primadas.length;
 click('[data-act="new-primada"]');                          // abre el wizard
-check('Wizard abierto (paso 1, overlay visible)', !q('#overlay').hidden && /paso 1 de 3/.test(q('#overlay').innerHTML));
+check('Wizard abierto (paso 1, overlay visible)', !q('#overlay').hidden && /wz-title">Organizadores/.test(q('#overlay').innerHTML));
 check('Aún no se creó la primada (solo abrió el wizard)', st().primadas.length === primadasAntes);
 // intentar avanzar sin principal → bloquea
 click('[data-act="wz-siguiente"]');
-check('Paso 1 sin principal NO avanza', /paso 1 de 3/.test(q('#overlay').innerHTML));
+check('Paso 1 sin principal NO avanza', /wz-title">Organizadores/.test(q('#overlay').innerHTML));
 // elegir principal (Ana, ahorradora) + un co-organizador (Beto)
 setVal('#wz-principal', ana.id);
 check('Beto aparece como co-organizador candidato', !!q(`[data-act="wz-toggle-coorg"][data-pid="${beto.id}"]`));
 click(`[data-act="wz-toggle-coorg"][data-pid="${beto.id}"]`);
 click('[data-act="wz-siguiente"]');                         // → paso 2
-check('Avanzó al paso 2 (productos)', /paso 2 de 3/.test(q('#overlay').innerHTML));
+check('Avanzó al paso 2 (productos)', /wz-title">Productos/.test(q('#overlay').innerHTML));
 // quitar todos los productos y agregar uno desde cero
 let nProd = qa('[data-act="wz-prod-remove"]').length;
 for (let i = 0; i < nProd; i++) click('[data-act="wz-prod-remove"]');
@@ -292,7 +292,7 @@ setVal('[data-wz="emoji"][data-i="0"]', '🍹');
 setVal('[data-wz="costoNeto"][data-i="0"]', '4000');
 setVal('[data-wz="precioVenta"][data-i="0"]', '12000');
 click('[data-act="wz-siguiente"]');                         // → paso 3
-check('Avanzó al paso 3 (fecha y mes)', /paso 3 de 3/.test(q('#overlay').innerHTML));
+check('Avanzó al paso 3 (fecha y mes)', /wz-title">Fecha/.test(q('#overlay').innerHTML));
 setVal('#wz-fecha', '2026-05-31');
 setVal('#wz-mes', '2026-06');
 click('[data-act="wz-crear"]');                             // crear
