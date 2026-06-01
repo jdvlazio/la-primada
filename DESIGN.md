@@ -4,7 +4,7 @@ Este archivo es la **constitución visual** del proyecto: el equivalente del `CL
 pero para lo visual. Toda decisión de apariencia sale de aquí.
 
 > **Estado:** este documento crece **una decisión a la vez**. Hoy define **Tipografía**, **Color**,
-> **Iconografía** y **Patrones** (acordeón). Faltan (pasadas posteriores): **espaciado** y más **componentes**.
+> **Iconografía**, **Espaciado y layout** y **Patrones** (acordeón). Faltan (pasadas posteriores): más **componentes**.
 > Mientras una sección no exista aquí, **no es una decisión tomada**.
 
 ## Tipografía
@@ -79,6 +79,57 @@ Toda referencia de color en el CSS pasa por estas variables (`:root` en `index.h
 - **Nada de color hardcodeado suelto.** Todo color en el CSS referencia estas variables. Agregar/cambiar un color =
   editar **este documento primero** y luego `:root` en `index.html`.
 - Los tintes translúcidos de estados (badges, hovers) se derivan de estos tonos; al sumar componentes se formalizan aquí.
+
+## Espaciado y layout
+
+**Principio: liviandad y minimalismo.** Densidad **baja**, aire **generoso**. Una cosa a la vez, con espacio para
+respirar. La app es **solo mobile** (referencia **390px**, iPhone estándar); **no hay adaptación desktop ni breakpoints**.
+
+### Escala de espaciado (tokens CSS)
+Una escala fija; **todo valor de espaciado sale de aquí**. Nada de números sueltos en el CSS.
+
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--space-1` | `4px`  | gaps mínimos (ícono↔texto, badge interno) |
+| `--space-2` | `8px`  | gap corto entre elementos contiguos |
+| `--space-3` | `12px` | gap medio (filas, controles) |
+| `--space-4` | `20px` | **padding estándar de tarjetas** (todos los lados) |
+| `--space-5` | `28px` | **separación entre secciones** de una misma pantalla |
+| `--space-6` | `40px` | margen mayor entre bloques |
+| `--space-safe` | `86px` | **padding inferior** del contenido (deja espacio a la tabbar fija) |
+
+### Alturas mínimas de toque
+Mobile-first, **pulgar cómodo**. Todo elemento interactivo respeta su mínimo:
+
+| Elemento | Altura mínima |
+|----------|---------------|
+| Botón principal | **52px** |
+| Botón secundario / chip | **40px** |
+| Fila de lista | **56px** |
+| Input | **52px** |
+
+### Radios de borde (tokens CSS)
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--radius-sm` | `8px`  | chips, badges |
+| `--radius-md` | `12px` | inputs, botones |
+| `--radius-lg` | `20px` | tarjetas |
+| `--radius-xl` | `28px` | modales, wizard |
+
+### Layout
+- **Ancho máximo de contenido: `480px`, centrado.** **Sin** breakpoints desktop — la app vive en una columna mobile.
+- **Padding interno de tarjeta:** `--space-4` (20px) en **todos** los lados.
+- **Gap entre secciones** de la misma pantalla: `--space-5` (28px).
+
+### Reglas
+- **Todo valor de espaciado sale de estas variables.** Nunca valores sueltos en el CSS (ni `padding:14px`, ni `gap:10px`).
+- **Botones principales ocupan el ancho completo** del contenedor en mobile.
+- **Altura mínima de toque respetada** en todos los elementos interactivos (botones, chips, filas, inputs).
+- Densidad baja: cuando dudes entre apretar o airear, **airea**. Una acción/idea principal por bloque.
+- Agregar/cambiar un token = editar **este documento primero**, y luego reflejarlo en `:root` de `index.html`.
+
+> **Nota:** esta sección **documenta** los tokens; la aplicación al CSS (`:root` + reemplazo de valores sueltos)
+> es una pasada **aparte**, aún no ejecutada.
 
 ## Patrones
 
