@@ -102,9 +102,11 @@ check('Ana es ahorradora, Beto invitado', ana.estado === 'ahorrador' && beto.est
 click('[data-act="close-overlay"]');
 check('Overlay cerrado', q('#overlay').hidden);
 
-/* ---------- 2. Crear primada (queda incompleta) ---------- */
+/* ---------- 2. Crear primada (queda incompleta) ----------
+   El botón "+ Nueva primada" ahora abre el WIZARD (se prueba por clics en la sección 12).
+   Aquí creamos una incompleta vía acción para cubrir el flujo de asignar principal por rol. */
 section('Crear y seleccionar primada');
-click('[data-act="new-primada"]');
+Store.actions.createPrimada({});
 eq('1 primada creada', st().primadas.length, 1);
 const prm = () => st().primadas[0];
 check('Primada activa = la nueva', st().activePrimadaId === prm().id);
@@ -240,8 +242,8 @@ setVal('[data-ch="cover-ahorrador"]', '20000');
 setVal('[data-ch="cover-invitado"]', '12000');
 click('[data-act="close-overlay"]');
 eq('Cover global cambiado a invitado 12.000', Store.select.state().settings.cover.invitado, 12000);
-// Crear una primada nueva → toma el cover NUEVO
-click('[data-act="new-primada"]');
+// Crear una primada nueva → toma el cover NUEVO (vía acción; el wizard se prueba en la sección 12)
+Store.actions.createPrimada({});
 const nuevaId = Store.select.activePrimada().id;
 eq('La primada NUEVA toma el cover global nuevo (12.000)', Store.select.activePrimada().cover.invitado, 12000);
 // La vieja aparece en el Historial; abrirla con un tap
@@ -251,6 +253,53 @@ click(`[data-act="select-primada"][data-id="${viejaId}"]`);
 eq('Se abrió la primada vieja', Store.select.activePrimada().id, viejaId);
 eq('Su cover sigue CONGELADO (10.000, no 12.000)', Store.select.activePrimada().cover.invitado, 10000);
 eq('Snapshot del cover idéntico al original', JSON.stringify(Store.select.activePrimada().cover), coverViejo);
+
+/* ---------- 12. Wizard "Nueva primada" (3 pasos) por clics REALES ---------- */
+section('Wizard Nueva primada: organizadores → productos → fecha → crear');
+const primadasAntes = st().primadas.length;
+click('[data-act="new-primada"]');                          // abre el wizard
+check('Wizard abierto (paso 1, overlay visible)', !q('#overlay').hidden && /paso 1 de 3/.test(q('#overlay').innerHTML));
+check('Aún no se creó la primada (solo abrió el wizard)', st().primadas.length === primadasAntes);
+// intentar avanzar sin principal → bloquea
+click('[data-act="wz-siguiente"]');
+check('Paso 1 sin principal NO avanza', /paso 1 de 3/.test(q('#overlay').innerHTML));
+// elegir principal (Ana, ahorradora) + un co-organizador (Beto)
+setVal('#wz-principal', ana.id);
+check('Beto aparece como co-organizador candidato', !!q(`[data-act="wz-toggle-coorg"][data-pid="${beto.id}"]`));
+click(`[data-act="wz-toggle-coorg"][data-pid="${beto.id}"]`);
+click('[data-act="wz-siguiente"]');                         // → paso 2
+check('Avanzó al paso 2 (productos)', /paso 2 de 3/.test(q('#overlay').innerHTML));
+// quitar todos los productos y agregar uno desde cero
+let nProd = qa('[data-act="wz-prod-remove"]').length;
+for (let i = 0; i < nProd; i++) click('[data-act="wz-prod-remove"]');
+click('[data-act="wz-prod-add"]');
+setVal('[data-wz="nombre"][data-i="0"]', 'Cóctel');
+setVal('[data-wz="emoji"][data-i="0"]', '🍹');
+setVal('[data-wz="costoNeto"][data-i="0"]', '4000');
+setVal('[data-wz="precioVenta"][data-i="0"]', '12000');
+click('[data-act="wz-siguiente"]');                         // → paso 3
+check('Avanzó al paso 3 (fecha y mes)', /paso 3 de 3/.test(q('#overlay').innerHTML));
+setVal('#wz-fecha', '2026-05-31');
+setVal('#wz-mes', '2026-06');
+click('[data-act="wz-crear"]');                             // crear
+check('Wizard cerrado tras crear', q('#overlay').hidden);
+eq('Se creó 1 primada nueva', st().primadas.length, primadasAntes + 1);
+const nueva = Store.select.activePrimada();
+eq('Primada activa = la del wizard', nueva.id, st().primadas[0].id);
+eq('Wizard: principal = Ana', nueva.organizadorPrincipalId, ana.id);
+check('Wizard: NO incompleta (tiene principal)', !Store.select.primadaIncompleta(nueva));
+eq('Wizard: 2 organizadores (Ana principal + Beto co-org)', nueva.asistencias.length, 2);
+check('Wizard: Beto co-organizador (rol organizador)', nueva.asistencias.find(a => a.personaId === beto.id).rol === 'organizador');
+eq('Wizard: 1 producto (Cóctel)', nueva.productos.length, 1);
+eq('Wizard: producto Cóctel nombre', nueva.productos[0].nombre, 'Cóctel');
+eq('Wizard: margen Cóctel = 8000', Store.select.margenProducto(nueva.productos[0]), 8000);
+eq('Wizard: fecha 2026-05-31', nueva.fecha, '2026-05-31');
+eq('Wizard: mes contable 2026-06 (distinto a la fecha)', nueva.mesContable, '2026-06');
+// cancelar un wizard nuevo no crea nada
+const antesCancelar = st().primadas.length;
+click('[data-act="new-primada"]');
+click('[data-act="wz-cancelar"]');
+check('Cancelar el wizard cierra sin crear', q('#overlay').hidden && st().primadas.length === antesCancelar);
 
 /* ---------- Resumen ---------- */
 console.log(`\n${'='.repeat(50)}`);

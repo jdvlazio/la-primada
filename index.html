@@ -237,6 +237,22 @@
   .sheet.full{min-height:86vh}
   .sheet-body{display:block}
 
+  /* Wizard "Nueva primada" (3 pasos) */
+  .wz .wz-steps{display:flex;align-items:center;gap:0;flex:1}
+  .wz-dot{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);color:var(--ink-soft);font-size:13px;font-weight:700;flex:none;background:var(--paper)}
+  .wz-dot.on{border-color:var(--accent);color:var(--accent)}
+  .wz-dot.done{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .wz-line{flex:1;height:2px;background:var(--line);margin:0 6px}
+  .wz-title{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:20px;margin:6px 0 12px}
+  .wz-step{display:block;animation:pop .22s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .wz-chips{display:flex;flex-wrap:wrap;gap:8px}
+  .wz-chips .chip i{color:var(--ink-soft);font-style:normal;font-size:10px;text-transform:uppercase}
+  .wz-chips .chip.on{border-color:var(--accent);color:var(--accent)}
+  .wz .prodlist{display:flex;flex-direction:column;gap:6px}
+  .wz-nav{display:flex;gap:8px;margin-top:18px;padding-top:12px;border-top:1px dashed var(--line)}
+  .wz-nav .mini,.wz-nav .btn{flex:1}
+
   /* seg-nav (segmented control) — Personas|Ajustes y estado ahorrador|invitado */
   .seg-nav{display:inline-flex;gap:0;background:var(--paper-2);border:2px solid var(--line);border-radius:11px;padding:2px}
   .seg{font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:none;background:transparent;color:var(--ink-soft);padding:7px 14px;border-radius:8px}

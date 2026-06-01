@@ -14,12 +14,37 @@
   const Store = root.Store;
   const View  = root.View;
   const Auth  = root.Auth || null;
+  const Util  = root.Util || {};
+  const CONFIG = root.CONFIG || {};
+
+  // Inicializa el estado del wizard "Nueva primada": principal vacío, sin co-organizadores,
+  // productos = copia editable del catálogo por defecto, fecha = hoy, mes = mes de hoy.
+  function nuevoWizard() {
+    const hoy = Util.currentDate ? Util.currentDate() : '';
+    const prods = (CONFIG.defaultProducts || []).map(p => ({ emoji: p.emoji, nombre: p.nombre, costoNeto: p.costoNeto, precioVenta: p.precioVenta }));
+    return { paso: 1, principalId: '', coorg: [], productos: prods, fecha: hoy, mesContable: Util.mesDeFecha ? Util.mesDeFecha(hoy) : '' };
+  }
+
+  // Vuelca los inputs del paso actual del wizard al estado ui.wizard (antes de avanzar/crear).
+  // El wizard es UI pura: no pasa por el Store, así que leemos el DOM directamente.
+  function wzSync() {
+    const w = ui.wizard; if (!w) return;
+    const val = id => { const el = document.getElementById(id); return el ? el.value : undefined; };
+    if (w.paso === 1) { const p = val('wz-principal'); if (p !== undefined) w.principalId = p; }
+    if (w.paso === 2) {
+      document.querySelectorAll('[data-wz]').forEach(el => {
+        const i = Number(el.dataset.i), campo = el.dataset.wz; if (!w.productos[i]) return;
+        w.productos[i][campo] = (campo === 'costoNeto' || campo === 'precioVenta') ? (Number(el.value) || 0) : el.value;
+      });
+    }
+    if (w.paso === 3) { const f = val('wz-fecha'), m = val('wz-mes'); if (f !== undefined) w.fecha = f; if (m !== undefined) w.mesContable = m; }
+  }
 
   // ui = estado EFÍMERO (no dominio, no se persiste):
   // - abiertos: Set de personaId con tarjeta-acordeón expandida (multiabierto)
   // - pickProd: personaId con el chip-picker "+ Agregar" abierto (uno a la vez)
   // - panelProductos: sección "Productos del evento" desplegada
-  const ui = { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, panelProductos: false };
+  const ui = { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, panelProductos: false, wizard: null };
 
   function rerender() { View.render(Store.select.state(), ui); }
 
@@ -65,11 +90,48 @@
       }
       case 'login-reset': View.renderLogin('form'); return;
 
-      // ----- ciclo de primada -----
-      case 'new-primada': {
-        A.createPrimada({});            // incompleta: el principal se asigna asignando rol
-        View.toast('Primada creada · asigna el principal en una asistencia ahorradora');
-        break;
+      // ----- wizard "Nueva primada" (3 pasos, estado efímero en ui.wizard) -----
+      case 'new-primada':   ui.wizard = nuevoWizard(); rerender(); return;
+      case 'wz-cancelar':   ui.wizard = null; rerender(); return;
+      case 'wz-atras':      if (ui.wizard && ui.wizard.paso > 1) ui.wizard.paso--; rerender(); return;
+      case 'wz-toggle-coorg': {
+        const w = ui.wizard; if (!w) return;
+        const i = w.coorg.indexOf(pid);
+        if (i >= 0) w.coorg.splice(i, 1); else w.coorg.push(pid);
+        rerender(); return;
+      }
+      case 'wz-prod-add':    if (ui.wizard) ui.wizard.productos.push({ emoji: '•', nombre: '', costoNeto: 0, precioVenta: 0 }); rerender(); return;
+      case 'wz-prod-remove': if (ui.wizard) ui.wizard.productos.splice(Number(b.dataset.i), 1); rerender(); return;
+      case 'wz-siguiente': {
+        const w = ui.wizard; if (!w) return;
+        // sincronizar inputs del paso actual antes de avanzar (los selects/date no disparan change si no se tocaron)
+        wzSync();
+        if (w.paso === 1) {
+          if (!w.principalId) { View.toast('Elige el organizador principal'); return; }
+          const per = Store.select.persona(w.principalId);
+          if (!per || per.estado !== 'ahorrador') { View.toast('El principal debe ser ahorrador'); return; }
+        }
+        if (w.paso === 2) {
+          w.productos = w.productos.filter(p => (p.nombre || '').trim());   // descarta filas vacías
+          if (!w.productos.length) { View.toast('Agrega al menos un producto con nombre'); return; }
+        }
+        w.paso++; rerender(); return;
+      }
+      case 'wz-crear': {
+        const w = ui.wizard; if (!w) return;
+        wzSync();
+        try {
+          const id = A.createPrimada({
+            principalId: w.principalId,
+            organizadores: [w.principalId].concat(w.coorg),
+            productos: w.productos.filter(p => (p.nombre || '').trim()),
+            fecha: w.fecha, mesContable: w.mesContable,
+          });
+          ui.wizard = null;
+          A.seleccionarPrimada(id);
+          View.toast('Primada creada');
+        } catch (err) { View.toast(err && err.message ? err.message : 'No se pudo crear'); }
+        return;
       }
       case 'select-primada':   A.seleccionarPrimada(id); break;
       case 'cerrar-primada':   A.cerrarPrimada(id);  View.toast('Cuenta cerrada (sigue aceptando abonos)'); break;
@@ -154,6 +216,12 @@
 
   /* ---------- Cambios de inputs/selects (delegados en document) ---------- */
   function onChange(ev) {
+    // Wizard: cambiar el principal refresca la lista de co-organizadores (excluye al elegido).
+    if (ui.wizard && ev.target && ev.target.id === 'wz-principal') {
+      ui.wizard.principalId = ev.target.value;
+      ui.wizard.coorg = ui.wizard.coorg.filter(id => id !== ev.target.value);
+      rerender(); return;
+    }
     const t = ev.target.closest('[data-ch]'); if (!t) return;
     const ch = t.dataset.ch;
     const pid = t.dataset.pid;

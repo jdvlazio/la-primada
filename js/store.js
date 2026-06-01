@@ -428,7 +428,7 @@
     removeDefaultProducto(id) { state.settings.defaultProducts = state.settings.defaultProducts.filter(p => p.id !== id); commit({ kind: 'settings' }); },
 
     // ----- ciclo de primada -----
-    createPrimada({ fecha, mesContable, organizadores, principalId, nombre } = {}) {
+    createPrimada({ fecha, mesContable, organizadores, principalId, nombre, productos } = {}) {
       organizadores = Array.isArray(organizadores) ? organizadores.slice() : [];
       if (principalId && !organizadores.includes(principalId)) organizadores.unshift(principalId);
       // INVARIANTE #2: el principal debe ser ahorrador (estado vigente al crear → snapshot ahorrador).
@@ -439,7 +439,10 @@
         if (principalPer.estado !== 'ahorrador') throw new Error('createPrimada: el organizador principal debe ser ahorrador');
       }
       const f = normFecha(fecha || Util.currentDate());
-      const productos = state.settings.defaultProducts.map(x => ({ ...x, aportadoPor: principalId || null }));
+      // productos: si el wizard pasa un set propio (editado/desde cero) se usa ese (snapshot del evento);
+      // si no, se copia el catálogo por defecto. En ambos casos aportadoPor por defecto = principal.
+      const baseProductos = (Array.isArray(productos) && productos.length) ? productos : state.settings.defaultProducts;
+      const productos_ = normProducts(baseProductos).map(x => ({ ...x, aportadoPor: x.aportadoPor || principalId || null }));
       const asistencias = organizadores.map(pid => {
         const per = select.persona(pid);
         return {
@@ -447,7 +450,7 @@
           estadoEnEseMomento: per ? normEstado(per.estado) : 'ahorrador',
           rol: pid === principalId ? 'principal' : 'organizador',
           coverExonerado: false,
-          items: normItems(productos, {}),
+          items: normItems(productos_, {}),
           abonos: [],
         };
       });
@@ -459,7 +462,7 @@
         organizadorPrincipalId: principalId || null,
         pago: { breB: principalPer ? principalPer.breB : null },
         cover: { ...state.settings.cover },        // SNAPSHOT del cover vigente
-        productos, asistencias,
+        productos: productos_, asistencias,
         estado: 'abierta',
       };
       state.primadas.unshift(prm);

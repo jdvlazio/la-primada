@@ -314,6 +314,21 @@ section('Acciones e invariantes');
 
   // aportadoPor por defecto = principal al crear
   check('aportadoPor por defecto = principal', pr3().productos.every(pr => pr.aportadoPor === ahorrA));
+
+  // createPrimada con productos PROPIOS (wizard paso 2): usa ese set, no el catálogo por defecto.
+  const pidW = Store.actions.createPrimada({
+    principalId: ahorrA, organizadores: [ahorrA],
+    productos: [{ nombre: 'Cóctel', emoji: '🍹', costoNeto: 4000, precioVenta: 12000 }],
+  });
+  const prW = Store.select.state().primadas.find(p => p.id === pidW);
+  eq('wizard: usa los productos pasados (1 Cóctel)', prW.productos.length, 1);
+  eq('wizard: producto custom con su nombre', prW.productos[0].nombre, 'Cóctel');
+  eq('wizard: margen del custom = 8000', Store.select.margenProducto(prW.productos[0]), 8000);
+  check('wizard: aportadoPor del custom = principal por defecto', prW.productos[0].aportadoPor === ahorrA);
+  // sin productos → sigue copiando el catálogo por defecto (compatibilidad)
+  const pidD = Store.actions.createPrimada({ principalId: ahorrA, organizadores: [ahorrA] });
+  const prD = Store.select.state().primadas.find(p => p.id === pidD);
+  check('wizard: sin productos → copia el catálogo por defecto', prD.productos.length === Store.select.state().settings.defaultProducts.length);
 }
 
 /* ============================================================ 7b. Informe: auto-abono del principal */

@@ -421,6 +421,84 @@
   }
 
   // Sheet a pantalla completa con seg-nav Personas | Ajustes.
+  /* ============================================================
+     WIZARD "Nueva primada" — 3 pasos sobre la app (estado efímero en ui.wizard)
+     ui.wizard = { paso, principalId, coorg:[ids], productos:[...], fecha, mesContable }
+     1) organizadores (principal ahorrador + co-organizadores) · 2) productos del evento · 3) fecha + mes
+     ============================================================ */
+  function wizardPaso1(state, w) {
+    const ahorradores = S().ahorradores();
+    const opcionPrincipal = ahorradores.length
+      ? `<select class="sel" id="wz-principal">
+           <option value="">— elige al principal —</option>
+           ${ahorradores.map(p => `<option value="${p.id}" ${w.principalId === p.id ? 'selected' : ''}>${e(p.nombre)}</option>`).join('')}
+         </select>`
+      : `<div class="muted small">No hay ahorradores en el directorio. Crea uno desde el engranaje ⚙ › Personas.</div>`;
+    // Co-organizadores: cualquier persona distinta del principal (toggle por chip).
+    const coCands = S().personasOrdenadas().filter(p => p.id !== w.principalId);
+    const chips = coCands.map(p => {
+      const on = w.coorg.indexOf(p.id) >= 0;
+      return `<button class="chip ${on ? 'on' : ''}" data-act="wz-toggle-coorg" data-pid="${p.id}">${e(p.nombre)} <i>${p.estado}</i></button>`;
+    }).join('');
+    return `<div class="wz-step">
+      <label class="fld"><span>Organizador principal (ahorrador)</span>${opcionPrincipal}</label>
+      <div class="sub">Co-organizadores <span class="muted">(opcional)</span></div>
+      <div class="muted small" style="margin:-2px 2px 8px">Entran como organizadores: sin cover, consumen normal. Su margen sí va al fondo.</div>
+      <div class="chips wz-chips">${chips || '<span class="muted small">No hay más personas.</span>'}</div>
+    </div>`;
+  }
+
+  function wizardPaso2(state, w) {
+    const filas = w.productos.map((prod, i) => `<div class="prodrow">
+      <input class="ti" style="width:48px;text-align:center" maxlength="2" value="${e(prod.emoji || '')}" data-wz="emoji" data-i="${i}" aria-label="Emoji">
+      <input class="ti" value="${e(prod.nombre || '')}" maxlength="40" placeholder="Nombre" data-wz="nombre" data-i="${i}" aria-label="Nombre">
+      <label class="prodrow-f"><span>costo</span><input class="ti num" type="number" min="0" step="500" inputmode="numeric" value="${prod.costoNeto}" data-wz="costoNeto" data-i="${i}"></label>
+      <label class="prodrow-f"><span>venta</span><input class="ti num" type="number" min="0" step="500" inputmode="numeric" value="${prod.precioVenta}" data-wz="precioVenta" data-i="${i}"></label>
+      <button class="xmini" data-act="wz-prod-remove" data-i="${i}" aria-label="quitar">${icon('trash-2', 'sm')}</button>
+    </div>`).join('');
+    return `<div class="wz-step">
+      <div class="muted small" style="margin:2px 2px 8px">Parte del catálogo por defecto, editable. Quita lo que no haya y agrega lo del evento (rifa, cóctel…).</div>
+      <div class="prodlist">${filas || '<div class="empty">Sin productos. Agrega al menos uno.</div>'}</div>
+      <button class="mini ghost" data-act="wz-prod-add" style="margin-top:10px">${icon('plus-circle')}Producto</button>
+    </div>`;
+  }
+
+  function wizardPaso3(state, w) {
+    return `<div class="wz-step">
+      <div class="grid2">
+        <label class="fld"><span>Fecha del evento</span>
+          <input class="ti" type="date" id="wz-fecha" value="${e(w.fecha)}"></label>
+        <label class="fld"><span>Mes contable</span>
+          <input class="ti" type="month" id="wz-mes" value="${e(w.mesContable)}"></label>
+      </div>
+      <div class="muted small" style="margin-top:8px">El mes contable se sugiere de la fecha, pero puede contar para otro mes (ej. la del 31 de mayo cuenta como junio).</div>
+      <div class="sub">Resumen</div>
+      <div class="kv"><span>Principal</span><b>${w.principalId ? e(nombrePersona(w.principalId)) : '— falta —'}</b></div>
+      <div class="kv"><span>Organizadores</span><b>${1 + w.coorg.length}</b></div>
+      <div class="kv"><span>Productos</span><b>${w.productos.length}</b></div>
+    </div>`;
+  }
+
+  function wizardSheet(state, ui) {
+    const w = ui.wizard;
+    const titulos = ['Organizadores', 'Productos del evento', 'Fecha y mes'];
+    const cuerpo = w.paso === 1 ? wizardPaso1(state, w) : (w.paso === 2 ? wizardPaso2(state, w) : wizardPaso3(state, w));
+    const stepper = [1, 2, 3].map(n => `<span class="wz-dot ${n === w.paso ? 'on' : ''} ${n < w.paso ? 'done' : ''}">${n}</span>`).join('<span class="wz-line"></span>');
+    const atras = w.paso > 1 ? `<button class="mini ghost" data-act="wz-atras">Atrás</button>` : `<button class="mini ghost" data-act="wz-cancelar">Cancelar</button>`;
+    const adelante = w.paso < 3
+      ? `<button class="btn" data-act="wz-siguiente">Siguiente</button>`
+      : `<button class="btn" data-act="wz-crear">${icon('plus-circle')}Crear primada</button>`;
+    return `<div class="sheet full wz">
+      <div class="sheet-head">
+        <div class="wz-steps">${stepper}</div>
+        <button class="gear" data-act="wz-cancelar" aria-label="Cerrar">${icon('x')}</button>
+      </div>
+      <div class="wz-title">${e(titulos[w.paso - 1])} <span class="muted">· paso ${w.paso} de 3</span></div>
+      <div class="sheet-body">${cuerpo}</div>
+      <div class="wz-nav">${atras}${adelante}</div>
+    </div>`;
+  }
+
   function overlaySheet(active, state) {
     const seg = (key, label) => `<button class="seg ${active === key ? 'on' : ''}" data-act="overlay-tab" data-overlay="${key}">${label}</button>`;
     const body = active === 'ajustes' ? ajustesBody(state) : personasBody(state);
@@ -459,10 +537,11 @@
     else                           html = tabPrimadas(state, ui);
     els.screen.innerHTML = html;
 
-    // 3) overlay/pantalla detrás del engranaje (Personas / Ajustes)
-    if (ui.overlay === 'personas' || ui.overlay === 'ajustes') els.overlay.innerHTML = overlaySheet(ui.overlay, state);
+    // 3) overlay: wizard "Nueva primada" (prioridad) o pantalla del engranaje (Personas / Ajustes)
+    if (ui.wizard)                                              els.overlay.innerHTML = wizardSheet(state, ui);
+    else if (ui.overlay === 'personas' || ui.overlay === 'ajustes') els.overlay.innerHTML = overlaySheet(ui.overlay, state);
     else                                                        els.overlay.innerHTML = '';
-    els.overlay.hidden = !ui.overlay;
+    els.overlay.hidden = !(ui.wizard || ui.overlay);
   }
 
   let toastTimer;
