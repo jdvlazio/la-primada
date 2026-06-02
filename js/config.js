@@ -20,9 +20,10 @@
 
     // Interruptor del backend en la nube. FALSE (temporal) → la app NO inicializa Supabase:
     // corre 100% sobre localStorage (modo 'local' del adaptador), sin auth gate ni RLS, totalmente
-    // usable en producción. Poner en TRUE cuando el admin esté sembrado y el auth magic link activo.
-    // (No borra nada: enciende Supabase + login con solo cambiar este flag.)
-    backendEnabled: false,
+    // usable en producción. ACTIVADO: enciende Supabase + login magic link (signups abiertos por
+    // ahora; el sembrado del admin y el cierre de signups se endurecen después). Flag REVERSIBLE:
+    // volver a false desactiva el backend y vuelve a localStorage sin login. (No borra nada.)
+    backendEnabled: true,
 
     // Cover "fijo": un único valor VIGENTE (editable hacia adelante). Sugerido SOLO para instalación nueva;
     // las primadas viejas conservan su propio snapshot y NO se reescriben.

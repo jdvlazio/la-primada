@@ -30,7 +30,11 @@ const SEL = {
 };
 
 // Arranca la app desde cero: limpia localStorage para un estado determinista.
+// Bloquea el SDK de Supabase (CDN): sin `window.supabase` → Api.init cae a modo LOCAL (sin auth
+// gate), que es lo que ejercitan los tests (la app sobre localStorage). Con backendEnabled=true en
+// producción el CDN sí carga y aparece el login; los tests cubren la lógica de la app, no el auth.
 async function abrirApp(page) {
+  await page.route(/supabase/i, route => route.abort());
   await page.addInitScript(() => { try { localStorage.clear(); } catch (e) {} });
   await page.goto('/');
   await page.waitForSelector(SEL.screen, { timeout: 15000 });
