@@ -328,7 +328,7 @@ Desviaciones **intencionales** del canónico, con razón. Aprobadas por el PO.
 | `rgba(255,255,255,.06)` (separador de filas) | valor raw, aún sin token | Línea tenue de separación de listas. **Pendiente de tokenizar** (`--line-soft`) cuando se aplique 2.1 — aprobar nombre con el PO |
 | `.chip` (picker "+ Agregar") | `border:2px solid var(--line)` | Es un **control interactivo** (chip-picker de productos), no una caja decorativa. El borde es la affordance, como en inputs |
 | `.ti` / `.sel` / `.step` | `border:2px solid var(--line)` | Inputs y steppers: el borde es affordance de control, permitido (§2.3) |
-| `.tab.active` | `background:rgba(45,212,191,.16)` (raw) | Pill de acento del tab activo; alpha del acento. Replicado del patrón iOS probado (Otrofestiv) |
+| `.tabbar` / `.tab.active` | sin pill ni línea: fondo de la barra = `var(--paper)` (igual al contenido), activo = solo color de acento | Evita banda/línea visible contra el contenido y "franja" en el inset (Apple Dev Forums: el corte se nota cuando el fondo de la barra difiere del contenido). El activo se distingue por color, no por caja |
 | `.toast` opacidad/blur raw | sombras y alphas a negro | Componentes flotantes (toast, sync-indicator); profundidad sobre oscuro |
 
 **Badges con borde** (`.badge.warn/.good/.red`): **legado**. Permitidos **sólo** de forma

@@ -49,11 +49,10 @@
      la pantalla COMPLETA → la tabbar bottom:0 llega al borde FÍSICO. (Otrofestiv usa body{min-height:
      100dvh} con la barra fixed;bottom:0; nosotros logramos lo mismo sin permitir el scroll del body.) */
   body{
-    min-height:100dvh;               /* el fondo (puntos) cubre toda la pantalla */
+    min-height:100dvh;               /* fondo SÓLIDO que cubre toda la pantalla (incl. el inset) */
     overscroll-behavior:none;
     font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--paper);
-    background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.04) 1px, transparent 0);
-    background-size:14px 14px;line-height:1.4;-webkit-font-smoothing:antialiased;
+    line-height:1.4;-webkit-font-smoothing:antialiased;
   }
   /* Único contenedor de SCROLL: position:fixed cubriendo el viewport (inset:0). El body no scrollea
      (todo su contenido es fixed) → la tabbar no se va con el scroll. Sin alturas dvh dinámicas que
@@ -148,17 +147,17 @@
      · Fondo SEMI-transparente (rgba) para que el backdrop-filter blur realmente se vea.
      ⚠️ env(safe-area-inset-bottom) solo es >0 en iOS standalone con barra de gestos; en escritorio/preview
        es 0 y aplica el piso de 20px — la validación del inset real debe hacerse en el iPhone. */
-  /* Tabbar fija al borde FÍSICO inferior (manejo de safe-area de Otrofestiv): position:fixed;bottom:0
-     con viewport-fit=cover → el borde inferior toca el fondo físico. padding-bottom:max(env,20px)
-     empuja los tabs por encima de la barra de gestos Y el FONDO de la barra se extiende por ese
-     padding hasta el borde (cubre el inset → sin espacio negro muerto). Es estable y NO salta porque
-     está fija al viewport, no atada a una caja de alto dinámico (dvh); y como el body no scrollea
-     (overflow:hidden) y el scroll vive en .app-scroll, tampoco se va con el scroll. */
-  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;gap:var(--space-1);background:var(--paper-2);border-top:1px solid var(--line);padding:var(--space-2) var(--space-2) max(env(safe-area-inset-bottom), 20px);box-shadow:0 -10px 30px -20px rgba(0,0,0,.6);will-change:transform}
+  /* Tabbar fija al borde FÍSICO inferior. CLAVE (Apple Dev Forums): su fondo es EXACTAMENTE el mismo
+     que el del contenido (var(--paper)) y NO lleva línea divisoria → no hay banda ni "línea visible"
+     contra el contenido, y si quedara un mínimo corte en el inset, sería del mismo color → invisible.
+     position:fixed;bottom:0 (viewport-fit=cover) lleva el borde al fondo físico; padding-bottom:
+     max(env,20px) empuja los 3 tabs sobre la barra de gestos mientras el fondo se extiende hasta abajo.
+     La sombra suave da una separación sutil del contenido sin una línea dura. */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;gap:var(--space-1);background:var(--paper);padding:var(--space-2) var(--space-2) max(env(safe-area-inset-bottom), 20px);box-shadow:0 -12px 24px -16px rgba(0,0,0,.7);will-change:transform}
   .tab{flex:1;max-width:160px;min-height:var(--tap-row);display:flex;align-items:center;justify-content:center;background:transparent;border:none;cursor:pointer;color:var(--ink-soft);font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:13px;letter-spacing:.02em;padding:var(--space-2);border-radius:var(--radius-md);transition:color .15s, background .15s}
   .tab:active{opacity:.7}
-  /* Activo BIEN diferenciado: pill teñido de acento + texto acento + peso mayor (no el pill blanco tenue de antes). */
-  .tab.active{background:rgba(45,212,191,.16);color:var(--accent);font-weight:800}
+  /* Activo = SOLO color (acento) + peso. Sin caja/pill (que solo cambie de color es suficiente). */
+  .tab.active{color:var(--accent);font-weight:800}
 
   .toast{position:fixed;left:50%;bottom:calc(76px + max(env(safe-area-inset-bottom), 20px));transform:translateX(-50%) translateY(20px);background:var(--paper-2);color:var(--ink);padding:var(--space-3) var(--space-4);border-radius:var(--radius-xl);font-size:12px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:60;box-shadow:0 10px 30px -12px rgba(0,0,0,.5);max-width:90vw;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -426,13 +425,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-075740-09ebec4"></script>
-  <script src="js/util.js?v=20260602-075740-09ebec4"></script>
-  <script src="js/api.js?v=20260602-075740-09ebec4"></script>
-  <script src="js/auth.js?v=20260602-075740-09ebec4"></script>
-  <script src="js/store.js?v=20260602-075740-09ebec4"></script>
-  <script src="js/view.js?v=20260602-075740-09ebec4"></script>
-  <script src="js/controller.js?v=20260602-075740-09ebec4"></script>
+  <script src="js/config.js?v=20260602-083703-2e478d7"></script>
+  <script src="js/util.js?v=20260602-083703-2e478d7"></script>
+  <script src="js/api.js?v=20260602-083703-2e478d7"></script>
+  <script src="js/auth.js?v=20260602-083703-2e478d7"></script>
+  <script src="js/store.js?v=20260602-083703-2e478d7"></script>
+  <script src="js/view.js?v=20260602-083703-2e478d7"></script>
+  <script src="js/controller.js?v=20260602-083703-2e478d7"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
