@@ -231,11 +231,55 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
   });
 
   test('E4 — los <select> usan appearance:none + chevron (no flechas nativas)', async ({ page }) => {
-    await appConPrimadaAbierta(page); // expande un asistente → aparece el select de rol
-    const sel = page.locator('select.sel').first();
+    await appConPrimadaAbierta(page);
+    await page.click('[data-act="open-config-primada"]'); // el select de rol vive en Configurar (sección Asistentes)
+    const sel = page.locator('.overlay select.sel').first();
     await expect(sel).toBeVisible();
     const css = await sel.evaluate(el => ({ ap: getComputedStyle(el).appearance, bg: getComputedStyle(el).backgroundImage }));
     expect(css.ap).toBe('none');
     expect(css.bg).toContain('svg'); // chevron-down como background data-URI
+  });
+
+  test('E5 — agregar asistente desde la hoja del directorio', async ({ page }) => {
+    await abrirApp(page);
+    await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }, { nombre: 'Beto', estado: 'ahorrador' }]);
+    await crearPrimada(page, 'Ana');               // solo Ana (principal) como asistente
+    expect(await page.locator('#screen .asis').count()).toBe(1);
+    await page.click('[data-act="open-add-asis"]'); // hoja simple
+    await expect(page.locator('.overlay .addrow').first()).toBeVisible();
+    await page.locator('.overlay [data-act="add-asistencia"]').first().click(); // un toque agrega
+    expect(await page.locator('#screen .asis').count()).toBe(2);
+  });
+
+  test('E6 — quitar asistente desde Configurar (con confirmación)', async ({ page }) => {
+    page.on('dialog', d => d.accept());            // confirmar el "¿Quitar al asistente?"
+    await appConPrimadaAbierta(page);              // Ana principal (1 asistente)
+    // sumar al resto del directorio como asistentes para tener varios
+    await page.evaluate(() => {
+      const S = window.Store, st = S.select.state(), p = st.primadas[0];
+      st.personas.forEach(per => { if (per.id !== p.organizadorPrincipalId) S.actions.addAsistencia(p.id, per.id); });
+    });
+    await page.click('[data-act="open-config-primada"]');
+    const rows = page.locator('.overlay .cfg-asis');
+    const before = await rows.count();
+    expect(before).toBeGreaterThan(1);
+    await page.locator('.overlay .cfg-asis [data-act="remove-asistencia"]').last().click(); // quita el último (no principal)
+    await expect(rows).toHaveCount(before - 1);
+  });
+
+  test('E7 — editar persona inline en el overlay Personas', async ({ page }) => {
+    await abrirApp(page);
+    await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
+    await page.click('#gearBtn');                  // overlay Personas
+    await expect(page.locator('.overlay .prow')).toBeVisible();
+    expect(await page.locator('.overlay [data-ch="rename-persona"]').count()).toBe(0); // cerrada: sin editor
+    await page.click('.overlay .prow .acc-head');  // expandir → edición inline
+    const inp = page.locator('.overlay [data-ch="rename-persona"]');
+    await expect(inp).toBeVisible();
+    await inp.fill('Anita');
+    await inp.blur();                               // el rename se aplica en 'change' (al salir del campo)
+    // commitQuiet es DEBOUNCED ~500ms para localStorage; el estado EN MEMORIA muta sincrónico → se verifica ahí.
+    const nombre = await page.evaluate(() => window.Store.select.state().personas[0].nombre);
+    expect(nombre).toBe('Anita');
   });
 });

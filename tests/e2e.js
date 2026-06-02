@@ -95,7 +95,8 @@ eq('localStorage limpio → 0 personas', st().personas.length, 0);
 /* ---------- 1. Directorio de personas (overlay del engranaje) ---------- */
 section('Personas: alta desde el overlay del engranaje');
 click('#gearBtn');                                   // abre la pantalla Personas
-check('Pantalla Personas visible', !q('#overlay').hidden && /Nueva persona/.test(q('#overlay').innerHTML));
+check('Pantalla Personas visible', !q('#overlay').hidden && /Agregar persona/.test(q('#overlay').innerHTML));
+click('[data-act="open-nueva-persona"]');            // despliega el form al pie (sin cajas siempre abiertas)
 setVal('#np-nombre', 'Ana'); setVal('#np-estado', 'ahorrador'); click('[data-act="add-persona"]');
 setVal('#np-nombre', 'Beto'); setVal('#np-estado', 'invitado'); click('[data-act="add-persona"]');
 eq('2 personas en el directorio', st().personas.length, 2);
@@ -117,9 +118,11 @@ check('Incompleta: sin principal en la UI', /sin principal/.test(q('#screen').in
 
 /* ---------- 3. Agregar asistencias desde el directorio ---------- */
 section('Asistencias desde el directorio');
-click('[data-act="open-add-asis"]');   // abrir el selector (un solo punto de entrada "+ Agregar")
-setVal('#as-pick', ana.id);  click('[data-act="add-asistencia"]');
-setVal('#as-pick', beto.id); click('[data-act="add-asistencia"]');
+click('[data-act="open-add-asis"]');   // abre la HOJA simple del directorio (overlay add-asis)
+check('Hoja Agregar asistente abierta', !q('#overlay').hidden && /Agregar asistente/.test(q('#overlay').innerHTML));
+click(`[data-act="add-asistencia"][data-pid="${ana.id}"]`);   // un toque agrega
+click(`[data-act="add-asistencia"][data-pid="${beto.id}"]`);
+click('[data-act="close-overlay"]');
 eq('2 asistencias', prm().asistencias.length, 2);
 check('Snapshot inmutable: Ana=ahorrador, Beto=invitado en la asistencia',
   prm().asistencias.find(a => a.personaId === ana.id).estadoEnEseMomento === 'ahorrador' &&
@@ -127,9 +130,9 @@ check('Snapshot inmutable: Ana=ahorrador, Beto=invitado en la asistencia',
 
 /* ---------- 4. Asignar principal (INVARIANTE #2) ---------- */
 section('Asignar principal — invariante "principal siempre ahorrador"');
-// Acordeón: abrir ambas tarjetas para acceder a sus controles internos (rol/cover/steppers/abonos).
-abrir(ana.id);
-abrir(beto.id);
+// El ROL es CONFIGURACIÓN: vive en el overlay "Configurar primada" (sección Asistentes), no en operación.
+click(`[data-act="open-config-primada"][data-id="${prm().id}"]`);
+check('Sección Asistentes en Configurar', /Asistentes/.test(q('#overlay').innerHTML));
 setVal(`select[data-ch="rol"][data-pid="${ana.id}"]`, 'principal');
 eq('Ana es el principal', prm().organizadorPrincipalId, ana.id);
 check('Ya no está incompleta', !Store.select.primadaIncompleta(prm()));
@@ -138,7 +141,8 @@ check('Snapshot de la llave Bre-B del principal en pago', 'breB' in prm().pago);
 // Intentar hacer principal a Beto (invitado) → debe rechazarse por invariante
 setVal(`select[data-ch="rol"][data-pid="${beto.id}"]`, 'principal');
 eq('Beto NO pudo ser principal (sigue Ana)', prm().organizadorPrincipalId, ana.id);
-check('Render se recuperó tras el error (sigue habiendo asistencias)', qa('.asis').length === 2);
+check('Render se recuperó tras el error (config sigue con 2 asistentes)', qa('.cfg-asis').length === 2);
+click('[data-act="close-overlay"]');
 
 /* ---------- 5. Consumos ± (progressive disclosure) ---------- */
 section('Consumos: primer ítem por el chip-picker, luego steppers ±');
@@ -169,10 +173,13 @@ click('[data-tab="resumen"]');
 check('Reparto visible en el tab Resumen', /Ganancia/.test(q('#screen').innerHTML));
 click('[data-tab="primadas"]');   // volver a operar
 
+// El cover (exonerar/cobrar) también es CONFIGURACIÓN → en Configurar, sección Asistentes.
+click(`[data-act="open-config-primada"][data-id="${prm().id}"]`);
 click(`[data-act="toggle-exonerado"][data-pid="${beto.id}"]`);
 check('Beto exonerado', betoAsis().coverExonerado === true);
 eq('Cover de Beto ahora 0', Store.select.coverDe(prm(), betoAsis()), 0);
 eq('Ganancia baja al margen puro (2.000)', Store.select.ganancia(prm()), 2000);
+click('[data-act="close-overlay"]');
 
 /* ---------- 7. Resumen e informe del principal ---------- */
 section('Resumen de ganancia + informe del principal');
@@ -221,6 +228,7 @@ section('Directorio: cambiar estado vigente conserva la historia (INV#1)');
 eq('Snapshot de Beto en la asistencia = invitado', betoAsis().estadoEnEseMomento, 'invitado');
 click('#gearBtn');                                   // abre la pantalla Personas
 check('Beto aparece en 1 primada (historia)', Store.select.aparicionesDe(beto.id) === 1);
+click(`[data-act="toggle-persona"][data-pid="${beto.id}"]`);   // expandir la fila para editar inline
 click(`[data-act="set-estado-persona"][data-pid="${beto.id}"][data-estado="ahorrador"]`);
 eq('Estado VIGENTE de Beto ahora = ahorrador', Store.select.persona(beto.id).estado, 'ahorrador');
 eq('Snapshot histórico INTACTO (sigue invitado)', betoAsis().estadoEnEseMomento, 'invitado');

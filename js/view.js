@@ -99,6 +99,11 @@
         </section>
 
         <section class="cfg-sec">
+          <div class="sub">Asistentes <span class="muted">(${p.asistencias.length})</span></div>
+          ${asistentesConfig(p)}
+        </section>
+
+        <section class="cfg-sec">
           <div class="sub">Productos <span class="muted">(${p.productos.length})</span></div>
           ${productosConfig(p)}
         </section>
@@ -115,6 +120,24 @@
           <button class="mini danger" data-act="borrar-primada" data-id="${p.id}">${icon('trash-2')}Borrar</button>
         </section>
       </div>
+    </div>`;
+  }
+
+  // Sección "Asistentes" del overlay Configurar: aquí vive la CONFIGURACIÓN de cada asistente
+  // (rol, cover, quitar) — fuera de la operación. Filas livianas, sin cajas anidadas.
+  function asistentesConfig(p) {
+    if (!p.asistencias.length) return '<div class="empty-soft">Sin asistentes</div>';
+    return `<div class="cfg-asis-list">${p.asistencias.map(a => asistenteConfigRow(p, a)).join('')}</div>`;
+  }
+  function asistenteConfigRow(p, a) {
+    const cerrada = p.estado === 'cerrada';
+    return `<div class="cfg-asis">
+      <div class="cfg-asis-top">
+        <span class="cfg-asis-name"><b>${e(nombrePersona(a.personaId))}</b> ${rolTag(a.estadoEnEseMomento)}</span>
+        ${rolSelect(p, a)}
+        <button class="xmini" data-act="remove-asistencia" data-pid="${a.personaId}" ${cerrada ? 'disabled' : ''} aria-label="quitar asistente">${icon('trash-2', 'sm')}</button>
+      </div>
+      ${a.rol === 'asistente' ? coverLinea(p, a) : ''}
     </div>`;
   }
 
@@ -199,7 +222,6 @@
   function asistenciaCard(p, a, ui) {
     const total = S().totalAsistencia(p, a);
     const esPrin = S().esPrincipal(p, a);
-    const saldo = S().saldoDe(p, a);
     const abierto = ui && ui.abiertos && ui.abiertos.has(a.personaId);
 
     // Cabecera-resumen (operar): el total visible es SOLO consumo + cover (el dato de un vistazo).
@@ -212,21 +234,12 @@
 
     if (!abierto) return `<div class="asis">${cabecera}</div>`;
 
-    const cerrada = p.estado === 'cerrada';
+    // OPERACIÓN = mínima: SOLO consumo + abono. El rol, el cover y "Quitar" son CONFIGURACIÓN
+    // y viven en el overlay "Configurar primada" (sección Asistentes), no aquí.
     return `<div class="asis open">
       ${cabecera}
       <div class="acc-body">
-        <div class="asis-ctl">
-          ${rolSelect(p, a)}
-          <button class="mini danger" data-act="remove-asistencia" data-pid="${a.personaId}" ${cerrada ? 'disabled' : ''} aria-label="quitar">${icon('trash-2')}Quitar</button>
-        </div>
-        ${coverLinea(p, a)}
         ${consumoBloque(p, a, ui)}
-        <div class="asis-foot">
-          <span>Total <b>${$peso(total)}</b></span>
-          ${esPrin ? `<span class="muted">Pagó</span>`
-                   : `<span>Saldo <b class="${saldo > 0 ? 'owe' : ''}">${$peso(saldo)}</b></span>`}
-        </div>
         ${abonosBlock(p, a)}
       </div>
     </div>`;
@@ -254,25 +267,37 @@
     </div>`;
   }
 
-  // UN solo punto de entrada "+ Agregar" (texto tocable, sin caja). Al tocar abre el selector
-  // del directorio; "Nueva persona" queda como acción de texto al pie del selector abierto.
+  // "+ Agregar" en operación = acción simple: abre una HOJA con el directorio (addAsisSheet).
+  // Nada de selector inline ni "Nueva persona" desparramados aquí.
   function pickerAsistentes(p, ui) {
     if (p.estado === 'cerrada') return '';
-    const abierto = ui && ui.addAsis;
-    if (!abierto) {
-      return `<button class="add-link" data-act="open-add-asis">${icon('plus-circle')}Agregar</button>`;
-    }
+    return `<button class="add-link" data-act="open-add-asis">${icon('plus-circle')}Agregar</button>`;
+  }
+
+  // Hoja simple "Agregar asistente": lista del directorio (los que NO están aún). Tocar uno lo
+  // agrega y queda abierta para sumar varios. "Nueva persona" NO vive aquí: enlace a Personas.
+  function addAsisSheet(state, ui) {
+    const p = S().activePrimada();
+    if (!p) return `<div class="sheet full"><div class="sheet-head"><div class="sheet-title">Agregar asistente</div>
+      <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button></div>
+      <div class="empty-soft">Sin primada</div></div>`;
     const dentro = new Set(p.asistencias.map(a => a.personaId));
     const fuera = S().personasOrdenadas().filter(per => !dentro.has(per.id));
-    const opts = fuera.length
-      ? fuera.map(per => `<option value="${per.id}">${e(per.nombre)} · ${cap(per.estado)}</option>`).join('')
-      : '';
-    return `<div class="addbar">
-      <select class="sel" id="as-pick" ${fuera.length ? '' : 'disabled'}>
-        ${fuera.length ? opts : '<option>Sin personas</option>'}
-      </select>
-      <button class="mini" data-act="add-asistencia" ${fuera.length ? '' : 'disabled'}>${icon('plus-circle')}Asistente</button>
-      <button class="add-link" data-act="open-personas">Nueva persona</button>
+    const filas = fuera.length
+      ? fuera.map(per => `<button class="addrow" data-act="add-asistencia" data-pid="${per.id}">
+          <span class="acc-id"><b>${e(per.nombre)}</b> ${rolTag(per.estado)}</span>
+          <span class="addrow-plus">${icon('plus-circle')}</span>
+        </button>`).join('')
+      : '<div class="empty-soft">Ya están todos</div>';
+    return `<div class="sheet full">
+      <div class="sheet-head">
+        <div class="sheet-title">Agregar asistente</div>
+        <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button>
+      </div>
+      <div class="sheet-body">
+        <div class="addrow-list">${filas}</div>
+        <div class="note">¿Falta alguien? <button class="link-inline" data-act="open-personas">Agregar en Personas</button></div>
+      </div>
     </div>`;
   }
 
@@ -434,36 +459,53 @@
   /* ============================================================
      PANTALLAS detrás del engranaje: Personas (directorio) y Ajustes
      ============================================================ */
-  // Tarjeta de una persona: nombre editable, estado VIGENTE (segmentado), llave Bre-B,
-  // y cuántas primadas la incluyen (su historia se conserva al cambiar de estado — INVARIANTE #1).
-  function personaCard(per) {
+  // Fila liviana de persona (DESIGN.md §2.9): dos líneas, expandible inline para editar.
+  // Cerrada: línea 1 = nombre + rol (etiqueta tenue, igual que la fila de asistente);
+  //          línea 2 tenue = nº de primadas. Abierta: edición en contexto (nombre, rol, Bre-B).
+  // Su historia se conserva al cambiar de estado (INVARIANTE #1).
+  function personaRow(per, ui) {
     const ap = S().aparicionesDe(per.id);
+    const meta = ap ? (ap + ' primada' + (ap > 1 ? 's' : '')) : 'Sin primadas';
+    const abierto = ui && ui.personasAbiertas && ui.personasAbiertas.has(per.id);
+    const cabecera = `<button class="acc-head" data-act="toggle-persona" data-pid="${per.id}" aria-expanded="${abierto ? 'true' : 'false'}">
+        <span class="acc-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
+        <span class="acc-id-stack">
+          <span class="acc-id"><b>${e(per.nombre)}</b> ${rolTag(per.estado)}</span>
+          <span class="acc-sub">${meta}</span>
+        </span>
+      </button>`;
+    if (!abierto) return `<div class="prow">${cabecera}</div>`;
     const seg = est => `<button class="seg ${per.estado === est ? 'on' : ''}" data-act="set-estado-persona" data-pid="${per.id}" data-estado="${est}">${cap(est)}</button>`;
-    return `<div class="pcard">
-      <input class="ti" data-ch="rename-persona" data-pid="${per.id}" value="${e(per.nombre)}" maxlength="40" aria-label="Nombre">
-      <div class="pcard-row">
-        <div class="seg-nav sm">${seg('ahorrador')}${seg('invitado')}</div>
-        <span class="muted small">${ap ? ap + ' primada' + (ap > 1 ? 's' : '') : 'Sin primadas'}</span>
+    return `<div class="prow open">
+      ${cabecera}
+      <div class="acc-body">
+        <label class="fld"><span>Nombre</span>
+          <input class="ti" data-ch="rename-persona" data-pid="${per.id}" value="${e(per.nombre)}" maxlength="40" aria-label="Nombre"></label>
+        <div class="fld"><span>Rol</span>
+          <div class="seg-nav sm">${seg('ahorrador')}${seg('invitado')}</div></div>
+        <label class="fld"><span>Bre-B</span>
+          <input class="ti breb" data-ch="breb-persona" data-pid="${per.id}" value="${per.breB ? e(per.breB) : ''}" placeholder="Bre-B" aria-label="Bre-B"></label>
       </div>
-      <input class="ti breb" data-ch="breb-persona" data-pid="${per.id}" value="${per.breB ? e(per.breB) : ''}" placeholder="Bre-B" aria-label="Bre-B">
     </div>`;
   }
 
-  function personasBody(state) {
+  function personasBody(state, ui) {
     const personas = S().personasOrdenadas();
-    const cuerpo = personas.length
-      ? `<div class="people">${personas.map(personaCard).join('')}</div>`
+    const filas = personas.length
+      ? `<div class="prow-list">${personas.map(per => personaRow(per, ui)).join('')}</div>`
       : '<div class="empty-soft">Sin personas</div>';
-    return `${cuerpo}
-      <div class="sub">Nueva persona</div>
-      <div class="addbar">
-        <input class="ti" id="np-nombre" placeholder="Nombre" maxlength="40">
-        <select class="sel" id="np-estado">
-          <option value="ahorrador">Ahorrador</option>
-          <option value="invitado">Invitado</option>
-        </select>
-        <button class="mini" data-act="add-persona">${icon('plus-circle')}Agregar</button>
-      </div>`;
+    const nueva = ui && ui.nuevaPersona;
+    const alta = nueva
+      ? `<div class="prow-new">
+          <input class="ti" id="np-nombre" placeholder="Nombre" maxlength="40">
+          <select class="sel" id="np-estado">
+            <option value="ahorrador">Ahorrador</option>
+            <option value="invitado">Invitado</option>
+          </select>
+          <button class="mini" data-act="add-persona">${icon('plus-circle')}Agregar</button>
+        </div>`
+      : `<button class="add-link" data-act="open-nueva-persona">${icon('plus-circle')}Agregar persona</button>`;
+    return `${filas}<div class="prow-foot">${alta}</div>`;
   }
 
   function ajustesBody(state) {
@@ -559,9 +601,9 @@
     </div>`;
   }
 
-  function overlaySheet(active, state) {
+  function overlaySheet(active, state, ui) {
     const seg = (key, label) => `<button class="seg ${active === key ? 'on' : ''}" data-act="overlay-tab" data-overlay="${key}">${label}</button>`;
-    const body = active === 'ajustes' ? ajustesBody(state) : personasBody(state);
+    const body = active === 'ajustes' ? ajustesBody(state) : personasBody(state, ui);
     return `<div class="sheet full">
       <div class="sheet-head">
         <div class="seg-nav">${seg('personas', 'Personas')}${seg('ajustes', 'Ajustes')}</div>
@@ -581,7 +623,7 @@
      (consumos, roles, abonos, navegación) sí re-renderizan.
      ============================================================ */
   function render(state, ui) {
-    ui = ui || { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null };
+    ui = ui || { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, personasAbiertas: new Set() };
 
     // 1) tabbar: marcar el activo
     if (els.tabbar) {
@@ -600,7 +642,8 @@
     // 3) overlay: wizard (prioridad) · config de primada · pantalla del engranaje (Personas / Ajustes)
     if (ui.wizard)                                              els.overlay.innerHTML = wizardSheet(state, ui);
     else if (ui.overlay === 'config-primada')                  els.overlay.innerHTML = configPrimadaSheet(state);
-    else if (ui.overlay === 'personas' || ui.overlay === 'ajustes') els.overlay.innerHTML = overlaySheet(ui.overlay, state);
+    else if (ui.overlay === 'add-asis')                        els.overlay.innerHTML = addAsisSheet(state, ui);
+    else if (ui.overlay === 'personas' || ui.overlay === 'ajustes') els.overlay.innerHTML = overlaySheet(ui.overlay, state, ui);
     else                                                        els.overlay.innerHTML = '';
     els.overlay.hidden = !(ui.wizard || ui.overlay);
   }

@@ -246,6 +246,30 @@ dos precios editables + quitar. Sin caja; separación entre filas por **línea t
 
 La lógica de precios (costo/venta, margen) **no** cambia con esta anatomía; solo **dónde** se edita.
 
+### 2.9 · Fila de persona — Directorio (✅ CANÓNICO)
+
+Dos líneas, expandible inline (sin cajas anidadas). Extiende la fila de asistente (§2.1).
+
+| Estado | Anatomía |
+|---|---|
+| **Cerrada** (`.prow` + `.acc-head`) | caret + identidad en stack (`.acc-id-stack`): **línea 1** = `<b>nombre</b>` + rol como etiqueta tenue (`.rol-tag`, igual que §2.1); **línea 2** (`.acc-sub`, `--ink-soft` 12px) = dato secundario (nº de primadas). Separación entre filas por línea tenue (`--line-soft`) |
+| **Abierta** (`.prow.open` + `.acc-body`) | edición **en contexto**: campo Nombre (`.ti`), Rol (`.seg-nav`), Bre-B (`.ti`). No es una caja siempre abierta: se revela al tocar |
+| **Alta** | al pie, botón **`+ Agregar persona`** (`.add-link`) que despliega un form inline (`.prow-new`) — no un form siempre visible |
+
+### 2.10 · Hoja "Agregar asistente" (✅ CANÓNICO)
+
+Acción **simple** en operación: el `+ Agregar` del tab Primadas abre un sheet (overlay `add-asis`)
+con el directorio; **un toque agrega** y la hoja queda abierta para sumar varios.
+
+| Clase | Propiedades canónicas |
+|---|---|
+| `.addrow` | fila tappable: `min-height:var(--tap-row)`; identidad (`.acc-id`: nombre + rol tenue) a la izquierda, `+` de acento (`.addrow-plus`) a la derecha; separación por línea tenue. Sin caja |
+| pie | enlace **"¿Falta alguien? Agregar en Personas"** (`.link-inline`) → overlay Personas. **"Nueva persona" NO vive aquí** |
+
+> **Operación vs configuración (decisión de producto):** en operación, de cada asistente solo
+> importa el **consumo** (§2.1 expandida = consumo + abono). El **rol, el cover y "Quitar"** son
+> configuración → viven en **Configurar primada › Asistentes** (`.cfg-asis`), no en operación.
+
 ---
 
 ## 3 · Jerarquía tipográfica por roles

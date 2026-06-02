@@ -41,10 +41,13 @@
   }
 
   // ui = estado EFÍMERO (no dominio, no se persiste):
-  // - abiertos: Set de personaId con tarjeta-acordeón expandida (multiabierto)
+  // - abiertos: Set de personaId con tarjeta-acordeón de asistente expandida (multiabierto)
   // - pickProd: personaId con el chip-picker "+ Agregar" abierto (uno a la vez)
-  // - addAsis: selector de asistente abierto (un solo punto de entrada "+ Agregar")
-  const ui = { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, wizard: null, addAsis: false };
+  // - personasAbiertas: Set de personaId con la fila de persona expandida (edición inline)
+  // - nuevaPersona: form "Agregar persona" desplegado al pie del overlay Personas
+  // - overlay 'add-asis': hoja simple para agregar asistentes del directorio
+  const ui = { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, wizard: null,
+               personasAbiertas: new Set(), nuevaPersona: false };
 
   function rerender() { View.render(Store.select.state(), ui); }
 
@@ -133,7 +136,7 @@
         } catch (err) { View.toast(err && err.message ? err.message : 'No se pudo crear'); }
         return;
       }
-      case 'select-primada':   A.seleccionarPrimada(id); ui.addAsis = false; break;
+      case 'select-primada':   A.seleccionarPrimada(id); break;
       // Config de la primada (escondida tras el engranaje de la cabecera).
       case 'open-config-primada': ui.overlay = 'config-primada'; rerender(); return;
       // Acciones destructivas: con confirmación (la cuenta cerrada congela consumos).
@@ -150,14 +153,14 @@
         break;
 
       // ----- asistencias -----
-      case 'open-add-asis': ui.addAsis = true; rerender(); return;
-      case 'add-asistencia': {
-        const seln = document.getElementById('as-pick');
-        if (seln && seln.value) A.addAsistencia(prm, seln.value);
-        ui.addAsis = true;   // se queda abierto para agregar varios
+      // "+ Agregar" abre la hoja simple del directorio (overlay 'add-asis').
+      case 'open-add-asis': ui.overlay = 'add-asis'; rerender(); return;
+      // En la hoja: cada fila lleva data-pid → agregar y quedarse en la hoja para sumar varios.
+      case 'add-asistencia': { if (pid) A.addAsistencia(prm, pid); break; }
+      // "Quitar" vive en Configurar (no en operación) y pide confirmación.
+      case 'remove-asistencia':
+        if (!root.confirm || root.confirm('¿Quitar al asistente?')) { A.removeAsistencia(prm, pid); ui.abiertos.delete(pid); }
         break;
-      }
-      case 'remove-asistencia': A.removeAsistencia(prm, pid); ui.abiertos.delete(pid); break;
       case 'toggle-exonerado':  A.toggleCoverExonerado(prm, pid); break;
       case 'item-plus':         A.changeItem(prm, pid, b.dataset.prod, +1); break;
       case 'item-minus':        A.changeItem(prm, pid, b.dataset.prod, -1); break;
@@ -209,6 +212,12 @@
       case 'open-ajustes':   ui.overlay = 'ajustes';  rerender(); return;
       case 'overlay-tab':    ui.overlay = b.dataset.overlay; rerender(); return;
       case 'close-overlay':  ui.overlay = null;       rerender(); return;
+      // Fila de persona: expandir/colapsar para editar inline (multiabierto).
+      case 'toggle-persona': {
+        if (ui.personasAbiertas.has(pid)) ui.personasAbiertas.delete(pid); else ui.personasAbiertas.add(pid);
+        rerender(); return;
+      }
+      case 'open-nueva-persona': ui.nuevaPersona = true; rerender(); return;
       case 'add-persona': {
         const n = document.getElementById('np-nombre');
         const es = document.getElementById('np-estado');
@@ -216,7 +225,7 @@
         if (!nombre) { View.toast('Falta el nombre'); return; }
         A.addPersona({ nombre, estado: es ? es.value : 'ahorrador' });
         View.toast('Persona agregada');
-        break;
+        break;   // el form queda abierto (nuevaPersona) para sumar varias
       }
       // INVARIANTE #1: solo cambia el estado VIGENTE; NUNCA toca estadoEnEseMomento de asistencias pasadas.
       case 'set-estado-persona': A.setEstadoPersona(pid, b.dataset.estado); break;

@@ -228,8 +228,6 @@
   .kv span i{font-style:normal;font-size:11px;color:var(--ink-soft)}
 
   /* asistencias */
-  .addbar{display:flex;gap:var(--space-2);margin-bottom:var(--space-3);flex-wrap:wrap}
-  .addbar .sel{flex:1;min-width:0}
   .asis-list{display:flex;flex-direction:column;margin-bottom:var(--space-4)}
   /* Fila de asistente CANÓNICA (DESIGN.md §2.1): sin caja con borde; separación por línea tenue.
      El principal se marca con punto teal + "Principal"; la deuda, con color en el número. */
@@ -242,6 +240,10 @@
   .acc-caret .icon{width:18px;height:18px}
   .acc-caret.open{transform:rotate(0deg)}
   .acc-id{flex:1;min-width:0;font-size:15px;display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
+  /* Identidad en DOS líneas (fila de persona): nombre+rol arriba, dato secundario tenue abajo. */
+  .acc-id-stack{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .acc-id-stack .acc-id{flex:none}
+  .acc-sub{font-size:12px;color:var(--ink-soft)}
   .acc-amt{flex:none;font-weight:700;font-size:14px;display:flex;flex-direction:column;align-items:flex-end;line-height:1.15}
   .acc-amt i{font-style:normal;font-weight:400;font-size:11px}
   .acc-body{padding:0 var(--space-3) var(--space-3);animation:accIn .18s ease}
@@ -249,7 +251,6 @@
   .acc-h2{display:flex;align-items:center;gap:var(--space-2);min-height:var(--tap-row);background:transparent;border:none;cursor:pointer;color:var(--ink-soft);font-family:inherit;width:100%;text-align:left}
   .asis-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);margin-bottom:var(--space-2)}
   .asis-id{font-size:15px;display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
-  .asis-ctl{display:flex;align-items:center;gap:var(--space-2)}
   .cover{font-size:12px;color:var(--ink-soft);display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-2)}
   .cover b{color:var(--ink)}
   .prods{display:flex;flex-direction:column;gap:var(--space-1)}
@@ -261,8 +262,6 @@
   .step:active{transform:scale(.9)}
   .step:disabled{opacity:.4;cursor:default}
   .qty{min-width:16px;text-align:center;font-size:14px}
-  .asis-foot{display:flex;justify-content:space-between;gap:var(--space-3);margin-top:var(--space-2);padding-top:var(--space-2);border-top:1px solid var(--line-soft);font-size:13px}
-  .asis-foot b{font-weight:700}
   .consumo-vacio{padding:var(--space-1) 0}
   /* chip-picker "+ Agregar" */
   .addprod{margin-top:var(--space-2)}
@@ -351,12 +350,30 @@
   .seg.on{background:var(--paper-2);color:var(--ink)}
   .seg-nav.sm .seg{font-size:12px;padding:var(--space-2) var(--space-3)}
 
-  /* directorio de personas */
-  .people{display:flex;flex-direction:column;gap:var(--space-3)}
-  /* Persona = unidad editable genuina (nombre + estado + Bre-B): superficie suave, sin outline pesado. */
-  .pcard{display:flex;flex-direction:column;gap:var(--space-2);background:var(--paper-2);border-radius:var(--radius-lg);padding:var(--space-4)}
-  .pcard-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap}
-  .pcard .breb{font-size:12px}
+  /* Directorio de personas — filas livianas (DESIGN.md §2.9), sin cajas anidadas.
+     Misma anatomía que la fila de asistente: caret + identidad; separación por línea tenue. */
+  .prow-list{display:flex;flex-direction:column}
+  .prow{border-bottom:1px solid var(--line-soft)}
+  .prow:last-child{border-bottom:none}
+  .prow .acc-body{display:flex;flex-direction:column;gap:var(--space-3);padding:0 var(--space-3) var(--space-3)}
+  .prow-foot{margin-top:var(--space-4)}
+  .prow-new{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}
+  .prow-new .ti{flex:1;min-width:120px}
+
+  /* Hoja "Agregar asistente": filas tappables del directorio (un toque agrega). */
+  .addrow-list{display:flex;flex-direction:column}
+  .addrow{display:flex;align-items:center;gap:var(--space-3);min-height:var(--tap-row);width:100%;background:transparent;border:none;border-bottom:1px solid var(--line-soft);cursor:pointer;color:var(--ink);font-family:inherit;text-align:left;padding:var(--space-3)}
+  .addrow:last-child{border-bottom:none}
+  .addrow:active{background:var(--paper-2)}
+  .addrow-plus{flex:none;color:var(--accent);display:inline-flex;align-items:center}
+
+  /* Sección "Asistentes" en Configurar: fila liviana con controles de configuración (rol/cover/quitar). */
+  .cfg-asis-list{display:flex;flex-direction:column}
+  .cfg-asis{padding:var(--space-3) 0;border-top:1px solid var(--line-soft)}
+  .cfg-asis:first-child{border-top:none}
+  .cfg-asis-top{display:flex;align-items:center;gap:var(--space-2)}
+  .cfg-asis-name{flex:1;min-width:0;font-size:15px;display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
+  .cfg-asis .cover{margin-top:var(--space-2);margin-bottom:0}
 
   [hidden]{display:none !important}
 </style>
@@ -404,13 +421,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-061203-37e103c"></script>
-  <script src="js/util.js?v=20260602-061203-37e103c"></script>
-  <script src="js/api.js?v=20260602-061203-37e103c"></script>
-  <script src="js/auth.js?v=20260602-061203-37e103c"></script>
-  <script src="js/store.js?v=20260602-061203-37e103c"></script>
-  <script src="js/view.js?v=20260602-061203-37e103c"></script>
-  <script src="js/controller.js?v=20260602-061203-37e103c"></script>
+  <script src="js/config.js?v=20260602-064057-ccdf4a2"></script>
+  <script src="js/util.js?v=20260602-064057-ccdf4a2"></script>
+  <script src="js/api.js?v=20260602-064057-ccdf4a2"></script>
+  <script src="js/auth.js?v=20260602-064057-ccdf4a2"></script>
+  <script src="js/store.js?v=20260602-064057-ccdf4a2"></script>
+  <script src="js/view.js?v=20260602-064057-ccdf4a2"></script>
+  <script src="js/controller.js?v=20260602-064057-ccdf4a2"></script>
 
   <!-- PWA: registrar el Service Worker (network-first; CACHE_VERSION se estampa en cada commit). -->
   <script>
