@@ -16,8 +16,7 @@ const SEL = {
   tabActive: '.tab.active',
   nuevaPrimada: '[data-act="new-primada"]',   // "+" chico del selector (abre el wizard)
   selector: '[data-act="open-selector"]',     // botón selector (abre la hoja agrupada)
-  selMain: '.sel-main',                        // línea principal del selector: "Mes Año"
-  selSub: '.sel-sub',                          // subtítulo tenue: estado + nombre
+  selMain: '.sel-main',                        // identidad del selector: SOLO "Mes Año" (+ punto estado)
   selFila: '.sel-fila',                        // fila de primada dentro de la hoja del selector
   selAnio: '.sel-anio',                        // encabezado de año en la hoja
   wizard: '.wz',

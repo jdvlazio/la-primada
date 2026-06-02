@@ -288,11 +288,14 @@ con el directorio; **un toque agrega** y la hoja queda abierta para sumar varios
 **Jerarquía por frecuencia de uso:** operar es diario → manda; crear es ~mensual → se degrada.
 La barra superior es un **selector** (navegación principal entre primadas), no una cabecera estática.
 
+**Identidad = SOLO el PERÍODO (Mes/Año), nunca el nombre.** Patrón de selectores de período en apps
+de finanzas/budgeting: el período ES la identidad; repetir el nombre de la primada en la navegación es
+redundante y se vuelve tedioso con nombres largos o muchos meses. El nombre vive en Configurar/Resumen.
+
 **Cerrado (`.selrow`):** una fila con `[selector (flex:1)] [⚙ Configurar] [+ Nueva]`.
-- `.prm-selector` (botón tappable, `data-act="open-selector"`): dos líneas — **`.sel-main`** = `"Mes Año"`
-  (ej. "Junio 2026", `Util.monthYear`, peso 800/22px, **primario**: lo que importa de un vistazo) sobre
-  **`.sel-sub`** = punto de estado + **nombre** de la primada (`--ink-soft`, **secundario**). `.sel-caret`
-  (chevron-down) indica que abre; rota 180° abierto.
+- `.prm-selector` (botón tappable, `data-act="open-selector"`): **una sola línea** — **`.sel-main`** =
+  punto de estado + `"Mes Año"` (ej. "Junio 2026", `Util.monthYear`, peso 800/22px). **Sin** subtítulo
+  de nombre. `.sel-caret` (chevron-down) indica que abre; rota 180° abierto.
 - **`⚙`** (`.icon-btn`, `open-config-primada`): configuración (escondida, §2.8).
 - **`+`** (`.icon-btn.nueva`, ~32px, `new-primada`): abre el wizard de 3 pasos. **Secundario** — ícono
   pequeño, NO un `.btn` grande (crear no compite con operar). **Prohibido** el botón grande "Nueva primada".
@@ -303,7 +306,7 @@ AÑO → MES** (reciente arriba; `Store.select.primadasPorAnio`). El **historial
 | Clase | Propiedades canónicas |
 |---|---|
 | `.sel-anio` | encabezado de año: `font-weight:800; font-size:13px; color:var(--ink-soft); letter-spacing:.06em` |
-| `.sel-fila` | fila tappable (`select-primada`): `min-height:var(--tap-row)`; sin caja; separación por línea tenue. Identidad `.sel-fila-main` = **`<b>Mes</b> · {nombre}`** (ellipsis); a la derecha `.sel-fila-right` = total (recaudo) + `.sel-check` (check teal) si es la activa |
+| `.sel-fila` | fila tappable (`select-primada`): `min-height:var(--tap-row)`; sin caja; separación por línea tenue. Identidad `.sel-fila-main` = punto de estado + **`<b>Mes</b>`** (SOLO el mes, sin nombre); a la derecha `.sel-fila-right` = total (recaudo) + `.sel-check` (check teal) si es la activa |
 | activa | `.sel-fila.on` → el mes en acento. Tocar una la activa (`seleccionarPrimada`) y **cierra** la hoja |
 
 > **Nombre automático (decisión de producto):** al crear, `Store.select.nombreSugerido` arma

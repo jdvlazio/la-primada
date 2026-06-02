@@ -339,12 +339,14 @@ test.describe('Selector de primada + nombre automático', () => {
     expect(await page.locator('#screen .icon-btn.nueva[data-act="new-primada"]').count()).toBe(1);
   });
 
-  test('F2 — selector cerrado muestra "Mes Año" + nombre; el "+" abre el wizard', async ({ page }) => {
+  test('F2 — selector cerrado muestra SOLO "Mes Año" (sin el nombre); el "+" abre el wizard', async ({ page }) => {
     await abrirApp(page);
     await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
     await crearPrimada(page, 'Ana');
-    await expect(page.locator('.sel-main').first()).toBeVisible();         // "Junio 2026" (Mes Año)
-    await expect(page.locator('.sel-sub').first()).toContainText('Primada Ana'); // nombre auto
+    const sel = page.locator('.sel-main').first();
+    await expect(sel).toBeVisible();                       // "Mes Año" presente
+    await expect(sel).not.toContainText('Primada');        // el nombre NO se repite en el selector
+    expect(await page.locator('.sel-sub').count()).toBe(0);// el subtítulo de nombre ya no existe
     // el "+" abre el wizard (no crea directo)
     await page.click('[data-act="new-primada"]');
     await expect(page.locator('.wz')).toBeVisible();

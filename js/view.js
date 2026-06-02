@@ -71,12 +71,12 @@
     const cerrada = p.estado === 'cerrada';
     const abierto = ui && ui.overlay === 'selector-primada';
     const inc = S().primadaIncompleta(p) ? ' ' + badge('sin principal', 'warn') : '';
+    // Identidad = SOLO el período (Mes Año) + punto de estado. El nombre de la primada NO se repite
+    // aquí (patrón de selectores de período en apps de finanzas: el período ES la identidad; el
+    // nombre es redundante en la navegación y se vuelve tedioso con nombres largos / muchos meses).
     return `<div class="selrow">
       <button class="prm-selector" data-act="open-selector" aria-haspopup="listbox" aria-expanded="${abierto ? 'true' : 'false'}">
-        <span class="sel-text">
-          <span class="sel-main">${e(Util.monthYear(p.mesContable))}</span>
-          <span class="sel-sub"><span class="dot ${cerrada ? 'closed' : 'open'}"></span>${e(p.nombre)}${inc}</span>
-        </span>
+        <span class="sel-main"><span class="dot ${cerrada ? 'closed' : 'open'}"></span>${e(Util.monthYear(p.mesContable))}${inc}</span>
         <span class="sel-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
       </button>
       <button class="icon-btn" data-act="open-config-primada" data-id="${p.id}" title="Configurar" aria-label="Configurar">${icon('settings-2')}</button>
@@ -101,12 +101,15 @@
       <div class="sheet-body">${cuerpo}</div>
     </div>`;
   }
+  // Fila del selector = SOLO el mes (+ punto de estado) + total + check en la activa. Sin el nombre
+  // de la primada (redundante: dentro del año, el mes la identifica). Minimalista.
   function selectorFila(p, activeId) {
     const sel = S();
     const activa = p.id === activeId;
+    const cerrada = p.estado === 'cerrada';
     const inc = sel.primadaIncompleta(p) ? ' ' + badge('incompleta', 'warn') : '';
     return `<button class="sel-fila ${activa ? 'on' : ''}" data-act="select-primada" data-id="${p.id}">
-      <span class="sel-fila-main"><b>${e(Util.monthName(p.mesContable))}</b> · ${e(p.nombre)}${inc}</span>
+      <span class="sel-fila-main"><span class="dot ${cerrada ? 'closed' : 'open'}"></span><b>${e(Util.monthName(p.mesContable))}</b>${inc}</span>
       <span class="sel-fila-right">
         <span class="sel-fila-total">${$peso(sel.recaudado(p))}</span>
         ${activa ? `<span class="sel-check">${icon('check', 'sm')}</span>` : ''}
