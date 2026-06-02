@@ -272,10 +272,12 @@ eq('Cover global cambiado a invitado 12.000', Store.select.state().settings.cove
 Store.actions.createPrimada({});
 const nuevaId = Store.select.activePrimada().id;
 eq('La primada NUEVA toma el cover global nuevo (12.000)', Store.select.activePrimada().cover.invitado, 12000);
-// La vieja aparece en el Historial; abrirla con un tap
-check('La vieja aparece en el Historial', !!q(`[data-act="select-primada"][data-id="${viejaId}"]`));
-check('Historial visible', /Historial/.test(q('#screen').innerHTML));
+// El historial vive ahora en el SELECTOR (agrupado por año→mes): abrirlo y tocar la vieja.
+click('[data-act="open-selector"]');
+check('Selector abierto (hoja "Primadas")', !q('#overlay').hidden && /sheet-title">Primadas/.test(q('#overlay').innerHTML));
+check('La vieja aparece en el selector', !!q(`[data-act="select-primada"][data-id="${viejaId}"]`));
 click(`[data-act="select-primada"][data-id="${viejaId}"]`);
+check('El selector se cerró al elegir', q('#overlay').hidden);
 eq('Se abrió la primada vieja', Store.select.activePrimada().id, viejaId);
 eq('Su cover sigue CONGELADO (10.000, no 12.000)', Store.select.activePrimada().cover.invitado, 10000);
 eq('Snapshot del cover idéntico al original', JSON.stringify(Store.select.activePrimada().cover), coverViejo);

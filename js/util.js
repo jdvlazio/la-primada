@@ -30,6 +30,21 @@
       const s = new Date(y, m - 1, 1).toLocaleDateString(CONFIG.locale, { month: 'long', year: 'numeric' });
       return s.charAt(0).toUpperCase() + s.slice(1);
     },
+    // 'YYYY-MM' → "Junio" (solo el mes, capitalizado). Para filas agrupadas bajo el año.
+    monthName(ym) {
+      if (!ym) return '';
+      const [y, m] = String(ym).split('-').map(Number);
+      if (!y || !m) return ym;
+      const s = new Date(y, m - 1, 1).toLocaleDateString(CONFIG.locale, { month: 'long' });
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    },
+    // 'YYYY-MM' → "Junio 2026" (mes + año, SIN "de"). Línea principal del selector cerrado.
+    monthYear(ym) {
+      if (!ym) return '';
+      const [y, m] = String(ym).split('-').map(Number);
+      if (!y || !m) return ym;
+      return Util.monthName(ym) + ' ' + y;
+    },
   };
 
   root.Util = Util;

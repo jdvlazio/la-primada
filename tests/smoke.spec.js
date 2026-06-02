@@ -57,8 +57,8 @@ test('S5 — se crea una primada (wizard completo) y aparece su detalle', async 
 
   await crearPrimada(page, 'Ana');
 
-  // Se creó 1 primada y su detalle (cabecera + fila del principal) está en pantalla.
+  // Se creó 1 primada; el selector (con "Mes Año") y la fila del principal están en pantalla.
   expect(await contarPrimadas(page)).toBe(1);
-  await expect(page.locator(SEL.prmName)).toBeVisible();
+  await expect(page.locator(SEL.selMain).first()).toBeVisible();
   await expect(page.locator(SEL.accHead).first()).toBeVisible();
 });

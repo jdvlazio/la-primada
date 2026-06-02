@@ -327,3 +327,71 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
     expect(nombre).toBe('Anita');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5 · SELECTOR de primada (año→mes) + "+" chico + nombre automático
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe('Selector de primada + nombre automático', () => {
+  test('F1 — el tab Primadas NO tiene botón grande "Nueva primada" (es el "+" chico del selector)', async ({ page }) => {
+    await abrirApp(page);
+    // El disparador de nueva primada existe, pero NO como .btn grande de pantalla.
+    expect(await page.locator('#screen .btn[data-act="new-primada"]').count()).toBe(0);
+    expect(await page.locator('#screen .icon-btn.nueva[data-act="new-primada"]').count()).toBe(1);
+  });
+
+  test('F2 — selector cerrado muestra "Mes Año" + nombre; el "+" abre el wizard', async ({ page }) => {
+    await abrirApp(page);
+    await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
+    await crearPrimada(page, 'Ana');
+    await expect(page.locator('.sel-main').first()).toBeVisible();         // "Junio 2026" (Mes Año)
+    await expect(page.locator('.sel-sub').first()).toContainText('Primada Ana'); // nombre auto
+    // el "+" abre el wizard (no crea directo)
+    await page.click('[data-act="new-primada"]');
+    await expect(page.locator('.wz')).toBeVisible();
+  });
+
+  test('F3 — el selector abre una hoja agrupada por año→mes con check en la activa', async ({ page }) => {
+    await abrirApp(page);
+    await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }, { nombre: 'Beto', estado: 'invitado' }]);
+    // dos primadas en años distintos vía Store (rápido y determinista)
+    const ids = await page.evaluate(() => {
+      const S = window.Store, st = S.select.state();
+      const ana = st.personas.find(p => p.nombre === 'Ana').id;
+      const a = S.actions.createPrimada({ principalId: ana, organizadores: [ana], mesContable: '2026-06' });
+      const b = S.actions.createPrimada({ principalId: ana, organizadores: [ana], mesContable: '2025-12' });
+      return { a, b, activa: S.select.state().activePrimadaId };
+    });
+    await page.click('[data-act="open-selector"]');
+    await expect(page.locator('.overlay .sheet-title')).toHaveText('Primadas');
+    // dos encabezados de año (2026, 2025), reciente primero
+    await expect(page.locator('.overlay .sel-anio')).toHaveCount(2);
+    await expect(page.locator('.overlay .sel-anio').first()).toHaveText('2026');
+    // la activa (la última creada, 2025-12) lleva check
+    const activaFila = page.locator(`.overlay [data-act="select-primada"][data-id="${ids.activa}"]`);
+    await expect(activaFila.locator('.sel-check')).toHaveCount(1);
+    // elegir la otra (2026-06) la activa y cierra la hoja
+    await page.click(`.overlay [data-act="select-primada"][data-id="${ids.a}"]`);
+    await expect(page.locator('.overlay')).toBeHidden();
+    const activa = await page.evaluate(() => window.Store.select.state().activePrimadaId);
+    expect(activa).toBe(ids.a);
+  });
+
+  test('F4 — nombre automático "Primada N1 + N2" con dos organizadores (vía wizard)', async ({ page }) => {
+    await abrirApp(page);
+    await sembrarPersonas(page, [{ nombre: 'Ana López', estado: 'ahorrador' }, { nombre: 'Beto', estado: 'invitado' }]);
+    await page.click('[data-act="new-primada"]');
+    await page.waitForSelector('.wz');
+    await page.evaluate((n) => {
+      const sel = document.getElementById('wz-principal');
+      const opt = [...sel.options].find(o => o.textContent.includes(n));
+      sel.value = opt.value; sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }, 'Ana');
+    await page.click(`[data-act="wz-toggle-coorg"][data-pid="${await page.evaluate(() => window.Store.select.state().personas.find(p => p.nombre === 'Beto').id)}"]`);
+    await page.click('[data-act="wz-siguiente"]');   // 1→2
+    await page.click('[data-act="wz-siguiente"]');   // 2→3
+    await page.click('[data-act="wz-crear"]');
+    await page.waitForSelector('.wz', { state: 'detached' });
+    const nombre = await page.evaluate(() => window.Store.select.activePrimada().nombre);
+    expect(nombre).toBe('Primada Ana + Beto');       // primer token de cada uno
+  });
+});

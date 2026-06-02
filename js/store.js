@@ -394,11 +394,34 @@
     },
 
     primadaIncompleta(primada) { return primada.organizadorPrincipalId == null; },
+    // Nombre automático: "Primada {N1} + {N2}" con el PRIMER token del nombre de cada persona.
+    // N1 = principal (primero de la lista). N2 = segundo organizador. Solo los dos primeros entran
+    // (3+ organizadores → igual solo N1 + N2). Un solo organizador → "Primada {N1}" (sin el +).
     nombreSugerido(organizadorIds) {
-      const nombres = (organizadorIds || []).map(id => { const p = select.persona(id); return p ? p.nombre : null; }).filter(Boolean);
-      return nombres.length ? 'Primada ' + nombres.join(', ') : 'Primada';
+      const primerToken = s => String(s || '').trim().split(/\s+/)[0] || '';
+      const nombres = (organizadorIds || [])
+        .map(id => { const p = select.persona(id); return p ? primerToken(p.nombre) : null; })
+        .filter(Boolean);
+      if (!nombres.length) return 'Primada';
+      if (nombres.length === 1) return 'Primada ' + nombres[0];
+      return 'Primada ' + nombres[0] + ' + ' + nombres[1];
     },
     anioContable(primada) { return String(primada.mesContable || '').slice(0, 4); },
+    // Primadas agrupadas por AÑO → (dentro) por MES, más reciente arriba. Para el selector del tab.
+    // → [{ anio:'2026', primadas:[…ordenadas por mesContable desc, desempate fecha desc] }, …]
+    primadasPorAnio() {
+      const grupos = {};
+      state.primadas.forEach(p => {
+        const anio = select.anioContable(p) || '—';
+        (grupos[anio] = grupos[anio] || []).push(p);
+      });
+      const desc = (a, b) => (a < b ? 1 : a > b ? -1 : 0);
+      return Object.keys(grupos).sort(desc).map(anio => ({
+        anio,
+        primadas: grupos[anio].slice().sort((a, b) =>
+          a.mesContable !== b.mesContable ? desc(a.mesContable, b.mesContable) : desc(a.fecha, b.fecha)),
+      }));
+    },
   };
 
   /* ---------- Acciones (único punto que muta; hacen cumplir invariantes) ---------- */

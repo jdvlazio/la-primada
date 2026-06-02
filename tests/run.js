@@ -377,6 +377,47 @@ section('Informe — saldoPendiente excluye al principal (auto-abono)');
   eq('Incompleta: autoAbonoPrincipal = 0', infInc.autoAbonoPrincipal, 0);
 }
 
+/* ============================================================ 7b. Nombre auto + selector año→mes */
+section('Nombre automático de la primada + agrupación del selector');
+{
+  Store.actions.replaceState(null);
+  const juan  = Store.actions.addPersona({ nombre: 'Juan Pérez', estado: 'ahorrador' });  // primer token "Juan"
+  const carla = Store.actions.addPersona({ nombre: 'Carla',      estado: 'invitado'  });
+  const luis  = Store.actions.addPersona({ nombre: 'Luis Gómez', estado: 'ahorrador' });
+
+  // 1 organizador → "Primada Juan" (primer token, sin +)
+  const id1 = Store.actions.createPrimada({ principalId: juan, organizadores: [juan], mesContable: '2026-06' });
+  eq('Nombre 1 org = "Primada Juan"', Store.select.state().primadas.find(p => p.id === id1).nombre, 'Primada Juan');
+
+  // 2 organizadores → "Primada Juan + Carla" (segundo org, ahorrador o invitado)
+  const id2 = Store.actions.createPrimada({ principalId: juan, organizadores: [juan, carla], mesContable: '2026-05' });
+  eq('Nombre 2 orgs = "Primada Juan + Carla"', Store.select.state().primadas.find(p => p.id === id2).nombre, 'Primada Juan + Carla');
+
+  // 3+ organizadores → SOLO los dos primeros
+  const id3 = Store.actions.createPrimada({ principalId: juan, organizadores: [juan, carla, luis], mesContable: '2025-12' });
+  eq('Nombre 3 orgs = solo los dos primeros', Store.select.state().primadas.find(p => p.id === id3).nombre, 'Primada Juan + Carla');
+
+  // Override manual: nombre explícito al crear se respeta
+  const idOv = Store.actions.createPrimada({ principalId: luis, organizadores: [luis], nombre: 'Mi fiesta', mesContable: '2026-04' });
+  eq('Override: nombre explícito se respeta', Store.select.state().primadas.find(p => p.id === idOv).nombre, 'Mi fiesta');
+
+  // Editar el nombre de una NO afecta el automatismo de las demás
+  Store.actions.renombrarPrimada(id2, 'Editada a mano');
+  eq('renombrarPrimada cambia solo esa', Store.select.state().primadas.find(p => p.id === id2).nombre, 'Editada a mano');
+  eq('Otra conserva su nombre auto', Store.select.state().primadas.find(p => p.id === id1).nombre, 'Primada Juan');
+
+  // nombreSugerido directo: sin organizadores → "Primada"
+  eq('nombreSugerido([]) = "Primada"', Store.select.nombreSugerido([]), 'Primada');
+
+  // Agrupación del selector por AÑO → MES (reciente arriba)
+  const grupos = Store.select.primadasPorAnio();
+  eq('Grupos por año = 2 (2026, 2025)', grupos.length, 2);
+  eq('Año más reciente primero', grupos[0].anio, '2026');
+  eq('Segundo grupo', grupos[1].anio, '2025');
+  eq('2026 ordenado por mes desc (06,05,04)', grupos[0].primadas.map(p => p.mesContable).join(','), '2026-06,2026-05,2026-04');
+  eq('2025 tiene la de diciembre', grupos[1].primadas[0].mesContable, '2025-12');
+}
+
 /* ============================================================ 8. Robustez */
 section('Robustez');
 {

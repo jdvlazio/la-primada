@@ -96,6 +96,9 @@
       }
       case 'login-reset': View.renderLogin('form'); return;
 
+      // ----- selector de primada (navegación: abre la hoja agrupada por año→mes) -----
+      case 'open-selector': ui.overlay = 'selector-primada'; rerender(); return;
+
       // ----- wizard "Nueva primada" (3 pasos, estado efímero en ui.wizard) -----
       case 'new-primada':   ui.wizard = nuevoWizard(); rerender(); return;
       case 'wz-cancelar':   ui.wizard = null; rerender(); return;
@@ -139,7 +142,8 @@
         } catch (err) { View.toast(err && err.message ? err.message : 'No se pudo crear'); }
         return;
       }
-      case 'select-primada':   A.seleccionarPrimada(id); break;
+      // Elegir una primada desde la hoja del selector: activa y cierra la hoja.
+      case 'select-primada':   A.seleccionarPrimada(id); ui.overlay = null; rerender(); return;
       // Config de la primada (escondida tras el engranaje de la cabecera).
       case 'open-config-primada': ui.overlay = 'config-primada'; rerender(); return;
       // Acciones destructivas: con confirmación (la cuenta cerrada congela consumos).

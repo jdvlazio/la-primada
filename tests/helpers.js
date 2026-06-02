@@ -14,14 +14,19 @@ const SEL = {
   tabbar: '#tabbar',
   tab: (id) => `.tab[data-tab="${id}"]`,
   tabActive: '.tab.active',
-  nuevaPrimada: '[data-act="new-primada"]',
+  nuevaPrimada: '[data-act="new-primada"]',   // "+" chico del selector (abre el wizard)
+  selector: '[data-act="open-selector"]',     // botón selector (abre la hoja agrupada)
+  selMain: '.sel-main',                        // línea principal del selector: "Mes Año"
+  selSub: '.sel-sub',                          // subtítulo tenue: estado + nombre
+  selFila: '.sel-fila',                        // fila de primada dentro de la hoja del selector
+  selAnio: '.sel-anio',                        // encabezado de año en la hoja
   wizard: '.wz',
   wzPrincipal: '#wz-principal',
   wzSiguiente: '[data-act="wz-siguiente"]',
   wzCrear: '[data-act="wz-crear"]',
   wzCancelar: '[data-act="wz-cancelar"]',
   accHead: '.acc-head',     // cabecera de fila de asistente (acordeón)
-  prmName: '.prm-name',     // nombre de la primada activa
+  prmName: '.prm-name',     // nombre de la primada activa (dashboard Resumen)
 };
 
 // Arranca la app desde cero: limpia localStorage para un estado determinista.

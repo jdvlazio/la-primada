@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260602-130403-27107f6">
+<meta name="build" content="20260602-140240-833f785">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -124,21 +124,10 @@
   .dot.prin{background:var(--accent)}                 /* punto del principal (teal) */
   /* etiqueta de rol / estado en texto tenue (reemplaza los badges con borde en la identidad) */
   .rol-tag{color:var(--ink-soft);font-weight:400;font-size:12px}
-  .estado-tag{color:var(--ink-soft);font-weight:400}
   /* estado vacío SIN caja: solo texto centrado con aire */
   .empty-soft{text-align:center;color:var(--ink-soft);font-size:14px;padding:var(--space-5) var(--space-3)}
-  .empty-soft.big{padding:var(--space-6) var(--space-3);font-size:15px}
-  .plist{display:flex;flex-direction:column;gap:0}
-  .pitem{display:flex;align-items:center;gap:var(--space-3);min-height:var(--tap-row);text-align:left;cursor:pointer;width:100%;background:transparent;border:none;border-radius:var(--radius-md);padding:var(--space-2) var(--space-1);font-family:inherit;color:var(--ink)}
-  .pitem:active{background:var(--paper-2)}
-  .pitem.active{border-color:var(--red)}
-  .pitem-main{flex:1;min-width:0}
-  .pitem-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .pitem-meta{font-size:11px;color:var(--ink-soft)}
-  .pitem-num{text-align:right;font-size:12px;display:flex;flex-direction:column;gap:var(--space-1);white-space:nowrap}
-  .pitem-num .muted{font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
-  .pitem-num b{color:var(--ink);font-weight:700}
-  .pitem-num b.g{color:var(--red-deep)}
+  .empty-soft.big{padding:var(--space-6) var(--space-3);font-size:15px;line-height:1.7}
+  /* (Historial de primadas: ya no es una lista aparte — vive dentro del selector, clases .sel-*.) */
 
   .badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:var(--space-1) var(--space-2);border-radius:var(--radius-sm);vertical-align:middle}
   .badge.warn{background:rgba(224,179,65,.16);color:var(--amber);border:1px solid rgba(224,179,65,.42)}
@@ -304,20 +293,49 @@
   .sheet{background:var(--paper);width:100%;max-width:var(--content-max);max-height:92vh;overflow:auto;border-radius:var(--radius-xl);border:2px solid var(--line);padding:var(--space-4) var(--space-4) calc(var(--space-5) + max(env(safe-area-inset-bottom), 20px));box-shadow:0 -16px 40px -18px rgba(0,0,0,.5)}
   .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-5)}
   .sheet-title{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:22px}
-  .sheet.full{min-height:86vh}
+  /* Las hojas se AJUSTAN AL CONTENIDO (bottom-sheet): sin min-height forzado. El alto sale del
+     contenido, con tope max-height:92vh (.sheet) + scroll interno si es largo. .full ya no estira. */
+  .sheet.full{min-height:0}
   .sheet-body{display:block}
   /* Overlay Configurar: secciones agrupadas por AIRE (sin divisores). Cada sección abre con su
      etiqueta .sub; entre secciones, --space-5. */
   .cfg-sec + .cfg-sec{margin-top:var(--space-5)}
   .cfg-sec .sub{margin-top:0}
 
-  /* Cabecera compacta de la primada activa (tab Primadas = operar) + dashboard Resumen */
-  .prm-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-6)}
-  .prm-head-main{min-width:0}
+  /* Identidad de la primada activa (título grande) — usado por el dashboard Resumen */
   .prm-name{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:22px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .prm-meta{font-size:13px;color:var(--ink-soft);margin-top:var(--space-1)}
   .resumen-head{margin-bottom:var(--space-4)}
   .resumen-head .prm-name{white-space:normal}
+
+  /* ---------- SELECTOR de primada (barra superior del tab Primadas, DESIGN.md §2.11) ----------
+     Navegación principal: selector tappable (flex:1) + engranaje (config) + "+" chico (nueva).
+     Cerrado: "Mes Año" (primario) sobre estado+nombre (tenue) + caret. Abre la hoja agrupada. */
+  .selrow{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-6)}
+  .prm-selector{flex:1;min-width:0;display:flex;align-items:center;gap:var(--space-2);background:transparent;border:none;cursor:pointer;color:var(--ink);font-family:inherit;text-align:left;padding:var(--space-1) 0}
+  .prm-selector:active{opacity:.7}
+  .prm-selector.empty{cursor:default}
+  .sel-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .sel-main{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:22px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sel-sub{font-size:13px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sel-caret{flex:none;color:var(--ink-soft);display:inline-flex;align-items:center;transition:transform .18s ease}
+  .sel-caret .icon{width:20px;height:20px}
+  .sel-caret.open{transform:rotate(180deg)}
+  /* "+" pequeño (~32px) para Nueva primada: secundario, no compite con operar */
+  .icon-btn.nueva{width:32px;height:32px;color:var(--accent)}
+  .icon-btn.nueva .icon{width:24px;height:24px}
+  /* Hoja del selector: agrupación por año → filas de mes·nombre + total + check en la activa */
+  .sel-anio{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:13px;color:var(--ink-soft);letter-spacing:.06em;margin:var(--space-5) 0 var(--space-1)}
+  .sel-anio:first-child{margin-top:0}
+  .sel-list{display:flex;flex-direction:column}
+  .sel-fila{display:flex;align-items:center;gap:var(--space-3);min-height:var(--tap-row);width:100%;background:transparent;border:none;border-bottom:1px solid var(--line-soft);cursor:pointer;color:var(--ink);font-family:inherit;text-align:left;padding:var(--space-2) var(--space-1)}
+  .sel-fila:last-child{border-bottom:none}
+  .sel-fila:active{background:var(--paper-2)}
+  .sel-fila-main{flex:1;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sel-fila-main b{font-weight:700}
+  .sel-fila.on .sel-fila-main b{color:var(--accent)}
+  .sel-fila-right{flex:none;display:flex;align-items:center;gap:var(--space-2)}
+  .sel-fila-total{font-size:13px;font-weight:700;color:var(--ink)}
+  .sel-check{color:var(--accent);display:inline-flex;align-items:center}
   /* "Zona peligrosa" en el sheet de config */
   .danger-sub{color:var(--alert)}
 
@@ -423,13 +441,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-130403-27107f6"></script>
-  <script src="js/util.js?v=20260602-130403-27107f6"></script>
-  <script src="js/api.js?v=20260602-130403-27107f6"></script>
-  <script src="js/auth.js?v=20260602-130403-27107f6"></script>
-  <script src="js/store.js?v=20260602-130403-27107f6"></script>
-  <script src="js/view.js?v=20260602-130403-27107f6"></script>
-  <script src="js/controller.js?v=20260602-130403-27107f6"></script>
+  <script src="js/config.js?v=20260602-140240-833f785"></script>
+  <script src="js/util.js?v=20260602-140240-833f785"></script>
+  <script src="js/api.js?v=20260602-140240-833f785"></script>
+  <script src="js/auth.js?v=20260602-140240-833f785"></script>
+  <script src="js/store.js?v=20260602-140240-833f785"></script>
+  <script src="js/view.js?v=20260602-140240-833f785"></script>
+  <script src="js/controller.js?v=20260602-140240-833f785"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
