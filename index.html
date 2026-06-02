@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260602-095224-a1fb29e">
+<meta name="build" content="20260602-104543-10dccc8">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,24 +44,28 @@
     --content-max:480px;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  /* APP SHELL — el SCROLL vive en .app-scroll (un contenedor position:fixed que cubre el viewport),
-     NO en el body. Así el body NUNCA scrollea (no hay scroll-away de la tabbar fija) PERO sin candar
-     el alto de html/body — clave: NO usar html,body{height:100%}, porque eso encogía el viewport de
-     position:fixed y la tabbar bottom:0 caía POR ENCIMA del inset inferior → franja negra muerta.
-     Con .app-scroll{position:fixed;inset:0} y viewport-fit=cover, el viewport de fixed sigue siendo
-     la pantalla COMPLETA → la tabbar bottom:0 llega al borde FÍSICO. (Otrofestiv usa body{min-height:
-     100dvh} con la barra fixed;bottom:0; nosotros logramos lo mismo sin permitir el scroll del body.) */
+  /* APP SHELL — SOLUCIÓN DE RAÍZ (réplica de Otrofestiv): un contenedor FLEX COLUMN anclado al
+     viewport (position:fixed;inset:0) que contiene DOS hijos en flujo:
+       1) .app-scroll  → flex:1, el único que scrollea.
+       2) .tabbar      → flex:none, EN FLUJO (NO position:fixed).
+     CLAVE: la tabbar ya NO es un elemento fixed independiente → iOS no la re-posiciona tras el
+     primer paint, así que NO puede "aparecer arriba y bajar al tocar". El flexbox la fija al fondo
+     del shell de forma determinista, sin hacks de compositor (transform/doble-rAF) ni z-index.
+     position:fixed;inset:0 + viewport-fit=cover → el shell cubre la pantalla COMPLETA (incl. los
+     insets); el padding-bottom de la tabbar empuja los tabs sobre la barra de gestos y su fondo
+     (= var(--paper), igual al contenido) llena hasta el borde físico → sin franja ni línea. */
   body{
-    min-height:100dvh;               /* fondo SÓLIDO que cubre toda la pantalla (incl. el inset) */
+    height:100dvh;                   /* alto del viewport; el shell hereda y nada scrollea fuera de él */
+    overflow:hidden;
     overscroll-behavior:none;
     font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--paper);
     line-height:1.4;-webkit-font-smoothing:antialiased;
   }
-  /* Único contenedor de SCROLL: position:fixed cubriendo el viewport (inset:0). El body no scrollea
-     (todo su contenido es fixed) → la tabbar no se va con el scroll. Sin alturas dvh dinámicas que
-     hagan saltar nada. padding-bottom reserva el alto de la tabbar fija. */
-  .app-scroll{position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
-    padding-bottom:calc(var(--space-safe) + max(env(safe-area-inset-bottom), 20px))}
+  .app-shell{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--paper)}
+  /* Único contenedor de SCROLL. flex:1 ocupa el alto disponible entre el borde superior y la tabbar;
+     min-height:0 deja que el contenido scrollee dentro (sin esto, flex no permite overflow interno). */
+  .app-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+    padding-bottom:var(--space-4)}
   .wrap{max-width:var(--content-max);margin:0 auto;padding:var(--space-3)}
 
   /* ---------- Encabezado ---------- */
@@ -156,7 +160,7 @@
      position:fixed;bottom:0 (viewport-fit=cover) lleva el borde al fondo físico; padding-bottom:
      max(env,20px) empuja los 3 tabs sobre la barra de gestos mientras el fondo se extiende hasta abajo.
      La sombra suave da una separación sutil del contenido sin una línea dura. */
-  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;gap:var(--space-1);background:var(--paper);padding:var(--space-2) var(--space-2) max(env(safe-area-inset-bottom), 20px);box-shadow:0 -12px 24px -16px rgba(0,0,0,.7);will-change:transform}
+  .tabbar{flex:none;display:flex;justify-content:center;gap:var(--space-1);background:var(--paper);padding:var(--space-2) var(--space-2) max(env(safe-area-inset-bottom), 20px);box-shadow:0 -10px 22px -20px rgba(0,0,0,.6)}
   .tab{flex:1;max-width:160px;min-height:var(--tap-row);display:flex;align-items:center;justify-content:center;background:transparent;border:none;cursor:pointer;color:var(--ink-soft);font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:13px;letter-spacing:.02em;padding:var(--space-2);border-radius:var(--radius-md);transition:color .15s, background .15s}
   .tab:active{opacity:.7}
   /* Activo = SOLO color (acento) + peso. Sin caja/pill (que solo cambie de color es suficiente). */
@@ -281,11 +285,10 @@
   .chip i{color:var(--ink-soft);font-style:normal;font-weight:400;font-size:11px}
   /* gestión de productos del evento */
   .prodmgmt{padding-top:var(--space-3)}
-  .prodrow{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) 0;border-top:1px solid var(--line-soft)}
-  .prodrow:first-child{border-top:none}
+  .prodrow{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) 0}
   .prodrow-name{flex:1;min-width:0;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .prodrow-f{display:flex;flex-direction:column;gap:var(--space-1);font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
-  .ti.num{width:74px;padding:var(--space-2);font-size:13px}
+  .ti.num{width:74px;min-height:var(--tap-sec);padding:var(--space-2);font-size:13px}
   .ti.emoji{width:var(--tap-input);text-align:center;padding:var(--space-2)}
   .prodnew{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line-soft)}
   .prodnew .ti:not(.num):not(#pn-emoji){flex:1;min-width:120px}
@@ -341,14 +344,15 @@
   .wz-chips{display:flex;flex-wrap:wrap;gap:var(--space-2)}
   .wz-chips .chip i{color:var(--ink-soft);font-style:normal;font-size:10px;text-transform:uppercase}
   .wz-chips .chip.on{border-color:var(--accent);color:var(--accent)}
-  .wz .prodlist{display:flex;flex-direction:column;gap:var(--space-3)}
-  .wz-prodrow{display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-3) 0;border-top:1px solid var(--line-soft)}
-  .wz-prodrow:first-child{border-top:none;padding-top:0}
+  /* Lista de productos del wizard: separación por AIRE (sin divisores, DESIGN.md §2.8 permite "sólo
+     espacio"). Cada producto = identidad (emoji+nombre) arriba + costo/venta COMPACTOS abajo. */
+  .wz .prodlist{display:flex;flex-direction:column;gap:var(--space-5)}
+  .wz-prodrow{display:flex;flex-direction:column;gap:var(--space-2);padding:0}
   .wz-prodrow-top{display:flex;gap:var(--space-2)}
   .wz-prodname{flex:1;min-width:0}
-  .wz-prodrow-bot{display:flex;gap:var(--space-2);align-items:flex-end}
-  .wz-prodrow-bot .prodrow-f{flex:1}
-  .wz-prodrow-bot .ti.num{width:100%}
+  .wz-prodrow-bot{display:flex;gap:var(--space-3);align-items:flex-end}
+  .wz-prodrow-bot .prodrow-f{flex:0 0 auto}
+  .wz-prodrow-bot .ti.num{width:96px}
   .wz-nav{display:flex;gap:var(--space-2);margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--line-soft)}
   .wz-nav .mini,.wz-nav .btn{flex:1}
 
@@ -389,6 +393,7 @@
 </style>
 </head>
 <body>
+  <div class="app-shell">
   <div class="app-scroll">
   <div class="wrap">
     <header class="topbar">
@@ -410,13 +415,14 @@
   </div><!-- /.wrap -->
   </div><!-- /.app-scroll -->
 
-  <!-- Tabbar (3 tabs): position:fixed; bottom:0 → pegada al borde físico. El body bloqueado
-       (overflow:hidden) + scroll en .app-scroll evitan que se vaya con el scroll. -->
+  <!-- Tabbar (3 tabs) EN FLUJO dentro del shell flex (NO position:fixed). El flexbox la ancla al
+       fondo del shell de forma determinista → no salta ni se reposiciona tras el primer paint. -->
   <nav class="tabbar" id="tabbar">
     <button class="tab" data-tab="resumen">Resumen</button>
     <button class="tab active" data-tab="primadas">Primadas</button>
     <button class="tab" data-tab="fondo">Fondo</button>
   </nav>
+  </div><!-- /.app-shell -->
 
   <!-- Overlay (detrás del engranaje): Personas / Ajustes. Inerte salvo cuando ui.overlay activo. -->
   <div class="overlay" id="overlay" hidden></div>
@@ -430,13 +436,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-095224-a1fb29e"></script>
-  <script src="js/util.js?v=20260602-095224-a1fb29e"></script>
-  <script src="js/api.js?v=20260602-095224-a1fb29e"></script>
-  <script src="js/auth.js?v=20260602-095224-a1fb29e"></script>
-  <script src="js/store.js?v=20260602-095224-a1fb29e"></script>
-  <script src="js/view.js?v=20260602-095224-a1fb29e"></script>
-  <script src="js/controller.js?v=20260602-095224-a1fb29e"></script>
+  <script src="js/config.js?v=20260602-104543-10dccc8"></script>
+  <script src="js/util.js?v=20260602-104543-10dccc8"></script>
+  <script src="js/api.js?v=20260602-104543-10dccc8"></script>
+  <script src="js/auth.js?v=20260602-104543-10dccc8"></script>
+  <script src="js/store.js?v=20260602-104543-10dccc8"></script>
+  <script src="js/view.js?v=20260602-104543-10dccc8"></script>
+  <script src="js/controller.js?v=20260602-104543-10dccc8"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
@@ -496,32 +502,13 @@
         });
       }
 
-      // FLUSH DEL COMPOSITOR (patrón Otrofestiv) — fix iOS standalone: la tabbar position:fixed
-      // aparece MAL POSICIONADA (muy arriba) hasta la primera interacción, porque el viewport/safe-area
-      // se asienta después del primer paint. Togglear transform en doble rAF fuerza al compositor a
-      // recalcular su posición al borde físico SIN esperar al toque. Se repite tras load y al volver
-      // de background (cuando el viewport se recalcula de nuevo).
-      function flushTabbar() {
-        var tb = document.getElementById('tabbar');
-        if (!tb) return;
-        tb.style.transform = 'translateY(0)';
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () { tb.style.transform = ''; });
-        });
-      }
-      function flushTabbarRepetido() {
-        // varios intentos: algunos iOS asientan el viewport con retraso tras abrir.
-        flushTabbar();
-        [60, 200, 500].forEach(function (ms) { setTimeout(flushTabbar, ms); });
-      }
-      if (document.readyState === 'complete') flushTabbarRepetido();
-      else window.addEventListener('load', flushTabbarRepetido);
+      // (La tabbar ahora vive EN FLUJO dentro del .app-shell flex → ya no necesita el hack de
+      //  compositor que antes la re-posicionaba: el flexbox la ancla al fondo de forma determinista.)
 
       checkVersion();                               // 1) cold start
       document.addEventListener('visibilitychange', function () {   // 1+3) volver de background
         if (document.visibilityState === 'visible' && !reloading) {
           checkVersion();
-          flushTabbarRepetido();                    // re-posicionar la tabbar tras volver de bg
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.ready.then(function (reg) { reg.update(); }).catch(function () {});
           }

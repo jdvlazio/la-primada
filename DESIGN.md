@@ -236,13 +236,16 @@ detalle (`.prm-meta`) y en el historial (`.estado-tag`).
 
 Vive **solo** en el overlay Configurar (no en el tab Primadas): editar un producto del snapshot
 de la primada es un ajuste de una vez, no operación diaria. Fila por producto: identidad +
-dos precios editables + quitar. Sin caja; separación entre filas por **línea tenue**.
+dos precios editables + quitar. Sin caja; separación entre filas por **AIRE** (pasada de liviandad:
+se eliminaron los divisores — DESIGN.md §2.8 permite "sólo espacio". Las líneas entre productos
+sumaban peso visual; el aire las reemplaza).
 
 | Clase | Propiedades canónicas |
 |---|---|
-| `.prodrow` | `display:flex; align-items:center; gap:var(--space-2); padding:var(--space-2) 0; border-top:1px solid var(--line-soft)` (primera sin borde). Sin caja |
+| `.prodrow` | `display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) 0` (**sin** `border-top`: separación por aire). Sin caja |
 | `.prodrow-name` | identidad (emoji + nombre): `flex:1; min-width:0; font-size:13px; font-weight:700` + ellipsis. **Primario** |
-| `.prodrow-f` (campo costo / venta) | etiqueta + input apilados: etiqueta `font-size:9px; uppercase; color:var(--ink-soft)` (**terciario**) sobre `.ti.num` (input, §2.3) |
+| `.prodrow-f` (campo costo / venta) | etiqueta + input apilados: etiqueta `font-size:9px; uppercase; color:var(--ink-soft)` (**terciario**) sobre `.ti.num` (input compacto: `min-height:var(--tap-sec)`, §2.3) |
+| `.wz-prodrow` (wizard) | misma identidad arriba (emoji+nombre editables) + costo/venta **compactos** (`.ti.num` 96px) abajo. Lista con `gap:var(--space-5)`, **sin divisores** (aire) |
 | quitar (`.xmini`) | ícono `trash-2`, `color:var(--alert)` — **destructivo** (§2.4) |
 | alta (`.prodnew`) | form de un producto nuevo (emoji, nombre, costo, venta + botón Agregar), separado por línea tenue |
 
@@ -346,27 +349,35 @@ tenue / dot. **Prohibidos** en la identidad de fila (§2.1). Decisión final pen
   genuina. **Nunca** para agrupar secciones, estados vacíos, ni barras de control.
 - Liviano pero **claro y con vida**: no esconder acciones esenciales; la principal siempre visible.
 
-### App shell y scroll (iOS / PWA standalone) — anclaje de la tabbar
-**El scroll vive en un contenedor interno, NO en el body.** En una PWA web pura de iOS, si el
-documento/body scrollea, una barra `position:fixed; bottom:0` se **desancla** con el scroll de
-inercia/rebote. (Otrofestiv no lo sufre porque corre como app **nativa Capacitor**: viewport fijo.)
-El equivalente robusto en PWA pura — **scroll bloqueado en el body + tabbar fija al borde físico**:
+### App shell y scroll (iOS / PWA standalone) — anclaje de la tabbar (SOLUCIÓN DE RAÍZ)
+**El shell es un FLEX COLUMN anclado al viewport; la tabbar es un hijo EN FLUJO, no un `fixed`.**
+En una PWA web pura de iOS, una barra `position:fixed; bottom:0` se **re-posiciona** tras el primer
+paint (el viewport/safe-area se asienta tarde) → aparece "muy arriba" y baja al primer toque; y
+escondida tras hacks de compositor. La raíz: **no debe haber NINGÚN elemento `fixed` independiente
+para la barra.** Patrón robusto (réplica del viewport fijo de Otrofestiv, en PWA pura):
 1. `viewport-fit=cover` en el `<meta viewport>` (requisito; sin esto `env(...)` = 0).
-2. **`html, body { height:100% }` + `body { overflow:hidden; overscroll-behavior:none }`** → el
-   body **no scrollea** (esto es lo que evita que la barra fija se vaya con el scroll de inercia).
-3. **`.app-scroll`** = único contenedor de scroll: **`height:100%`** (ESTABLE, **no `100dvh`** —
-   dvh es dinámico y al recalcularse hacía SALTAR la barra), `overflow-y:auto;
-   -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain`. Contiene topbar + `#screen`.
-   Lleva `padding-bottom` (≈`--space-safe` + inset) para que el contenido despeje la tabbar fija.
-4. **`.tabbar`** = **`position:fixed; left:0; right:0; bottom:0`** (manejo de safe-area de Otrofestiv):
-   con `viewport-fit=cover` el borde inferior toca el **fondo físico**; `padding-bottom:
-   max(env(safe-area-inset-bottom),20px)` empuja los tabs sobre la barra de gestos **y el FONDO
-   sólido se extiende por ese padding hasta el borde** (cubre el inset → sin espacio negro muerto).
-   Es estable (fija al viewport, no a una caja `dvh`) y, como el body no scrollea, tampoco se va
-   con el scroll. **No** usar la tabbar como ítem flex de una caja `100dvh` (causaba el corte + el salto).
-5. Header bajo el Island: `padding-top:env(safe-area-inset-top)` dentro de `@supports`.
-6. Mínimo inferior: tabbar/sheets/padding usan **`max(env(safe-area-inset-bottom),20px)`**
+2. **`body { height:100dvh; overflow:hidden; overscroll-behavior:none }`** → el body no scrollea.
+3. **`.app-shell`** = **`position:fixed; inset:0; display:flex; flex-direction:column;
+   background:var(--paper)`**. CLAVE: `position:fixed; inset:0` con `viewport-fit=cover` lo hace
+   cubrir la pantalla **COMPLETA** (incl. los insets) — NO es una caja `height:100dvh` en flujo del
+   body (ese intento previo encogía el alto y cortaba el inferior). Sobre un shell fijo de viewport
+   completo, el flexbox sí ancla bien.
+4. **`.app-scroll`** = único contenedor de scroll: **`flex:1 1 auto; min-height:0`** (`min-height:0`
+   es obligatorio para que el hijo flex permita overflow interno), `overflow-y:auto;
+   -webkit-overflow-scrolling:touch; overscroll-behavior:contain`. Contiene topbar + `#screen`.
+5. **`.tabbar`** = **`flex:none`** (hijo EN FLUJO del shell, `position:static`). El flexbox la ancla
+   al fondo del shell de forma **determinista** → **no puede saltar** (no es un `fixed` que iOS
+   recalcule). `padding-bottom: max(env(safe-area-inset-bottom),20px)` empuja los tabs sobre la barra
+   de gestos **y su FONDO (= `var(--paper)`, igual al contenido) llena hasta el borde físico** (cubre
+   el inset → sin franja negra ni línea). Sin `z-index`, sin `will-change`, sin hack de compositor.
+6. Header bajo el Island: `padding-top:env(safe-area-inset-top)` dentro de `@supports`.
+7. Mínimo inferior: tabbar/sheets/padding usan **`max(env(safe-area-inset-bottom),20px)`**
    **directo** (no anidado en `calc(var()+max(...))`).
+
+> **Por qué el intento flex previo falló y este no:** antes se usó `html,body{height:100%}` con la
+> tabbar como ítem flex de una caja en **flujo del body** → el alto se encogía bajo el inset y dejaba
+> una franja negra. Aquí el contenedor flex es **`position:fixed; inset:0`** (viewport completo,
+> independiente del flujo) → el mismo patrón flex ahora ancla la barra al borde físico sin corte.
 
 ### Acordeón (progressive disclosure)
 Cerrado por defecto: cada ítem es una **línea-resumen**; el detalle aparece al expandir.

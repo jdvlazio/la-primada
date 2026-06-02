@@ -103,21 +103,28 @@ test.describe('Conformidad DESIGN.md — verde', () => {
     expect(color).toBe(ACCENT);
   });
 
-  test('C4 — app shell: scroller fijo + tabbar al borde físico (§6 safe-area)', async ({ page }) => {
+  test('C4 — app shell flex: tabbar EN FLUJO anclada al borde físico (§6 safe-area)', async ({ page }) => {
     await abrirApp(page);
     const r = await page.evaluate(() => {
+      const shell = document.querySelector('.app-shell');
       const tb = document.querySelector('.tabbar');
       const sc = document.querySelector('.app-scroll');
       const rect = tb.getBoundingClientRect();
       return {
-        scrollerPosition: sc ? getComputedStyle(sc).position : null,
+        shellPosition: shell ? getComputedStyle(shell).position : null,
+        scrollerFlexGrow: sc ? getComputedStyle(sc).flexGrow : null,
+        scrollerOverflowY: sc ? getComputedStyle(sc).overflowY : null,
         tabbarPosition: getComputedStyle(tb).position,
         tabbarBottom: Math.round(rect.bottom),
         innerHeight: window.innerHeight,
       };
     });
-    expect(r.scrollerPosition).toBe('fixed');       // el scroll vive en un contenedor FIJO → body no scrollea
-    expect(r.tabbarPosition).toBe('fixed');         // tabbar fija al viewport
+    // SOLUCIÓN DE RAÍZ: el SHELL es fijo (cubre el viewport); la tabbar es un hijo EN FLUJO
+    // (position:static) anclado por flexbox al fondo → no es un fixed independiente que pueda saltar.
+    expect(r.shellPosition).toBe('fixed');          // el shell flex cubre el viewport
+    expect(r.scrollerFlexGrow).toBe('1');           // el scroller ocupa el alto disponible (flex:1)
+    expect(r.scrollerOverflowY).toBe('auto');       // y es el único que scrollea
+    expect(r.tabbarPosition).toBe('static');        // tabbar EN FLUJO (no fixed) → no se reposiciona
     expect(r.tabbarBottom).toBe(r.innerHeight);     // toca el borde inferior físico (cubre el inset)
   });
 
