@@ -744,11 +744,13 @@
 
   // Pantalla de LOGIN (auth gate). Magic link: email + "Entrar". Estados: 'form' | 'sent' | 'error'.
   // Se renderiza en #screen; oculta tabbar/engranaje mientras no haya sesión.
+  // Login = HOJA desde abajo (mismo lenguaje que el resto de la app: overlay + sheet), NO full-pantalla.
+  // El topbar (la marca) queda visible detrás, atenuado; los botones de acción se ocultan (no hay sesión).
   function renderLogin(estado, detalle) {
     if (els.tabbar) els.tabbar.style.display = 'none';
-    const topbar = document.querySelector('.topbar'); if (topbar) topbar.style.display = 'none';  // la pantalla de login trae su propia marca
-    const gear = document.getElementById('gearBtn'); if (gear) gear.style.display = 'none';
-    if (els.overlay) { els.overlay.innerHTML = ''; els.overlay.hidden = true; }
+    const actions = document.querySelector('.header-actions'); if (actions) actions.style.display = 'none';
+    const topbar = document.querySelector('.topbar'); if (topbar) topbar.style.display = '';   // marca visible
+    els.screen.innerHTML = '';                                                                 // sin datos sin sesión
     const enviado = estado === 'sent';
     const cuerpo = enviado
       ? `<div class="login-sent">
@@ -762,11 +764,11 @@
                   placeholder="tu@correo.com" value="${e(detalle || '')}" aria-label="Correo">
            <button class="btn" data-act="login-enviar">Entrar</button>
          </div>`;
-    els.screen.innerHTML = `<div class="login">
-        <div class="login-brand"><h1>Primad<span class="accent">app</span></h1>
-          <div class="tagline">AHORRO · ENCUENTRO · BALANCE</div></div>
-        ${cuerpo}
+    els.overlay.innerHTML = `<div class="sheet login-sheet">
+        <div class="sheet-head"><div class="sheet-title">${enviado ? 'Revisa tu correo' : 'Entrar'}</div></div>
+        <div class="sheet-body">${cuerpo}</div>
       </div>`;
+    els.overlay.hidden = false;
   }
 
   // Actualiza el ícono del botón de cuenta según el estado de auth:
@@ -782,6 +784,7 @@
   function showAppChrome() {
     if (els.tabbar) els.tabbar.style.display = '';
     const topbar = document.querySelector('.topbar'); if (topbar) topbar.style.display = '';
+    const actions = document.querySelector('.header-actions'); if (actions) actions.style.display = '';
     const gear = document.getElementById('gearBtn'); if (gear) gear.style.display = '';
   }
 

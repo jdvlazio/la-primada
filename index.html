@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260602-173546-5e4224f">
+<meta name="build" content="20260602-181356-cb241d7">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -155,11 +155,8 @@
   .sync-indicator.err{background:var(--alert-bg);color:var(--alert);border-color:var(--alert)}
 
   /* Pantalla de login (auth gate, magic link) */
-  .login{max-width:360px;margin:0 auto;padding:var(--space-6) var(--space-4) 0;display:flex;flex-direction:column;gap:var(--space-5);text-align:center}
-  .login-brand h1{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:40px;line-height:.95;letter-spacing:-.02em;color:var(--ink)}
-  .login-brand h1 .accent{color:var(--accent)}
-  .login-brand .tagline{margin-top:var(--space-1);font-weight:400;font-size:10px;letter-spacing:.3px;color:var(--ink-soft)}
-  .login-form,.login-sent{display:flex;flex-direction:column;gap:var(--space-3)}
+  /* Login = HOJA desde abajo (overlay + .sheet, igual que el resto). El form/sent viven en .sheet-body. */
+  .login-form,.login-sent{display:flex;flex-direction:column;gap:var(--space-3);text-align:center}
   .login-form .ti{text-align:center;font-size:16px}
   .login-emoji{font-size:40px}
   .login-sent p{font-size:14px;line-height:1.5}
@@ -449,13 +446,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-173546-5e4224f"></script>
-  <script src="js/util.js?v=20260602-173546-5e4224f"></script>
-  <script src="js/api.js?v=20260602-173546-5e4224f"></script>
-  <script src="js/auth.js?v=20260602-173546-5e4224f"></script>
-  <script src="js/store.js?v=20260602-173546-5e4224f"></script>
-  <script src="js/view.js?v=20260602-173546-5e4224f"></script>
-  <script src="js/controller.js?v=20260602-173546-5e4224f"></script>
+  <script src="js/config.js?v=20260602-181356-cb241d7"></script>
+  <script src="js/util.js?v=20260602-181356-cb241d7"></script>
+  <script src="js/api.js?v=20260602-181356-cb241d7"></script>
+  <script src="js/auth.js?v=20260602-181356-cb241d7"></script>
+  <script src="js/store.js?v=20260602-181356-cb241d7"></script>
+  <script src="js/view.js?v=20260602-181356-cb241d7"></script>
+  <script src="js/controller.js?v=20260602-181356-cb241d7"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
