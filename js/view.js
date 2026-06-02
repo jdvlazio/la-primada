@@ -552,23 +552,7 @@
           <input class="ti" type="number" min="0" step="500" data-ch="cover-invitado" value="${c.invitado}"></label>
       </div>
       <div class="sub">Versión</div>
-      <div class="muted small">${e(build)}</div>
-      <div class="sub">Diagnóstico viewport</div>
-      <div class="muted small">${e(viewportDiag())}</div>`;
-  }
-
-  // Diagnóstico del viewport (para depurar el anclaje de la tabbar en iOS PWA): compara las distintas
-  // medidas de alto. Si la tabbar queda "muy arriba", aquí se ve cuál valor = pantalla completa.
-  function viewportDiag() {
-    if (typeof window === 'undefined') return '—';
-    const cs = (typeof getComputedStyle !== 'undefined') ? getComputedStyle(document.documentElement) : null;
-    const sab = cs ? cs.getPropertyValue('--sab').trim() : '?';
-    const sat = cs ? cs.getPropertyValue('--sat').trim() : '?';
-    const app = document.querySelector('.app');
-    const appH = app ? Math.round(app.getBoundingClientRect().height) : '?';
-    const vv = window.visualViewport ? Math.round(window.visualViewport.height) : '?';
-    const sh = (window.screen && window.screen.height) ? window.screen.height : '?';
-    return `iH ${window.innerHeight} · cH ${document.documentElement.clientHeight} · vv ${vv} · scr ${sh} · app ${appH} · sab ${sab || '0'} · sat ${sat || '0'}`;
+      <div class="muted small">${e(build)}</div>`;
   }
 
   // Sheet a pantalla completa con seg-nav Personas | Ajustes.

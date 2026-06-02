@@ -263,6 +263,14 @@ Asistencia{ personaId, estadoEnEseMomento:'ahorrador'|'invitado', rol:'principal
 - **`CACHE_VERSION` auto-versionado:** el hook git `pre-commit` corre `node scripts/stamp-sw.js`, que sella `CACHE_VERSION`
   con `fecha-hash` y re-stagea `sw.js`. Así **cada commit invalida el caché viejo** y el celular ve la versión nueva sin borrar caché.
   ⚠️ El hook vive en `.git/hooks/` (no se versiona): tras un clon nuevo, recrearlo o correr `node scripts/stamp-sw.js` antes de commitear.
+- **Propagación de versión (modelo Otrofestiv):** `version.json` + `<meta name="build">` sellados cada deploy; la app compara
+  el build INCRUSTADO (no `localStorage`, que podía "mentir") contra `version.json` no-store al abrir/volver de background → reload
+  duro si difiere. ⚙ **Ajustes muestra el build vigente** para confirmar a ojo qué versión corre en el celular.
+- **Anclaje de la tabbar en iOS PWA (RESUELTO — ver `DESIGN.md` › "App shell y scroll"):** la barra inferior aparecía "muy
+  arriba" al lanzar. CAUSA: en PWA standalone el viewport no está asentado en el cold-start → `100dvh`, `position:fixed;bottom:0`
+  y hasta `window.innerHeight` dan un alto CORTO. FIX: **`.app { height:100vh }`** (pantalla completa fiable en standalone; el
+  roto es `100dvh`), columna flex con la tabbar como **hijo flex al fondo** (no `position:fixed`). Otrofestiv no lo sufre por ser
+  app **nativa Capacitor** (viewport fijo); su CSS no basta en PWA pura. **Verificado en iPhone real.**
 
 ## Roadmap
 - [x] Paso 0: arquitectura MVC + migraciones, verificada con tests.

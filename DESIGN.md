@@ -352,9 +352,11 @@ tenue / dot. **Prohibidos** en la identidad de fila (§2.1). Decisión final pen
   genuina. **Nunca** para agrupar secciones, estados vacíos, ni barras de control.
 - Liviano pero **claro y con vida**: no esconder acciones esenciales; la principal siempre visible.
 
-### App shell y scroll (iOS / PWA standalone) — fix del cold-start (`.app = 100vh`)
+### App shell y scroll (iOS / PWA standalone) — fix del cold-start (`.app = 100vh`) ✅ CONFIRMADO
 **El alto de la app lo manda `.app { height:100vh }`, NO `100dvh` ni `window.innerHeight` ni un
-`position:fixed` que dependa del viewport.** CAUSA del bug "la tabbar aparece muy arriba al lanzar":
+`position:fixed` que dependa del viewport.** ✅ Verificado en iPhone real (la tabbar queda pegada al
+borde inferior desde el cold-start, sin "saltar" ni quedar arriba). CAUSA del bug "la tabbar aparece
+muy arriba al lanzar":
 en una PWA standalone el viewport no está asentado en el cold-start, así que `100dvh` y el anclaje de
 `position:fixed; bottom:0` caen cortos. Se probó `window.innerHeight` (vía `--app-height`) y en el
 device real devolvía MENOS que la pantalla (excluía el inset inferior) → la barra quedaba arriba de
@@ -375,8 +377,11 @@ Modelo:
    usa z-index; histórico: cuando fue `position:fixed;z-index:1000`, interceptaba los clics del pie
    del sheet — wizard "Siguiente"/"Crear" — si el overlay no iba por encima).
 7. Header bajo el Island: `padding-top:env(safe-area-inset-top)` dentro de `@supports`.
-8. **Diagnóstico:** Ajustes muestra una línea `iH·cH·vv·scr·app·sab·sat` (innerHeight, clientHeight,
-   visualViewport, screen, alto de `.app`, safe-area bottom/top) para depurar el anclaje en el device.
+
+> **Si vuelve a fallar en otro device:** se puede re-agregar temporalmente un diagnóstico en Ajustes
+> que muestre `window.innerHeight`, `documentElement.clientHeight`, `visualViewport.height`,
+> `screen.height` y el alto de `.app` — esa comparación revela cuál medida = pantalla completa. Fue
+> la que confirmó que `innerHeight` daba corto y `100vh` (= alto de `.app`) era el correcto.
 
 > **Por qué los intentos previos fallaron:** `position:fixed;bottom:0` (copia de Otrofestiv, app
 > nativa) asume viewport asentado → en PWA cold-start cae corto y baja al tocar. `100dvh` se rompe en
