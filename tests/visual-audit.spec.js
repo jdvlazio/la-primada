@@ -112,8 +112,8 @@ test.describe('Conformidad DESIGN.md — verde', () => {
       const rect = tb.getBoundingClientRect();
       return {
         hasApp: !!app,
-        appHeightVar: getComputedStyle(document.documentElement).getPropertyValue('--app-height').trim(),
         appDisplay: app ? getComputedStyle(app).display : null,
+        appHeight: app ? Math.round(app.getBoundingClientRect().height) : null,
         scrollerFlexGrow: sc ? getComputedStyle(sc).flexGrow : null,
         scrollerOverflowY: sc ? getComputedStyle(sc).overflowY : null,
         bodyOverflow: getComputedStyle(document.body).overflow,
@@ -122,11 +122,11 @@ test.describe('Conformidad DESIGN.md — verde', () => {
         innerHeight: window.innerHeight,
       };
     });
-    // FIX del cold-start de iOS PWA: el alto lo manda .app=var(--app-height) (window.innerHeight),
-    // NO 100dvh ni un position:fixed que iOS ancla mal al lanzar. La tabbar es un hijo flex al fondo.
+    // FIX del cold-start de iOS PWA: el alto lo manda .app=100vh (pantalla completa fiable en
+    // standalone), NO 100dvh ni un position:fixed que iOS ancla mal al lanzar. Tabbar = hijo flex al fondo.
     expect(r.hasApp).toBe(true);
-    expect(r.appHeightVar).toMatch(/px$/);          // --app-height puesto por JS desde innerHeight
     expect(r.appDisplay).toBe('flex');              // columna flex
+    expect(r.appHeight).toBe(r.innerHeight);        // .app = 100vh = alto del viewport
     expect(r.scrollerFlexGrow).toBe('1');           // .app-scroll ocupa el alto disponible
     expect(r.scrollerOverflowY).toBe('auto');       // y es el único que scrollea
     expect(r.bodyOverflow).toBe('hidden');          // el body no scrollea

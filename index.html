@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260602-124637-6a0564f">
+<meta name="build" content="20260602-125613-b9ee0ed">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,18 +42,19 @@
     --tap-btn:52px; --tap-sec:40px; --tap-row:56px; --tap-input:52px;
     /* ancho máximo de contenido (solo mobile, sin breakpoints desktop) */
     --content-max:480px;
+    /* safe-area insets legibles por JS (diagnóstico de viewport en Ajustes) */
+    --sat:env(safe-area-inset-top, 0px); --sab:env(safe-area-inset-bottom, 0px);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  /* APP SHELL — fix DOCUMENTADO del bug de cold-start de PWA en iOS (la barra inferior aparece
-     "muy arriba" al lanzar y baja al primer scroll). CAUSA (foros/docs): en una PWA standalone el
-     viewport NO está asentado en el cold-start → `100dvh` y el anclaje de `position:fixed;bottom:0`
-     se calculan contra un viewport corto. (Otrofestiv no lo sufre porque corre como app NATIVA
-     Capacitor: viewport fijo; su CSS basta ahí, no en PWA pura.)
-     SOLUCIÓN (fuera de la barra, a nivel documento): el alto lo manda `.app` = `var(--app-height)`,
-     que un script pone desde `window.innerHeight` (valor FIABLE en cold-start) y re-mide en cada
-     evento de viewport + reintentos. Fallback `100vh` (que en standalone SÍ es correcto; el que
-     falla es `100dvh`). La tabbar va al fondo de ese contenedor de alto correcto (flex), NO anclada
-     a un viewport que iOS calcula mal. Refs: gist iphone-pwa-game-guide, frontend.fyi, susiekim9. */
+  /* APP SHELL — fix del cold-start de PWA en iOS (la barra inferior aparece "muy arriba" al lanzar).
+     CAUSA (foros/docs): en una PWA standalone el viewport no está asentado en el cold-start, y
+     `100dvh` / `position:fixed;bottom:0` / `window.innerHeight` pueden dar un alto CORTO (en este
+     device innerHeight excluía el inset inferior → barra flotando arriba de forma estable).
+     SOLUCIÓN: el alto lo manda `.app = 100vh`. En standalone (sin barra de direcciones) `100vh` ES
+     el alto correcto de pantalla completa desde el cold-start — es el valor que la documentación
+     señala como fiable; el roto es `100dvh`. La tabbar va al fondo de ese contenedor (flex), no
+     anclada a un viewport que iOS calcula mal. (Otrofestiv no lo sufre porque es app NATIVA Capacitor,
+     viewport fijo.) Refs: gist iphone-pwa-game-guide, frontend.fyi, susiekim9, dev.to/maciejtrzcinski. */
   html{height:100%}
   body{
     height:100%;
@@ -63,10 +64,9 @@
     font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--paper);
     line-height:1.4;-webkit-font-smoothing:antialiased;
   }
-  /* Raíz de la app: su ALTO es el viewport REAL (window.innerHeight vía --app-height), NO 100dvh.
-     Columna flex: scroll arriba, tabbar abajo. Como el alto es correcto desde el cold-start, la
-     tabbar (hijo flex al fondo) NO puede quedar "muy arriba". */
-  .app{height:var(--app-height, 100vh);display:flex;flex-direction:column;background:var(--paper)}
+  /* Raíz: alto = 100vh (pantalla completa en standalone, fiable en cold-start; NO 100dvh ni
+     innerHeight, que daban corto). Columna flex: scroll arriba, tabbar al fondo. */
+  .app{height:100vh;display:flex;flex-direction:column;background:var(--paper)}
   .app-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:var(--space-4)}
   .wrap{max-width:var(--content-max);margin:0 auto;padding:var(--space-3)}
 
@@ -425,13 +425,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-124637-6a0564f"></script>
-  <script src="js/util.js?v=20260602-124637-6a0564f"></script>
-  <script src="js/api.js?v=20260602-124637-6a0564f"></script>
-  <script src="js/auth.js?v=20260602-124637-6a0564f"></script>
-  <script src="js/store.js?v=20260602-124637-6a0564f"></script>
-  <script src="js/view.js?v=20260602-124637-6a0564f"></script>
-  <script src="js/controller.js?v=20260602-124637-6a0564f"></script>
+  <script src="js/config.js?v=20260602-125613-b9ee0ed"></script>
+  <script src="js/util.js?v=20260602-125613-b9ee0ed"></script>
+  <script src="js/api.js?v=20260602-125613-b9ee0ed"></script>
+  <script src="js/auth.js?v=20260602-125613-b9ee0ed"></script>
+  <script src="js/store.js?v=20260602-125613-b9ee0ed"></script>
+  <script src="js/view.js?v=20260602-125613-b9ee0ed"></script>
+  <script src="js/controller.js?v=20260602-125613-b9ee0ed"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
@@ -450,26 +450,6 @@
         navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () {});
       });
     }
-
-    /* --- FIX cold-start iOS PWA: --app-height = window.innerHeight (a nivel documento) ---------
-       En una PWA standalone el viewport NO está asentado al lanzar → 100dvh y el anclaje de
-       position:fixed dan un alto CORTO y la barra inferior aparece "muy arriba" (baja al primer
-       scroll). window.innerHeight SÍ es fiable; lo exponemos como --app-height para que el alto del
-       .app sea el viewport real. Se re-mide en cada evento que cambia el viewport + reintentos por
-       timer (el área segura/viewport se asienta tarde en el cold-start). Refs: gist
-       iphone-pwa-game-guide, frontend.fyi, susiekim9 (Medium), dev.to/maciejtrzcinski. */
-    (function () {
-      function setAppHeight() {
-        document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
-      }
-      setAppHeight();
-      window.addEventListener('resize', setAppHeight);
-      window.addEventListener('orientationchange', function () { setAppHeight(); setTimeout(setAppHeight, 300); });
-      if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
-      // Reintentos: el viewport del cold-start se asienta entre el primer paint y ~1s.
-      window.addEventListener('load', function () { [0, 100, 300, 600, 1000].forEach(function (ms) { setTimeout(setAppHeight, ms); }); });
-      document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') setAppHeight(); });
-    })();
 
     (function () {
       // BUILD = build de ESTE HTML (meta sellado). Es la VERDAD de qué versión corre — NO localStorage,

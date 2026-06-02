@@ -352,36 +352,37 @@ tenue / dot. **Prohibidos** en la identidad de fila (§2.1). Decisión final pen
   genuina. **Nunca** para agrupar secciones, estados vacíos, ni barras de control.
 - Liviano pero **claro y con vida**: no esconder acciones esenciales; la principal siempre visible.
 
-### App shell y scroll (iOS / PWA standalone) — fix del cold-start (`--app-height`)
-**El alto de la app lo manda `window.innerHeight` (vía `--app-height`), NO `100dvh` ni un
-`position:fixed` que dependa del viewport.** CAUSA del bug "la tabbar aparece muy arriba al lanzar y
-baja al primer scroll" (documentada en foros/docs): en una PWA standalone el viewport **no está
-asentado en el cold-start**, así que `100dvh` y el anclaje de `position:fixed; bottom:0` se calculan
-contra un viewport corto. **`100dvh` se rompe específicamente en el cold-start de PWA**; `100vh` en
-standalone SÍ es correcto, y **`window.innerHeight` es el valor fiable**. (Otrofestiv no lo sufre
-porque corre como app **NATIVA Capacitor** = viewport fijo; su CSS `position:fixed;bottom:0` basta
-ahí, pero NO en una PWA pura. Por eso el fix va **por fuera** de la barra, a nivel documento.)
+### App shell y scroll (iOS / PWA standalone) — fix del cold-start (`.app = 100vh`)
+**El alto de la app lo manda `.app { height:100vh }`, NO `100dvh` ni `window.innerHeight` ni un
+`position:fixed` que dependa del viewport.** CAUSA del bug "la tabbar aparece muy arriba al lanzar":
+en una PWA standalone el viewport no está asentado en el cold-start, así que `100dvh` y el anclaje de
+`position:fixed; bottom:0` caen cortos. Se probó `window.innerHeight` (vía `--app-height`) y en el
+device real devolvía MENOS que la pantalla (excluía el inset inferior) → la barra quedaba arriba de
+forma estable. **En standalone (sin barra de direcciones) `100vh` es el alto de pantalla completa y
+es fiable desde el cold-start** (el roto es `100dvh`; `100vh` solo falla en Safari-navegador, que
+aquí no aplica). (Otrofestiv no lo sufre porque es app **NATIVA Capacitor** = viewport fijo; su CSS
+`position:fixed;bottom:0` basta ahí, NO en una PWA pura.)
 Modelo:
 1. **Viewport:** `width=device-width, initial-scale=1.0, viewport-fit=cover` (sin `maximum-scale`/`user-scalable`).
 2. **`html, body { height:100% }` + `body { overflow:hidden; touch-action:pan-y; overscroll-behavior:none }`** → el body no scrollea.
-3. **`.app`** = **`height:var(--app-height, 100vh); display:flex; flex-direction:column`**. El alto es
-   el viewport REAL. Fallback `100vh` (correcto en standalone), nunca `100dvh`.
+3. **`.app`** = **`height:100vh; display:flex; flex-direction:column`**. Pantalla completa en standalone,
+   fiable en cold-start. **Nunca `100dvh`** (se rompe al lanzar) ni `window.innerHeight` (dio corto).
 4. **`.app-scroll`** = `flex:1 1 auto; min-height:0; overflow-y:auto` (único scroller).
 5. **`.tabbar`** = **`flex:none`** (hijo flex al fondo de `.app`, `position:static`). Como `.app`
    tiene el alto correcto desde el cold-start, la barra queda pegada al borde físico sin `position:fixed`.
    `padding-bottom:max(env(safe-area-inset-bottom),20px)`; fondo `var(--paper)`, `border-top:1px var(--line)`.
-6. **JS (a nivel documento, en `index.html`):** `--app-height = window.innerHeight + 'px'` en `load`,
-   `resize`, `orientationchange`, `visualViewport.resize`, `visibilitychange`, **+ reintentos**
-   `setTimeout` a 0/100/300/600/1000 ms (el viewport del cold-start se asienta tarde).
-7. **z-index de overlays:** `.overlay`=1100, `.toast`=1200, `.sync-indicator`=1300 (la tabbar ya no
+6. **z-index de overlays:** `.overlay`=1100, `.toast`=1200, `.sync-indicator`=1300 (la tabbar ya no
    usa z-index; histórico: cuando fue `position:fixed;z-index:1000`, interceptaba los clics del pie
    del sheet — wizard "Siguiente"/"Crear" — si el overlay no iba por encima).
-8. Header bajo el Island: `padding-top:env(safe-area-inset-top)` dentro de `@supports`.
+7. Header bajo el Island: `padding-top:env(safe-area-inset-top)` dentro de `@supports`.
+8. **Diagnóstico:** Ajustes muestra una línea `iH·cH·vv·scr·app·sab·sat` (innerHeight, clientHeight,
+   visualViewport, screen, alto de `.app`, safe-area bottom/top) para depurar el anclaje en el device.
 
-> **Por qué los intentos previos fallaron:** `position:fixed;bottom:0` (copia de Otrofestiv) asume
-> viewport asentado → en PWA cold-start cae corto. `100dvh` se rompe en cold-start. Hacks de
-> compositor (doble-rAF) eran parches frágiles. El fix robusto es **medir el alto real con
-> `window.innerHeight` y dárselo al contenedor raíz** — patrón documentado para PWA en iOS.
+> **Por qué los intentos previos fallaron:** `position:fixed;bottom:0` (copia de Otrofestiv, app
+> nativa) asume viewport asentado → en PWA cold-start cae corto y baja al tocar. `100dvh` se rompe en
+> cold-start. `window.innerHeight` dio corto (excluía el inset). Hacks de compositor (doble-rAF) eran
+> parches frágiles. El fix robusto es `.app { height:100vh }` (pantalla completa fiable en standalone)
+> con la barra como hijo flex al fondo. Refs: gist *iphone-pwa-game-guide*, *frontend.fyi*, *susiekim9*.
 > Refs: gist *iphone-pwa-game-guide*, *frontend.fyi*, *susiekim9* (Medium), *dev.to/maciejtrzcinski*.
 
 ### Acordeón (progressive disclosure)
