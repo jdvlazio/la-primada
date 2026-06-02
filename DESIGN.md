@@ -97,13 +97,17 @@ jerarquía se logra con **peso y tamaño**, nunca cambiando de fuente.
 | `--radius-lg` | 20px | tarjeta genuina |
 | `--radius-xl` | 28px | sheet / wizard / toast |
 
-### Alturas mínimas de toque
+### Alturas mínimas de toque (PASADA DE COMPACTACIÓN)
+**Regla:** los controles van **ceñidos a su contenido** — minimalista, sin aire vertical de más.
+Los valores se compactaron (un input de fecha en 52px+12px de padding ocupaba demasiado). Pisos
+tappables respetados: **44px** primario/input, **36px** secundario.
 | Token | Valor | Elemento |
 |---|---|---|
-| `--tap-btn` | 52px | botón primario |
-| `--tap-sec` | 40px | botón secundario / chip / ícono tocable |
-| `--tap-row` | 56px | fila de lista (cabecera de acordeón) |
-| `--tap-input` | 52px | input |
+| `--tap-btn` | **46px** (antes 52) | botón primario |
+| `--tap-sec` | **36px** (antes 40) | botón secundario / chip / ícono tocable |
+| `--tap-row` | **48px** (antes 56) | fila de lista (cabecera de acordeón) |
+| `--tap-input` | **44px** (antes 52) | input |
+| `.ti` padding | `var(--space-2) var(--space-3)` (8/12, antes 12/12) | menos aire vertical en inputs |
 
 ### Layout
 | Token | Valor | Uso |
@@ -189,7 +193,7 @@ El input **sí** lleva borde: es la affordance del control, no una caja decorati
 
 | Clase | Propiedades canónicas |
 |---|---|
-| `.ti` (texto) | `font-size:14px; min-height:var(--tap-input); padding:var(--space-3); border:1px solid var(--line); border-radius:var(--radius-md); background:var(--paper); color:var(--ink); width:100%` |
+| `.ti` (texto) | `font-size:14px; min-height:var(--tap-input)` (44px, compacto); `padding:var(--space-2) var(--space-3)` (8/12, poco aire vertical); `border:1px solid var(--line); border-radius:var(--radius-md); background:var(--paper); color:var(--ink); width:100%` |
 | `.ti:focus` | `border-color:var(--accent)` (foco = acento) |
 | `.ti.name` | variante título: `font-weight:700; font-size:18px` |
 | `.sel` (select) | igual al `.ti` (`border:1px`) + chevron-down de Lucide (`appearance:none` + background data-URI), una sola flecha como el caret de fila |

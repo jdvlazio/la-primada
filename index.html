@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260602-140400-3b3b71d">
+<meta name="build" content="20260602-141711-eed0728">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,8 +38,9 @@
     --space-1:4px; --space-2:8px; --space-3:12px; --space-4:20px; --space-5:28px; --space-6:40px; --space-safe:86px;
     /* radios */
     --radius-sm:8px; --radius-md:12px; --radius-lg:20px; --radius-xl:28px;
-    /* alturas mínimas de toque (necesarias como variables para no dejar px sueltos) */
-    --tap-btn:52px; --tap-sec:40px; --tap-row:56px; --tap-input:52px;
+    /* alturas mínimas de toque — PASADA DE COMPACTACIÓN (DESIGN.md › Alturas): controles ceñidos a
+       su contenido, minimalista, sin aire vertical de más. Pisos tappables: 44 (primario/input), 36 (secundario). */
+    --tap-btn:46px; --tap-sec:36px; --tap-row:48px; --tap-input:44px;
     /* ancho máximo de contenido (solo mobile, sin breakpoints desktop) */
     --content-max:480px;
   }
@@ -178,7 +179,7 @@
 
   /* inputs base */
   /* Inputs SUTILES (como en Personas): borde tenue en reposo, acento al enfocar. Sin caja marcada. */
-  .ti{font-family:inherit;font-size:14px;min-height:var(--tap-input);padding:var(--space-3);border:1px solid var(--line-soft);border-radius:var(--radius-md);background:var(--paper);color:var(--ink);width:100%}
+  .ti{font-family:inherit;font-size:14px;min-height:var(--tap-input);padding:var(--space-2) var(--space-3);border:1px solid var(--line-soft);border-radius:var(--radius-md);background:var(--paper);color:var(--ink);width:100%}
   .ti:focus{outline:none;border-color:var(--accent)}
   .ti.name{font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:18px}
   .ti:disabled{opacity:.6}
@@ -291,7 +292,7 @@
      de los botones del pie del sheet (p. ej. "Siguiente"/"Crear" del wizard). */
   .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1100;display:flex;justify-content:center;align-items:flex-end;padding:var(--space-3) var(--space-3) 0}
   .sheet{background:var(--paper);width:100%;max-width:var(--content-max);max-height:92vh;overflow:auto;border-radius:var(--radius-xl);border:2px solid var(--line);padding:var(--space-4) var(--space-4) calc(var(--space-5) + max(env(safe-area-inset-bottom), 20px));box-shadow:0 -16px 40px -18px rgba(0,0,0,.5)}
-  .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-5)}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-4)}
   .sheet-title{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:22px}
   /* Las hojas se AJUSTAN AL CONTENIDO (bottom-sheet): sin min-height forzado. El alto sale del
      contenido, con tope max-height:92vh (.sheet) + scroll interno si es largo. .full ya no estira. */
@@ -310,7 +311,7 @@
   /* ---------- SELECTOR de primada (barra superior del tab Primadas, DESIGN.md §2.11) ----------
      Navegación principal: selector tappable (flex:1) + engranaje (config) + "+" chico (nueva).
      Cerrado: "Mes Año" (primario) sobre estado+nombre (tenue) + caret. Abre la hoja agrupada. */
-  .selrow{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-6)}
+  .selrow{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-4)}
   .prm-selector{flex:1;min-width:0;display:flex;align-items:center;gap:var(--space-2);background:transparent;border:none;cursor:pointer;color:var(--ink);font-family:inherit;text-align:left;padding:var(--space-1) 0}
   .prm-selector:active{opacity:.7}
   .prm-selector.empty{cursor:default}
@@ -441,13 +442,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-140400-3b3b71d"></script>
-  <script src="js/util.js?v=20260602-140400-3b3b71d"></script>
-  <script src="js/api.js?v=20260602-140400-3b3b71d"></script>
-  <script src="js/auth.js?v=20260602-140400-3b3b71d"></script>
-  <script src="js/store.js?v=20260602-140400-3b3b71d"></script>
-  <script src="js/view.js?v=20260602-140400-3b3b71d"></script>
-  <script src="js/controller.js?v=20260602-140400-3b3b71d"></script>
+  <script src="js/config.js?v=20260602-141711-eed0728"></script>
+  <script src="js/util.js?v=20260602-141711-eed0728"></script>
+  <script src="js/api.js?v=20260602-141711-eed0728"></script>
+  <script src="js/auth.js?v=20260602-141711-eed0728"></script>
+  <script src="js/store.js?v=20260602-141711-eed0728"></script>
+  <script src="js/view.js?v=20260602-141711-eed0728"></script>
+  <script src="js/controller.js?v=20260602-141711-eed0728"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
