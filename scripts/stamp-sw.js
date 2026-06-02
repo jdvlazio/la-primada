@@ -17,6 +17,7 @@ const { execSync } = require('child_process');
 const ROOT = path.join(__dirname, '..');
 const SW = path.join(ROOT, 'sw.js');
 const HTML = path.join(ROOT, 'index.html');
+const VERSION_JSON = path.join(ROOT, 'version.json');
 
 function shortRef() {
   try { return execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim(); }
@@ -52,5 +53,13 @@ if (html !== before) {
   console.error('stamp-sw: no encontré <script src="js/..."> en index.html');
 }
 
-// Re-stagear sw.js e index.html si estamos dentro de un commit (hook).
-try { execSync('git add sw.js index.html', { cwd: ROOT }); } catch (e) {}
+// version.json: misma marca de build. La app lo consulta no-store al abrir y al volver de
+// background (modelo de Otrofestiv); si el build difiere del guardado → reload duro. Es la
+// garantía REAL de propagación en iOS, independiente del Service Worker.
+try {
+  fs.writeFileSync(VERSION_JSON, '{ "build": "' + version + '" }\n');
+  console.log('stamp-sw: version.json build =', version);
+} catch (e) { console.error('stamp-sw: no pude escribir version.json'); }
+
+// Re-stagear los tres archivos si estamos dentro de un commit (hook).
+try { execSync('git add sw.js index.html version.json', { cwd: ROOT }); } catch (e) {}

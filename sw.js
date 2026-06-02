@@ -10,7 +10,7 @@
    ============================================================ */
 'use strict';
 
-const CACHE_VERSION = '20260602-072132-2350425';
+const CACHE_VERSION = '20260602-075740-09ebec4';
 const CACHE_NAME = 'primadapp-' + CACHE_VERSION;
 
 // Núcleo a precachear (todo servido por GitHub Pages, rutas relativas al scope).
@@ -37,20 +37,22 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: borrar cachés viejos, reclamar clientes, y NAVEGAR cada cliente abierto.
-// El navigate() es la garantía DURA de que el HTML cacheado se descarta al deploy:
-// controllerchange en iOS WKWebView es flaky, no se puede confiar solo en él.
+// Activate: borrar TODOS los cachés viejos, reclamar, y NAVEGAR los clientes SOLO en la primera
+// instalación (modelo de Otrofestiv). En updates posteriores NO se navega desde el SW: de eso se
+// encarga el check de version.json en index.html (location.reload duro), fiable en iOS. Navegar en
+// cada activate provocaba recargas espurias / loops.
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
+    const primeraInstalacion = !keys.some((k) => k.startsWith('primadapp-'));
     await Promise.all(
-      keys.filter((k) => k.startsWith('primadapp-') && k !== CACHE_NAME)
-          .map((k) => caches.delete(k))
+      keys.filter((k) => k.startsWith('primadapp-') && k !== CACHE_NAME).map((k) => caches.delete(k))
     );
     await self.clients.claim();
-    // Refrescar todas las pestañas/PWA abiertas con el SW nuevo ya en control.
-    const wins = await self.clients.matchAll({ type: 'window' });
-    await Promise.all(wins.map((c) => { try { return c.navigate(c.url); } catch (e) { return null; } }));
+    if (primeraInstalacion) {
+      const wins = await self.clients.matchAll({ type: 'window' });
+      await Promise.all(wins.map((c) => { try { return c.navigate(c.url); } catch (e) { return null; } }));
+    }
   })());
 });
 
@@ -63,6 +65,12 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;                 // solo GET (no POST a Supabase, etc.)
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;  // no interceptar CDN/Supabase: que vayan directo a la red
+
+  // version.json → SIEMPRE desde red (no-store), nunca cacheado: es el chequeo de versión.
+  if (url.pathname.endsWith('/version.json')) {
+    event.respondWith(fetch(new Request(req, { cache: 'no-store' })).catch(() => caches.match(req)));
+    return;
+  }
 
   // HTML (navegación) y scripts del propio origen → red dura, nunca HTTP cache.
   const esCodigo = req.destination === 'document' || req.destination === 'script' || req.mode === 'navigate';
