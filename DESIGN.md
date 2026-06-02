@@ -184,16 +184,18 @@ reemplazar por espacio.
 
 ### 2.3 · Input / campo (✅ CANÓNICO)
 
-El input **sí** lleva borde: es la affordance del control, no una caja decorativa.
+El input **sí** lleva borde: es la affordance del control, no una caja decorativa. El borde es
+**`1px solid var(--line)`** (fino — la liviandad pesa: marca el campo sin convertirlo en caja gruesa).
 
 | Clase | Propiedades canónicas |
 |---|---|
-| `.ti` (texto) | `font-size:14px; min-height:var(--tap-input); padding:var(--space-3); border:2px solid var(--line); border-radius:var(--radius-md); background:var(--paper); color:var(--ink); width:100%` |
+| `.ti` (texto) | `font-size:14px; min-height:var(--tap-input); padding:var(--space-3); border:1px solid var(--line); border-radius:var(--radius-md); background:var(--paper); color:var(--ink); width:100%` |
 | `.ti:focus` | `border-color:var(--accent)` (foco = acento) |
 | `.ti.name` | variante título: `font-weight:700; font-size:18px` |
-| `.sel` (select) | igual al `.ti` con `padding:var(--space-2) var(--space-3); font-size:13px` |
-| `.fld` (etiqueta de campo) | `font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft)` + gap al control |
-| `.stepper` / `.step` (±) | botón `var(--tap-sec)` cuadrado, `border:2px solid var(--line)`, `background:var(--paper)` |
+| `.sel` (select) | igual al `.ti` (`border:1px`) + chevron-down de Lucide (`appearance:none` + background data-URI), una sola flecha como el caret de fila |
+| `.fld` (etiqueta de campo) | `font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft)` + gap al control. **Secciones de un sheet separadas por aire (`.cfg-sec`), no por divisores** |
+| `.stepper` / `.step` (±) · `.mini` (botón chico) | borde **`1px solid var(--line)`** (afinado de 2px → 1px en la pasada de liviandad) |
+| **Quitar inline** (`.xmini` + `trash-2`) | **ícono discreto sin caja**, `color:var(--alert)` (destructivo). **No** un botón con borde/caja roja |
 
 ### 2.4 · Botones — tres roles (✅ CANÓNICO)
 
@@ -388,6 +390,11 @@ el código; **no se narran en pantalla** (regla de oro: si un texto explica una 
 sistema, **bórralo**).
 
 - **Acciones:** verbo en infinitivo, sin artículos (`Agregar`, `Crear primada`, `Borrar`).
+- **"Agregar" lleva su objeto cuando hay ambigüedad en pantalla.** Si conviven dos "Agregar" en
+  contextos distintos, cada uno nombra QUÉ agrega, con la palabra del **glosario** (no la del catálogo):
+  - cabecera de Asistentes → **`Agregar`** (agrega un asistente; el contexto de la sección lo aclara).
+  - dentro de la tarjeta de una persona → **`Consumo`** (registra el **consumo** de esa persona —
+    término del dominio—; **nunca** "Producto", que es el ítem del catálogo, otro concepto).
 - **Estados vacíos:** `Sin <cosa>` (`Sin asistentes`, `Sin productos`). Nada de "Aún no hay…".
 - **Títulos de sección:** sustantivo + conteo (`Asistentes (0)`, `Productos (4)`).
 - **Toasts:** confirmación corta en pasado/sustantivo (`Primada creada`, `Abono registrado`).

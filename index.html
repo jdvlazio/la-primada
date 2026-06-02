@@ -191,13 +191,13 @@
   .link-inline{background:none;border:none;padding:0;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline}
 
   /* inputs base */
-  .ti{font-family:inherit;font-size:14px;min-height:var(--tap-input);padding:var(--space-3);border:2px solid var(--line);border-radius:var(--radius-md);background:var(--paper);color:var(--ink);width:100%}
+  .ti{font-family:inherit;font-size:14px;min-height:var(--tap-input);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper);color:var(--ink);width:100%}
   .ti:focus{outline:none;border-color:var(--red)}
   .ti.name{font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:18px}
   .ti:disabled{opacity:.6}
   /* Select con chevron-down de Lucide (appearance:none): una sola flecha, no las dobles nativas.
      Igual que el caret de fila (.acc-caret, --ink-soft). El <select> nativo sigue funcional. */
-  .sel{font-family:inherit;font-size:13px;min-height:var(--tap-input);padding:var(--space-2) calc(var(--space-3) + 22px) var(--space-2) var(--space-3);border:2px solid var(--line);border-radius:var(--radius-md);color:var(--ink);appearance:none;-webkit-appearance:none;background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238aa3a0' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right var(--space-3) center;background-size:16px}
+  .sel{font-family:inherit;font-size:13px;min-height:var(--tap-input);padding:var(--space-2) calc(var(--space-3) + 22px) var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);color:var(--ink);appearance:none;-webkit-appearance:none;background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238aa3a0' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right var(--space-3) center;background-size:16px}
   .sel:disabled{opacity:.6}
   .fld{display:flex;flex-direction:column;gap:var(--space-1);font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin:var(--space-3) 0}
@@ -206,7 +206,7 @@
   .row.gap{gap:var(--space-2)}.row.end{justify-content:flex-end;flex-wrap:wrap;margin-top:var(--space-3)}
 
   /* botones chicos */
-  .mini{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap-sec);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;border:2px solid var(--line);background:var(--paper);color:var(--ink);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);white-space:nowrap}
+  .mini{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap-sec);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);white-space:nowrap}
   .mini:active{transform:scale(.95)}
   .mini:disabled{opacity:.45;cursor:default}
   .mini.ghost{background:transparent}
@@ -261,7 +261,7 @@
   .prod.has{font-weight:700}
   .prod-name i{color:var(--ink-soft);font-style:normal;font-size:11px}
   .stepper{display:flex;align-items:center;gap:var(--space-2)}
-  .step{display:flex;align-items:center;justify-content:center;width:var(--tap-sec);height:var(--tap-sec);border-radius:var(--radius-md);border:2px solid var(--line);background:var(--paper);color:var(--ink);font-size:17px;font-weight:700;cursor:pointer;line-height:1}
+  .step{display:flex;align-items:center;justify-content:center;width:var(--tap-sec);height:var(--tap-sec);border-radius:var(--radius-md);border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:17px;font-weight:700;cursor:pointer;line-height:1}
   .step:active{transform:scale(.9)}
   .step:disabled{opacity:.4;cursor:default}
   .qty{min-width:16px;text-align:center;font-size:14px}
@@ -285,7 +285,8 @@
   .ti.emoji{width:var(--tap-input);text-align:center;padding:var(--space-2)}
   .prodnew{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center;margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--line-soft)}
   .prodnew .ti:not(.num):not(#pn-emoji){flex:1;min-width:120px}
-  .prodrow .xmini,.prodpick-head .xmini{display:flex;align-items:center;justify-content:center;border:2px solid var(--line);background:var(--paper);color:var(--alert);border-radius:var(--radius-sm);width:var(--tap-sec);height:var(--tap-sec);font-weight:700;flex:none}
+  /* Quitar producto = ícono discreto (sin caja), color destructivo. */
+  .prodrow .xmini{color:var(--alert);flex:none}
 
   /* abonos / pagos (siguen activos con la cuenta cerrada) */
   .pay{margin-top:var(--space-2);padding-top:var(--space-2);border-top:1px solid var(--line-soft)}
@@ -376,7 +377,9 @@
   .cfg-asis:first-child{border-top:none}
   .cfg-asis-top{display:flex;align-items:center;gap:var(--space-2)}
   .cfg-asis-name{flex:1;min-width:0;font-size:15px;display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
+  .cfg-asis .xmini{color:var(--alert);flex:none}   /* Quitar = ícono discreto (sin caja roja) */
   .cfg-asis .cover{margin-top:var(--space-2);margin-bottom:0}
+  .cfg-asis .cover .link-inline{font-size:12px}
 
   [hidden]{display:none !important}
 </style>
@@ -423,13 +426,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-071133-aa3de86"></script>
-  <script src="js/util.js?v=20260602-071133-aa3de86"></script>
-  <script src="js/api.js?v=20260602-071133-aa3de86"></script>
-  <script src="js/auth.js?v=20260602-071133-aa3de86"></script>
-  <script src="js/store.js?v=20260602-071133-aa3de86"></script>
-  <script src="js/view.js?v=20260602-071133-aa3de86"></script>
-  <script src="js/controller.js?v=20260602-071133-aa3de86"></script>
+  <script src="js/config.js?v=20260602-072132-2350425"></script>
+  <script src="js/util.js?v=20260602-072132-2350425"></script>
+  <script src="js/api.js?v=20260602-072132-2350425"></script>
+  <script src="js/auth.js?v=20260602-072132-2350425"></script>
+  <script src="js/store.js?v=20260602-072132-2350425"></script>
+  <script src="js/view.js?v=20260602-072132-2350425"></script>
+  <script src="js/controller.js?v=20260602-072132-2350425"></script>
 
   <!-- PWA: registrar el Service Worker (network-first; CACHE_VERSION se estampa en cada commit). -->
   <script>

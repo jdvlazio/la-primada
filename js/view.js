@@ -173,7 +173,7 @@
     if (!disponibles.length) return '';
     const abierto = ui && ui.pickProd === a.personaId;
     if (!abierto) {
-      return `<button class="mini ghost addprod" data-act="open-pickprod" data-pid="${a.personaId}">${icon('plus-circle')}Agregar</button>`;
+      return `<button class="mini ghost addprod" data-act="open-pickprod" data-pid="${a.personaId}">${icon('plus-circle')}Consumo</button>`;
     }
     const chips = disponibles.map(prod =>
       `<button class="chip" data-act="add-item" data-pid="${a.personaId}" data-prod="${prod.id}">${e(prod.emoji)} ${e(prod.nombre)} <i>${$peso(prod.precioVenta)}</i></button>`
@@ -195,10 +195,10 @@
     const cv = S().coverDe(p, a);
     if (a.coverExonerado) {
       return `<div class="cover">Cover <b>exonerado</b>
-        <button class="mini" data-act="toggle-exonerado" data-pid="${a.personaId}" ${dis}>Cobrar</button></div>`;
+        <button class="link-inline" data-act="toggle-exonerado" data-pid="${a.personaId}" ${dis}>Cobrar</button></div>`;
     }
     return `<div class="cover">Cover <b>${$peso(cv)}</b>
-      <button class="mini" data-act="toggle-exonerado" data-pid="${a.personaId}" ${dis}>Exonerar</button></div>`;
+      <button class="link-inline" data-act="toggle-exonerado" data-pid="${a.personaId}" ${dis}>Exonerar</button></div>`;
   }
 
   function rolSelect(p, a) {
