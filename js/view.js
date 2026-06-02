@@ -30,6 +30,9 @@
   // Etiqueta de rol/estado en texto tenue (reemplaza los badges con borde en la identidad).
   function rolTag(estado) { return `<span class="rol-tag">${e(cap(estado))}</span>`; }
   function nombrePersona(id) { const p = S().persona(id); return p ? p.nombre : '—'; }
+  // Nombre CORTO para el selector: quita el prefijo "Primada " (el período ya es la guía; el resto
+  // —los organizadores— es la identidad real). Si el nombre no empieza con "Primada", se muestra tal cual.
+  function nombreCorto(nombre) { const n = String(nombre || '').trim(); return n.replace(/^primada\s+/i, '') || n; }
 
   /* ---------- Iconografía: Lucide, SVG inline (ver DESIGN.md › Iconografía) ----------
      Solo los <path>/<line> de cada ícono, copiados de lucide.dev (licencia ISC).
@@ -71,12 +74,14 @@
     const cerrada = p.estado === 'cerrada';
     const abierto = ui && ui.overlay === 'selector-primada';
     const inc = S().primadaIncompleta(p) ? ' ' + badge('sin principal', 'warn') : '';
-    // Identidad = SOLO el período (Mes Año) + punto de estado. El nombre de la primada NO se repite
-    // aquí (patrón de selectores de período en apps de finanzas: el período ES la identidad; el
-    // nombre es redundante en la navegación y se vuelve tedioso con nombres largos / muchos meses).
+    // Identidad: el PERÍODO (Mes Año) como GUÍA primaria + el NOMBRE corto (sin "Primada") como
+    // identidad real, tenue. El mes orienta (habrá muchas al año); el nombre distingue cuál es.
     return `<div class="selrow">
       <button class="prm-selector" data-act="open-selector" aria-haspopup="listbox" aria-expanded="${abierto ? 'true' : 'false'}">
-        <span class="sel-main"><span class="dot ${cerrada ? 'closed' : 'open'}"></span>${e(Util.monthYear(p.mesContable))}${inc}</span>
+        <span class="sel-text">
+          <span class="sel-main"><span class="dot ${cerrada ? 'closed' : 'open'}"></span>${e(Util.monthYear(p.mesContable))}</span>
+          <span class="sel-sub">${e(nombreCorto(p.nombre))}${inc}</span>
+        </span>
         <span class="sel-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
       </button>
       <button class="icon-btn" data-act="open-config-primada" data-id="${p.id}" title="Configurar" aria-label="Configurar">${icon('settings-2')}</button>
@@ -101,15 +106,15 @@
       <div class="sheet-body">${cuerpo}</div>
     </div>`;
   }
-  // Fila del selector = SOLO el mes (+ punto de estado) + total + check en la activa. Sin el nombre
-  // de la primada (redundante: dentro del año, el mes la identifica). Minimalista.
+  // Fila del selector = MES (guía, en negrita) · NOMBRE corto (sin "Primada", la identidad real) +
+  // total + check en la activa. El nombre distingue varias primadas del MISMO mes.
   function selectorFila(p, activeId) {
     const sel = S();
     const activa = p.id === activeId;
     const cerrada = p.estado === 'cerrada';
     const inc = sel.primadaIncompleta(p) ? ' ' + badge('incompleta', 'warn') : '';
     return `<button class="sel-fila ${activa ? 'on' : ''}" data-act="select-primada" data-id="${p.id}">
-      <span class="sel-fila-main"><span class="dot ${cerrada ? 'closed' : 'open'}"></span><b>${e(Util.monthName(p.mesContable))}</b>${inc}</span>
+      <span class="sel-fila-main"><span class="dot ${cerrada ? 'closed' : 'open'}"></span><b>${e(Util.monthName(p.mesContable))}</b> · ${e(nombreCorto(p.nombre))}${inc}</span>
       <span class="sel-fila-right">
         <span class="sel-fila-total">${$peso(sel.recaudado(p))}</span>
         ${activa ? `<span class="sel-check">${icon('check', 'sm')}</span>` : ''}
