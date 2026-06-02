@@ -46,11 +46,14 @@ let html = fs.readFileSync(HTML, 'utf8');
 const reV = /(<script src="js\/[^"?]+)(?:\?v=[^"]*)?(")/g;
 const before = html;
 html = html.replace(reV, `$1?v=${version}$2`);
+// <meta name="build" content="..."> = build incrustado en el HTML. La app compara version.json
+// contra ESTO (verdad de tierra), no contra localStorage → no se atasca si un reload sirve viejo.
+html = html.replace(/(<meta name="build" content=")[^"]*(">)/, `$1${version}$2`);
 if (html !== before) {
   fs.writeFileSync(HTML, html);
-  console.log('stamp-sw: ?v= en index.html =', version);
+  console.log('stamp-sw: ?v= y meta build en index.html =', version);
 } else {
-  console.error('stamp-sw: no encontré <script src="js/..."> en index.html');
+  console.error('stamp-sw: no encontré <script src="js/..."> ni meta build en index.html');
 }
 
 // version.json: misma marca de build. La app lo consulta no-store al abrir y al volver de

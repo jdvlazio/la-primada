@@ -510,13 +510,17 @@
 
   function ajustesBody(state) {
     const c = state.settings.cover;
+    // Build incrustado (meta sellado) → para confirmar de un vistazo qué versión corre en el device.
+    const build = (typeof document !== 'undefined' && (document.querySelector('meta[name="build"]') || {}).content) || '—';
     return `<div class="sub">Cover</div>
       <div class="grid2">
         <label class="fld"><span>Ahorrador</span>
           <input class="ti" type="number" min="0" step="500" data-ch="cover-ahorrador" value="${c.ahorrador}"></label>
         <label class="fld"><span>Invitado</span>
           <input class="ti" type="number" min="0" step="500" data-ch="cover-invitado" value="${c.invitado}"></label>
-      </div>`;
+      </div>
+      <div class="sub">Versión</div>
+      <div class="muted small">${e(build)}</div>`;
   }
 
   // Sheet a pantalla completa con seg-nav Personas | Ajustes.
