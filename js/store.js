@@ -2,13 +2,13 @@
    MODELO — Store (único dueño del estado) · esquema v4 DEFINITIVO
    Se carga tras CONFIG y Util.
    ------------------------------------------------------------
-   AppState  { schemaVersion:4, settings{cover,defaultProducts}, personas[], primadas[], activePrimadaId }
+   AppState  { schemaVersion:5, settings{cover,defaultProducts}, personas[], primadas[], activePrimadaId }
    Persona   { id, nombre, estado:'ahorrador'|'invitado', breB }
    Primada   { id, nombre, fecha:'YYYY-MM-DD', mesContable:'YYYY-MM', organizadorPrincipalId,
                pago{breB}, cover{ahorrador,invitado}, productos[], asistencias[], estado }
    Producto  { id, nombre, emoji, costoNeto, precioVenta, aportadoPor }
    Asistencia{ personaId, estadoEnEseMomento, rol:'principal'|'organizador'|'asistente',
-               coverExonerado, items{prodId:cant}, abonos[]{id,monto,fecha} }
+               coverExonerado, items{prodId:cant}, pagado:bool }   // pagado = saldó su total (binario)
    ------------------------------------------------------------
    Flujo: evento → acción → commit (guarda) → notifica → render.
    Las ACCIONES hacen cumplir los invariantes (ver CLAUDE.md).
@@ -69,11 +69,7 @@
     productos.forEach(prod => { items[prod.id] = Math.max(0, parseInt((raw || {})[prod.id]) || 0); });
     return items;
   }
-  function normAbonos(arr) {
-    return (arr || []).map(b => ({ id: b.id || Util.uid('ab'), monto: Number(b.monto) || 0, fecha: normFecha(b.fecha) }));
-  }
-
-  /* ---------- Migración: cualquier dato viejo → v4 ---------- */
+  /* ---------- Migración: cualquier dato viejo → v5 ---------- */
   function migrate(raw) {
     if (raw == null) return defaultState();
 
@@ -147,7 +143,7 @@
           rol: 'asistente',
           coverExonerado: !!a.coverExonerado,
           items: normItems(productos, a.items),
-          abonos: [],
+          pagado: false,
         };
       });
       return {
@@ -189,14 +185,23 @@
       const productos = normProducts(p.productos && p.productos.length ? p.productos : catalogoBase());
       const fecha = normFecha(p.fecha);
       const asisRaw = Array.isArray(p.asistencias) ? p.asistencias : (Array.isArray(p.asistentes) ? p.asistentes : []);
-      const asistencias = asisRaw.map(a => ({
-        personaId: a.personaId || null,
-        estadoEnEseMomento: normEstado(a.estadoEnEseMomento != null ? a.estadoEnEseMomento : a.tipo),
-        rol: normRol(a.rol),
-        coverExonerado: !!a.coverExonerado,
-        items: normItems(productos, a.items),
-        abonos: normAbonos(a.abonos),
-      }));
+      const asistencias = asisRaw.map(a => {
+        const rol = normRol(a.rol);
+        const estado = normEstado(a.estadoEnEseMomento != null ? a.estadoEnEseMomento : a.tipo);
+        const items = normItems(productos, a.items);
+        // pagado (v5, BINARIO): si ya viene → respetar; migración v4 (abonos[]) → pagado solo si los
+        // abonos cubrían el total; el principal queda auto-saldado (true). Reemplaza el historial de abonos.
+        let pagado;
+        if (typeof a.pagado === 'boolean') pagado = a.pagado;
+        else if (rol === 'principal') pagado = true;
+        else {
+          const consumo = productos.reduce((s, prod) => s + (Number(prod.precioVenta) || 0) * (items[prod.id] || 0), 0);
+          const cover = (rol === 'asistente' && !a.coverExonerado) ? (Number((p.cover || {})[estado]) || 0) : 0;
+          const abon = Array.isArray(a.abonos) ? a.abonos.reduce((s, b) => s + (Number(b.monto) || 0), 0) : 0;
+          pagado = (consumo + cover) > 0 && abon >= (consumo + cover);
+        }
+        return { personaId: a.personaId || null, estadoEnEseMomento: estado, rol, coverExonerado: !!a.coverExonerado, items, pagado };
+      });
 
       // Reconciliar el principal con un único rol coherente.
       let principalId = (p.organizadorPrincipalId != null && asistencias.some(a => a.personaId === p.organizadorPrincipalId))
@@ -344,10 +349,10 @@
     consumidosDe(primada, a) { return primada.productos.filter(prod => (a.items[prod.id] || 0) > 0); },
     disponiblesPara(primada, a) { return primada.productos.filter(prod => (a.items[prod.id] || 0) === 0); },
     totalAsistencia(primada, a) { return select.coverDe(primada, a) + select.consumoDe(primada, a); },
-    abonadoDe(a) { return (a.abonos || []).reduce((sum, b) => sum + (Number(b.monto) || 0), 0); },
     esPrincipal(primada, a) { return a.personaId != null && a.personaId === primada.organizadorPrincipalId; },
-    // El principal se considera auto-saldado (tiene la plata en mano): no es deudor.
-    saldoDe(primada, a) { return select.esPrincipal(primada, a) ? 0 : select.totalAsistencia(primada, a) - select.abonadoDe(a); },
+    // Saldo BINARIO: el principal está auto-saldado (plata en mano); un asistente debe su total
+    // completo hasta que marca "pagado" (entonces 0). No hay pagos parciales (v5).
+    saldoDe(primada, a) { return (select.esPrincipal(primada, a) || a.pagado) ? 0 : select.totalAsistencia(primada, a); },
 
     recaudado(primada) { return (primada.asistencias || []).reduce((sum, a) => sum + select.totalAsistencia(primada, a), 0); },
     ventaProductos(primada) { return primada.productos.reduce((sum, prod) => sum + (prod.precioVenta || 0) * unidadesVendidas(primada, prod), 0); },
@@ -368,20 +373,20 @@
     informePrincipal(primada) {
       const pid = primada.organizadorPrincipalId;
       const recaudadoTeorico = select.recaudado(primada);
-      // Abonos REALES de terceros (no el principal: él no se abona a sí mismo).
-      const abonosTerceros = (primada.asistencias || []).reduce((sum, a) =>
-        select.esPrincipal(primada, a) ? sum : sum + select.abonadoDe(a), 0);
+      // Pagos REALES de terceros (no el principal): el total de los que marcaron "pagado".
+      const pagadoTerceros = (primada.asistencias || []).reduce((sum, a) =>
+        (select.esPrincipal(primada, a) || !a.pagado) ? sum : sum + select.totalAsistencia(primada, a), 0);
       // El principal tiene su parte EN MANO: su total cuenta como ABONO AUTOMÁTICO (no es deuda).
       // Así el pendiente refleja solo deuda de terceros y la identidad real+pendiente=teórico se mantiene.
       const principalAsis = (primada.asistencias || []).find(a => select.esPrincipal(primada, a));
       const autoAbonoPrincipal = principalAsis ? select.totalAsistencia(primada, principalAsis) : 0;
-      const recaudadoReal = abonosTerceros + autoAbonoPrincipal;
+      const recaudadoReal = pagadoTerceros + autoAbonoPrincipal;
       return {
         incompleta: pid == null,
         recaudadoTeorico,
         recuperaPrincipal: pid ? select.recuperaDe(primada, pid) : 0,
         entregaTesorero: select.ganancia(primada),
-        abonosTerceros,
+        pagadoTerceros,
         autoAbonoPrincipal,
         recaudadoReal,
         saldoPendiente: recaudadoTeorico - recaudadoReal,   // = Σ saldos de los terceros
@@ -474,7 +479,7 @@
           rol: pid === principalId ? 'principal' : 'organizador',
           coverExonerado: false,
           items: normItems(productos_, {}),
-          abonos: [],
+          pagado: false,
         };
       });
       const prm = {
@@ -536,7 +541,7 @@
       const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
       if (p.asistencias.some(a => a.personaId === personaId)) return;
       const per = select.persona(personaId); if (!per) return;
-      p.asistencias.push({ personaId, estadoEnEseMomento: normEstado(per.estado), rol: 'asistente', coverExonerado: false, items: normItems(p.productos, {}), abonos: [] });
+      p.asistencias.push({ personaId, estadoEnEseMomento: normEstado(per.estado), rol: 'asistente', coverExonerado: false, items: normItems(p.productos, {}), pagado: false });
       commit({ kind: 'primada', id: primadaId });
     },
     removeAsistencia(primadaId, personaId) {
@@ -572,18 +577,12 @@
       a.items[prodId] = Math.max(0, (a.items[prodId] || 0) + delta); commit({ kind: 'primada', id: primadaId });
     },
 
-    // ----- abonos (INVARIANTE #4: permitidos AUNQUE la primada esté cerrada) -----
-    registrarAbono(primadaId, personaId, monto, fecha) {
+    // ----- pago (BINARIO; INVARIANTE #4: permitido AUNQUE la primada esté cerrada: los pagos llegan
+    //         después de cerrar la cuenta). El que paga marca su propio "pagado". -----
+    setPagado(primadaId, personaId, valor) {
       const p = findPrimada(primadaId); if (!p) return;
       const a = p.asistencias.find(x => x.personaId === personaId); if (!a) return;
-      const m = Number(monto) || 0; if (m <= 0) return;
-      a.abonos.push({ id: Util.uid('ab'), monto: m, fecha: normFecha(fecha || Util.currentDate()) });
-      commit({ kind: 'primada', id: primadaId });
-    },
-    removerAbono(primadaId, personaId, abonoId) {
-      const p = findPrimada(primadaId); if (!p) return;
-      const a = p.asistencias.find(x => x.personaId === personaId); if (!a) return;
-      a.abonos = a.abonos.filter(b => b.id !== abonoId); commit({ kind: 'primada', id: primadaId });
+      a.pagado = !!valor; commit({ kind: 'primada', id: primadaId });
     },
 
     // ----- infra -----

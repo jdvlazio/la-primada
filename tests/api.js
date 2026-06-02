@@ -70,7 +70,7 @@ function makeFakeSupabase() {
 /* ---------- Datos v4 de muestra ---------- */
 function sampleState() {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     settings: { cover: { ahorrador: 15000, invitado: 10000 }, defaultProducts: [{ id: 'cz', nombre: 'Costeñita', emoji: '🍺', costoNeto: 2500, precioVenta: 3500, aportadoPor: null }] },
     personas: [
       { id: 'per_a', nombre: 'Ana', estado: 'ahorrador', breB: 'ana@bre-b' },
@@ -81,8 +81,8 @@ function sampleState() {
       organizadorPrincipalId: 'per_a', pago: { breB: 'ana@bre-b' }, cover: { ahorrador: 15000, invitado: 10000 },
       productos: [{ id: 'cz', nombre: 'Costeñita', emoji: '🍺', costoNeto: 2500, precioVenta: 3500, aportadoPor: 'per_a' }],
       asistencias: [
-        { personaId: 'per_a', estadoEnEseMomento: 'ahorrador', rol: 'principal', coverExonerado: false, items: { cz: 2 }, abonos: [] },
-        { personaId: 'per_b', estadoEnEseMomento: 'invitado', rol: 'asistente', coverExonerado: false, items: { cz: 1 }, abonos: [{ id: 'ab1', monto: 5000, fecha: '2026-06-02' }] },
+        { personaId: 'per_a', estadoEnEseMomento: 'ahorrador', rol: 'principal', coverExonerado: false, items: { cz: 2 }, pagado: true },
+        { personaId: 'per_b', estadoEnEseMomento: 'invitado', rol: 'asistente', coverExonerado: false, items: { cz: 1 }, pagado: true },
       ],
       estado: 'abierta',
     }],
@@ -116,9 +116,9 @@ section('Round-trip jsonb: primada → fila → primada idéntica');
 {
   const original = sampleState().primadas[0];
   const back = Api._ser.rowToPrimada(Api._ser.primadaToRow(original));
-  check('primada round-trip 100% idéntica (incluye asistencias/items/abonos)', deepEqual(back, original));
+  check('primada round-trip 100% idéntica (incluye asistencias/items/pagado)', deepEqual(back, original));
   // foco en lo anidado profundo
-  eq('abono dentro del jsonb preservado', back.asistencias[1].abonos[0].monto, 5000);
+  eq('pagado dentro del jsonb preservado', back.asistencias[1].pagado, true);
   eq('items dentro del jsonb preservado', back.asistencias[0].items.cz, 2);
 }
 
@@ -132,7 +132,7 @@ section('fromRows: filas → AppState crudo');
     settings: [Api._ser.settingsToRow(s.settings)],
   };
   const app = Api._ser.fromRows(rows);
-  eq('fromRows: schemaVersion 4', app.schemaVersion, 4);
+  eq('fromRows: schemaVersion 5', app.schemaVersion, 5);
   eq('fromRows: 2 personas', app.personas.length, 2);
   eq('fromRows: 1 primada', app.primadas.length, 1);
   eq('fromRows: activePrimadaId null (local por dispositivo, no se sincroniza)', app.activePrimadaId, null);

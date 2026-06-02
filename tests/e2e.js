@@ -210,21 +210,25 @@ check('Steppers deshabilitados al cerrar', !!plus && plus.disabled === true);
 if (plus) click(plus);   // aunque hagamos click, la acción debe ignorarlo
 eq('Consumo congelado tras cerrar', betoAsis().items.cerveza, before);
 
-/* ---------- 8b. Abonos vía UI con la cuenta CERRADA (INVARIANTE #4) ---------- */
-section('Abonos: registrar/eliminar pago con la primada cerrada');
-// Beto exonerado, 2 cervezas → total 7.000, saldo 7.000
-eq('Saldo de Beto antes de abonar = 7.000', Store.select.saldoDe(prm(), betoAsis()), 7000);
-setVal(`#abono-${beto.id}`, '3000');
-click(`[data-act="abonar"][data-pid="${beto.id}"]`);
-eq('Abono registrado (abonado = 3.000)', Store.select.abonadoDe(betoAsis()), 3000);
-eq('Saldo de Beto baja a 4.000', Store.select.saldoDe(prm(), betoAsis()), 4000);
-eq('Informe: recaudado real = 3.000', Store.select.informePrincipal(prm()).recaudadoReal, 3000);
-eq('Informe: saldo pendiente = 4.000', Store.select.informePrincipal(prm()).saldoPendiente, 4000);
-const abId = betoAsis().abonos[0].id;
-click(`[data-act="remove-abono"][data-pid="${beto.id}"][data-abono="${abId}"]`);
-eq('Abono eliminado (abonado = 0)', Store.select.abonadoDe(betoAsis()), 0);
-setVal(`#abono-${beto.id}`, '3000');   // dejarlo registrado para la persistencia
-click(`[data-act="abonar"][data-pid="${beto.id}"]`);
+/* ---------- 8b. Pago BINARIO vía UI con la cuenta CERRADA (INVARIANTE #4) ---------- */
+section('Pago: "Pagar" → hoja con llave → "Ya pagué", con la primada cerrada');
+// Beto exonerado, 2 cervezas → total 7.000, saldo 7.000 (no pagado)
+eq('Saldo de Beto antes de pagar = 7.000', Store.select.saldoDe(prm(), betoAsis()), 7000);
+abrir(beto.id);                                            // la UI de pago vive en la tarjeta expandida
+click(`[data-act="open-pagar"][data-pid="${beto.id}"]`);   // abre la hoja "Pagar"
+check('Hoja Pagar abierta (aún cerrada la primada)', !q('#overlay').hidden && /sheet-title">Pagar a/.test(q('#overlay').innerHTML));
+click(`[data-act="marcar-pagado"][data-pid="${beto.id}"]`); // "Ya pagué"
+eq('Beto marcado pagado', betoAsis().pagado, true);
+eq('Saldo de Beto = 0 tras pagar', Store.select.saldoDe(prm(), betoAsis()), 0);
+eq('Informe: recaudado real = 7.000', Store.select.informePrincipal(prm()).recaudadoReal, 7000);
+eq('Informe: saldo pendiente = 0', Store.select.informePrincipal(prm()).saldoPendiente, 0);
+check('La hoja Pagar se cerró al marcar', q('#overlay').hidden);
+// Deshacer (vuelve a deber) y re-marcar (queda pagado para la persistencia)
+click(`[data-act="set-no-pagado"][data-pid="${beto.id}"]`);
+eq('Deshacer: Beto vuelve a deber 7.000', Store.select.saldoDe(prm(), betoAsis()), 7000);
+click(`[data-act="open-pagar"][data-pid="${beto.id}"]`);
+click(`[data-act="marcar-pagado"][data-pid="${beto.id}"]`);
+eq('Re-marcado pagado (persistencia)', betoAsis().pagado, true);
 
 /* ---------- 8c. Directorio: cambiar estado NO reescribe snapshots (INVARIANTE #1) vía UI ---------- */
 section('Directorio: cambiar estado vigente conserva la historia (INV#1)');
@@ -254,7 +258,7 @@ check('Vuelve a Primadas', /Asistentes/.test(q('#screen').innerHTML));
 /* ---------- 10. Persistencia (lo escrito quedó en localStorage v4) ---------- */
 section('Persistencia');
 const saved = JSON.parse(window.localStorage.getItem('laPrimada'));
-check('localStorage tiene schemaVersion 4', saved && saved.schemaVersion === 4);
+check('localStorage tiene schemaVersion 5', saved && saved.schemaVersion === 5);
 check('Persistió la primada con sus 2 asistencias', saved.primadas[0].asistencias.length === 2);
 
 /* ---------- 11. Historial: abrir una primada vieja muestra valores CONGELADOS ---------- */

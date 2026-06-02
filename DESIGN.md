@@ -324,6 +324,24 @@ AÑO → MES** (reciente arriba; `Store.select.primadasPorAnio`). El **historial
 > N2 = segundo organizador; 1 solo → "Primada {N1}"; 3+ → solo los dos primeros. **Editable** (✎ =
 > `renombrarPrimada`, override manual). Aplica a primadas nuevas; las viejas conservan su nombre.
 
+### 2.12 · Pago BINARIO — "Pagar" + hoja con la llave Bre-B (✅ CANÓNICO)
+
+**No hay "Abonar" ni pagos parciales.** Cada asistencia está `pagado` o no. El que paga **se autosirve**.
+- **En la ficha del asistente** (operación, `.acc-body`, `pagoBlock`): si no pagó → botón **"Pagar {monto}"**
+  (`open-pagar`); si pagó → `.pay.paid` = **"✓ Pagado"** (`.pay-state`, `--pos`) + **"Deshacer"** (`set-no-pagado`).
+  El **principal** no muestra pago (auto-saldado). Activo aún con la cuenta **cerrada** (INVARIANTE #4).
+- **Hoja "Pagar a {Principal}"** (overlay `pagar`, `pagarSheet`, ajustada al contenido):
+  | Elemento | Canónico |
+  |---|---|
+  | `.pagar-amount` | monto que debe, **800/34px** (lo primero que se ve) |
+  | `.pagar-to` | "Transfiere por Bre-B a **{Principal}**" |
+  | `.pagar-llave` | la **llave Bre-B** del principal (`pago.breB`, fallback a la vigente), monoespaciada + **"Copiar"** (`copiar-llave`). Si no hay llave: nota + enlace a Personas |
+  | `.btn` "Ya pagué" | `marcar-pagado` → marca `pagado`, cierra la hoja, toast |
+
+> **Sin comprobante en la app** (decisión de producto): el comprobante se comparte por fuera (ej. WhatsApp).
+> La llave Bre-B es el dato para **recibir** (no sensible, visible para todos). QR queda para una fase
+> futura (el QR oficial de Bre-B usa un payload estándar que no se puede generar solo desde la llave).
+
 ---
 
 ## 3 · Jerarquía tipográfica por roles

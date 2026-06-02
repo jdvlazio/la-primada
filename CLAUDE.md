@@ -54,17 +54,19 @@ sobranteFondo   = gananciaPrimada − parteIgual × nAhorradoras                
 recaudadoTeorico   = Σ total de todas las asistencias         // = Σ costoNeto + gananciaPrimada (identidad)
 recuperaPrincipal  = Σ costoNeto × unidades de los productos que él frontó (aportadoPor)
 entregaTesorero    = gananciaPrimada
-abonosTerceros     = Σ abonos registrados de las asistencias NO principal
+pagadoTerceros     = Σ total de las asistencias NO principal que marcaron `pagado` (BINARIO, no parcial)
 autoAbonoPrincipal = total del principal                      // su parte EN MANO: no se debe a sí mismo
-recaudadoReal      = abonosTerceros + autoAbonoPrincipal
+recaudadoReal      = pagadoTerceros + autoAbonoPrincipal
 saldoPendiente     = recaudadoTeorico − recaudadoReal         // = Σ saldos de los terceros (deuda real)
 ```
 - **El principal cuenta como auto-abonado:** su total entra a `recaudadoReal` como abono automático, de modo
   que **`saldoPendiente` refleja solo la deuda de terceros** (la palanca de "quién debe"). Esto **mantiene las dos
   identidades**: `recaudadoReal + saldoPendiente = recaudadoTeorico` **y** `recaudadoTeorico = Σ costoNeto + ganancia`
   (no se toca el teórico). *No* se resta el principal del teórico — eso rompería la segunda identidad.
-- Los asistentes pagan **después**, al principal, y pueden **abonar de a poco** (historial `abonos[]`).
-  Saber **quién debe cuánto** es protagonista de la UI.
+- **Pago BINARIO (decisión de producto, v5):** cada asistencia está **`pagado` o no** — NO hay abonos parciales.
+  El que paga **se autosirve**: en su ficha (tab Primadas) toca **"Pagar"** → hoja con la **llave Bre-B del
+  principal** + el monto → **"Ya pagué"** marca `pagado`. **Sin comprobante en la app** (se comparte por fuera).
+  Saber **quién debe cuánto** sigue siendo protagonista. (El historial de abonos parciales se eliminó.)
 
 ## Stack y restricciones (no negociables)
 - **Vanilla JS**, sin librerías de frontend (no React/Vue). Sin build, sin bundler, sin npm en producción.
@@ -169,9 +171,9 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
   - **Ajustes** — cover vigente, productos por defecto.
 - Toda feature nueva debe caber en esta navegación. Si no cabe → **pausar y consultar** (no inventar un cuarto tab).
 
-## Modelo de datos (esquema v4 — DEFINITIVO)
+## Modelo de datos (esquema v5 — DEFINITIVO)
 ```
-AppState  { schemaVersion:4, settings{cover{ahorrador,invitado}, defaultProducts[]},
+AppState  { schemaVersion:5, settings{cover{ahorrador,invitado}, defaultProducts[]},
             personas[], primadas[], activePrimadaId }
 Persona   { id, nombre, estado:'ahorrador'|'invitado', breB:string|null }
 Primada   { id, nombre, fecha:'YYYY-MM-DD', mesContable:'YYYY-MM',
@@ -179,7 +181,7 @@ Primada   { id, nombre, fecha:'YYYY-MM-DD', mesContable:'YYYY-MM',
             cover{ahorrador,invitado}, productos[], asistencias[], estado:'abierta'|'cerrada' }
 Producto  { id, nombre, emoji, costoNeto, precioVenta, aportadoPor:personaId|null }   // default aportadoPor = principal
 Asistencia{ personaId, estadoEnEseMomento:'ahorrador'|'invitado', rol:'principal'|'organizador'|'asistente',
-            coverExonerado:bool, items{productoId:cantidad}, abonos[]{id,monto,fecha} }
+            coverExonerado:bool, items{productoId:cantidad}, pagado:bool }   // pagado = saldó su total (binario, v5)
 ```
 - **Organizadores = `rol` dentro de la asistencia** (asisten y consumen). El `principal` es la asistencia con `rol:'principal'`;
   `organizadorPrincipalId` es el puntero de integridad. **"Sin cover" se deriva del `rol`** (o de `coverExonerado`).
@@ -197,20 +199,20 @@ Asistencia{ personaId, estadoEnEseMomento:'ahorrador'|'invitado', rol:'principal
 2. **Principal siempre ahorrador:** asignar `principal` (al crear o vía `setRol`) exige `estadoEnEseMomento === 'ahorrador'`;
    si no, la acción **lanza error**.
 3. **A lo sumo un `rol:'principal'`** por primada, coherente con `organizadorPrincipalId`.
-4. **"Cerrada" congela la edición de la cuenta** (consumos, cover, productos, roles) **pero SIGUE aceptando abonos**:
-   la cuenta del evento se cierra; los pagos siguen llegando después.
+4. **"Cerrada" congela la edición de la cuenta** (consumos, cover, productos, roles) **pero SIGUE aceptando pagos**
+   (`setPagado`): la cuenta del evento se cierra; los pagos siguen llegando después.
 
 ## Selectores y acciones del Store
-- **`select` (derivados puros):** `coverDe`, `consumoDe`, `totalAsistencia`, `abonadoDe`, `saldoDe` (principal = 0),
+- **`select` (derivados puros):** `coverDe`, `consumoDe`, `totalAsistencia`, `saldoDe` (binario: principal/pagado = 0),
   `margenProducto`, `ventaProductos`, `costoNetoTotal`, `coverCobrado`, `margenTotal`, `ganancia`,
   `asistenciasAhorradoras`, `parteIgual`, `sobranteFondo`, `repartoPorPersona`, `recuperaDe`, `informePrincipal`,
-  `deudores`, `recaudado`, `primadaIncompleta`, `nombreSugerido`, `anioContable`, + directorio (`persona`, `ahorradores`, …).
+  `deudores`, `recaudado`, `primadaIncompleta`, `nombreSugerido`, `anioContable`, `primadasPorAnio`, + directorio (`persona`, `ahorradores`, …).
 - **`actions` (mutan + invariantes):** personas (`addPersona`, `setEstadoPersona`, `renombrarPersona`, `setBreBPersona`);
   settings (`setCover`, `upsertDefaultProducto`, `removeDefaultProducto`); ciclo de primada (`createPrimada`,
   `seleccionarPrimada`, `renombrarPrimada`, `setFecha`, `setMesContable`, `cerrarPrimada`, `reabrirPrimada`, `borrarPrimada`);
   productos de la primada (`addProducto`, `setPreciosProducto`, `setAportadoPor`, `removeProducto`);
   asistencias (`addAsistencia`, `removeAsistencia`, `setRol`, `toggleCoverExonerado`, `changeItem`);
-  abonos (`registrarAbono`, `removerAbono`); infra (`replaceState`).
+  pago binario (`setPagado`); infra (`replaceState`).
 
 ## Reglas de datos y migraciones (evitan cambios traumáticos)
 - **Todo cambio de forma del estado = subir `schemaVersion` + caso en `Store.migrate()` + tests primero.**
@@ -218,8 +220,13 @@ Asistencia{ personaId, estadoEnEseMomento:'ahorrador'|'invitado', rol:'principal
 - El **normalizador es tolerante**: rellena campos faltantes con defaults seguros, de modo que datos parciales (incluido
   cualquier borrador previo) suben limpio.
 
-### Migración v1 → v2 → v3 → v4 (implementada)
-`migrate()` detecta la versión y converge a v4. Casos clave del salto a v4:
+### Migración v1 → … → v5 (implementada)
+`migrate()` detecta la versión y converge a **v5** (normalizador tolerante).
+- **Salto v4 → v5 (pago binario):** `Asistencia.abonos[]` → **`pagado:bool`**. El normalizador deriva
+  `pagado = (Σ abonos ≥ total)` (si los abonos cubrían el total → pagado); el principal queda `true`.
+  Se **elimina** el historial de abonos parciales (decisión de producto). Idempotente: si ya viene `pagado`, se respeta.
+
+Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
 - v3 tenía `primadas[]` con `asistentes[]{ tipo, nombre, items }` y `Producto.price` (un solo precio).
 - **Directorio `personas[]`:** se crea de los **nombres distintos** de los asistentes; `estado` = el tipo que traían,
   **última aparición (por fecha) gana**. `breB` arranca `null`.

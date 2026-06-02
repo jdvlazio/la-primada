@@ -42,15 +42,15 @@ const CONFIG = require(JS('config.js')).CONFIG;
 
 /* ---------- Forma v4 ---------- */
 function assertFormaV4(name, s) {
-  eq(name + ': schemaVersion 4', s.schemaVersion, 4);
+  eq(name + ': schemaVersion 5', s.schemaVersion, 5);
   check(name + ': personas[]', Array.isArray(s.personas));
   check(name + ': primadas[]', Array.isArray(s.primadas));
   check(name + ': sin natilleras', !('natilleras' in s));
   const prodOk = s.primadas.every(p => p.productos.every(pr => 'costoNeto' in pr && 'precioVenta' in pr && 'aportadoPor' in pr && !('price' in pr)));
   check(name + ': productos {costoNeto,precioVenta,aportadoPor} sin price', prodOk);
   const asisOk = s.primadas.every(p => (p.asistencias || []).every(a =>
-    'personaId' in a && 'estadoEnEseMomento' in a && 'rol' in a && 'coverExonerado' in a && Array.isArray(a.abonos) && !('nombre' in a)));
-  check(name + ': asistencias {personaId,estadoEnEseMomento,rol,coverExonerado,abonos[]}', asisOk);
+    'personaId' in a && 'estadoEnEseMomento' in a && 'rol' in a && 'coverExonerado' in a && typeof a.pagado === 'boolean' && !('abonos' in a) && !('nombre' in a)));
+  check(name + ': asistencias {personaId,estadoEnEseMomento,rol,coverExonerado,pagado} (sin abonos)', asisOk);
   const prmOk = s.primadas.every(p => 'mesContable' in p && 'organizadorPrincipalId' in p && p.pago && 'breB' in p.pago && /^\d{4}-\d{2}-\d{2}$/.test(p.fecha));
   check(name + ': primadas {mesContable,organizadorPrincipalId,pago.breB,fecha YYYY-MM-DD}', prmOk);
 }
@@ -208,7 +208,7 @@ let v4primada;
   eq('v4: recuperaPrincipal = costoNeto 8000', inf.recuperaPrincipal, 8000);
   eq('v4: entregaTesorero = ganancia 29000', inf.entregaTesorero, 29000);
   // Auto-abono del principal: A tiene su total (6000) en mano; D abonó 5000.
-  eq('v4: abonosTerceros = 5000 (solo D)', inf.abonosTerceros, 5000);
+  eq('v4: pagadoTerceros = 5000 (solo D, migró pagado)', inf.pagadoTerceros, 5000);
   eq('v4: autoAbonoPrincipal = total de A = 6000', inf.autoAbonoPrincipal, 6000);
   eq('v4: recaudadoReal = terceros 5000 + principal 6000 = 11000', inf.recaudadoReal, 11000);
   eq('v4: saldoPendiente = solo deuda de terceros = 26000', inf.saldoPendiente, 26000);
@@ -298,7 +298,7 @@ section('Acciones e invariantes');
   try { Store.actions.setRol(pid2, invB, 'principal'); } catch (e) { threw2 = true; }
   check('INV#2: setRol principal sobre snapshot invitado lanza error', threw2);
 
-  // INVARIANTE #4 — cerrada congela consumos pero ACEPTA abonos
+  // INVARIANTE #4 — cerrada congela consumos pero ACEPTA pagos (binario)
   const pid3 = Store.actions.createPrimada({ principalId: ahorrA, organizadores: [ahorrA] });
   const cliente = Store.actions.addPersona({ nombre: 'Cli', estado: 'invitado' });
   Store.actions.addAsistencia(pid3, cliente);
@@ -309,8 +309,9 @@ section('Acciones e invariantes');
   const pr3 = () => Store.select.state().primadas.find(p => p.id === pid3);
   const asisCli = () => pr3().asistencias.find(a => a.personaId === cliente);
   eq('INV#4: consumo NO cambió tras cerrar', Store.select.consumoDe(pr3(), asisCli()), totalAbierta);
-  Store.actions.registrarAbono(pid3, cliente, 3000);        // debe ACEPTARSE
-  eq('INV#4: abono aceptado con primada cerrada', Store.select.abonadoDe(asisCli()), 3000);
+  Store.actions.setPagado(pid3, cliente, true);             // debe ACEPTARSE aún cerrada
+  eq('INV#4: pago aceptado con primada cerrada', asisCli().pagado, true);
+  eq('INV#4: saldo del cliente = 0 tras pagar', Store.select.saldoDe(pr3(), asisCli()), 0);
 
   // aportadoPor por defecto = principal al crear
   check('aportadoPor por defecto = principal', pr3().productos.every(pr => pr.aportadoPor === ahorrA));
@@ -351,15 +352,14 @@ section('Informe — saldoPendiente excluye al principal (auto-abono)');
   eq('Teórico = 39.500', inf0.recaudadoTeorico, 39500);
   eq('Identidad teórico = ΣcostoNeto + ganancia', Store.select.costoNetoTotal(P()) + Store.select.ganancia(P()), inf0.recaudadoTeorico);
 
-  // Beto paga completo, Carlos parcial
-  Store.actions.registrarAbono(pid, beto, 17000);
-  Store.actions.registrarAbono(pid, carlos, 9000);
+  // Pago BINARIO: Beto paga (su total completo), Carlos NO paga (sigue debiendo su total).
+  Store.actions.setPagado(pid, beto, true);
   const inf = Store.select.informePrincipal(P());
 
   eq('autoAbonoPrincipal = total del principal (3.500)', inf.autoAbonoPrincipal, 3500);
-  eq('abonosTerceros = 26.000', inf.abonosTerceros, 26000);
-  eq('recaudadoReal = terceros + principal (29.500)', inf.recaudadoReal, 29500);
-  eq('saldoPendiente = solo deuda de terceros (10.000)', inf.saldoPendiente, 10000);
+  eq('pagadoTerceros = total de Beto (17.000)', inf.pagadoTerceros, 17000);
+  eq('recaudadoReal = Beto + principal (20.500)', inf.recaudadoReal, 20500);
+  eq('saldoPendiente = deuda de Carlos (19.000)', inf.saldoPendiente, 19000);
   // saldoPendiente == Σ saldos de los deudores (terceros)
   const sumaDeudores = Store.select.deudores(P()).reduce((s, d) => s + d.saldo, 0);
   eq('saldoPendiente == Σ deudores', inf.saldoPendiente, sumaDeudores);
@@ -421,9 +421,9 @@ section('Nombre automático de la primada + agrupación del selector');
 /* ============================================================ 8. Robustez */
 section('Robustez');
 {
-  const a = migrate(null); check('null → defaultState v4', a.schemaVersion === 4 && a.primadas.length === 0 && a.personas.length === 0);
-  const b = migrate(42); check('basura → defaultState v4', b.schemaVersion === 4 && Array.isArray(b.primadas));
-  const d = defaultState(); check('defaultState forma v4', 'personas' in d && 'primadas' in d && 'settings' in d && !('ahorrosMensuales' in d));
+  const a = migrate(null); check('null → defaultState v5', a.schemaVersion === 5 && a.primadas.length === 0 && a.personas.length === 0);
+  const b = migrate(42); check('basura → defaultState v5', b.schemaVersion === 5 && Array.isArray(b.primadas));
+  const d = defaultState(); check('defaultState forma v5', 'personas' in d && 'primadas' in d && 'settings' in d && !('ahorrosMensuales' in d));
   eq('defaultState cover sugerido 15000/10000', d.settings.cover.ahorrador + '/' + d.settings.cover.invitado, '15000/10000');
 }
 

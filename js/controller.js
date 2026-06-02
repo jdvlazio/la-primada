@@ -50,7 +50,7 @@
   //   (mismo patrón que personasAbiertas; clon del componente de Personas)
   const ui = { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, wizard: null,
                personasAbiertas: new Set(), nuevaPersona: false,
-               configAsis: new Set(), configProd: new Set() };
+               configAsis: new Set(), configProd: new Set(), pagarPid: null };
 
   function rerender() { View.render(Store.select.state(), ui); }
 
@@ -203,16 +203,20 @@
         break;
       }
 
-      // ----- abonos/pagos (válidos AUNQUE la primada esté cerrada) -----
-      case 'abonar': {
-        const inp = document.getElementById('abono-' + pid);
-        const monto = inp ? Number(inp.value) : 0;
-        if (!monto || monto <= 0) { View.toast('Monto no válido'); return; }
-        A.registrarAbono(prm, pid, monto);
-        View.toast('Abono registrado');
-        break;
+      // ----- pago BINARIO (válido AUNQUE la primada esté cerrada: los pagos llegan después) -----
+      // "Pagar" abre la hoja con la llave Bre-B del principal; "Ya pagué" marca pagado; "Deshacer" revierte.
+      case 'open-pagar':    ui.overlay = 'pagar'; ui.pagarPid = pid; rerender(); return;
+      case 'marcar-pagado': A.setPagado(prm, pid, true); ui.overlay = null; ui.pagarPid = null; View.toast('Marcado como pagado'); rerender(); return;
+      case 'set-no-pagado': A.setPagado(prm, pid, false); break;
+      case 'copiar-llave': {
+        const llave = b.dataset.llave || '';
+        const ok = () => View.toast('Llave copiada');
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(llave).then(ok).catch(function () { View.toast(llave); });
+          else View.toast(llave);
+        } catch (e) { View.toast(llave); }
+        return;
       }
-      case 'remove-abono': A.removerAbono(prm, pid, b.dataset.abono); break;
 
       // ----- pantallas del engranaje (Personas / Ajustes) -----
       case 'open-personas':  ui.overlay = 'personas'; rerender(); return;

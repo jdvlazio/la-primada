@@ -46,6 +46,7 @@
     'plus-circle':'<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/>',
     'trash-2':    '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
     'check':      '<polyline points="20 6 9 17 4 12"/>',
+    'copy':       '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
     'x':          '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     'chevron-down':'<path d="m6 9 6 6 6-6"/>',
   };
@@ -301,37 +302,61 @@
 
     if (!abierto) return `<div class="asis">${cabecera}</div>`;
 
-    // OPERACIÓN = mínima: SOLO consumo + abono. El rol, el cover y "Quitar" son CONFIGURACIÓN
+    // OPERACIÓN = mínima: SOLO consumo + PAGO. El rol, el cover y "Quitar" son CONFIGURACIÓN
     // y viven en el overlay "Configurar primada" (sección Asistentes), no aquí.
     return `<div class="asis open">
       ${cabecera}
       <div class="acc-body">
         ${consumoBloque(p, a, ui)}
-        ${abonosBlock(p, a)}
+        ${pagoBlock(p, a)}
       </div>
     </div>`;
   }
 
-  // Abonos/pagos por asistencia. SIGUE activo aunque la primada esté cerrada (INVARIANTE #4):
-  // la cuenta se cierra, pero los pagos llegan después. El principal está auto-saldado → sin abonos.
-  function abonosBlock(p, a) {
+  // Bloque de PAGO por asistencia (binario). El que paga se autosirve: "Pagar" abre una hoja con la
+  // llave Bre-B del principal + el monto. SIGUE activo aunque la primada esté cerrada (INVARIANTE #4:
+  // la cuenta se cierra, los pagos llegan después). El principal está auto-saldado → sin pago.
+  function pagoBlock(p, a) {
     if (S().esPrincipal(p, a)) return '';
     const total = S().totalAsistencia(p, a);
-    const abonos = a.abonos || [];
-    if (total <= 0 && abonos.length === 0) return '';
-    const abonado = S().abonadoDe(a);
-    const lista = abonos.length
-      ? `<div class="abonos">${abonos.map(b =>
-          `<div class="abono">${icon('check', 'sm')}<span>${e(b.fecha)}</span><b>${$peso(b.monto)}</b><button class="xmini" data-act="remove-abono" data-pid="${a.personaId}" data-abono="${b.id}" aria-label="quitar abono">${icon('trash-2', 'sm')}</button></div>`).join('')}</div>`
-      : '';
+    if (total <= 0) return '';
+    if (a.pagado) {
+      return `<div class="pay paid">
+        <span class="pay-state">${icon('check', 'sm')}Pagado</span>
+        <button class="mini ghost" data-act="set-no-pagado" data-pid="${a.personaId}">Deshacer</button>
+      </div>`;
+    }
     return `<div class="pay">
-      <div class="pay-form">
-        <input class="ti" id="abono-${a.personaId}" type="number" min="0" step="1000" inputmode="numeric" placeholder="Abono" aria-label="Monto del abono">
-        <button class="mini" data-act="abonar" data-pid="${a.personaId}">Abonar</button>
-      </div>
-      ${abonado ? `<div class="pay-sum muted small">Abonado: <b>${$peso(abonado)}</b></div>` : ''}
-      ${lista}
+      <button class="mini" data-act="open-pagar" data-pid="${a.personaId}">${icon('log-in')}Pagar ${$peso(total)}</button>
     </div>`;
+  }
+
+  // Hoja "Pagar": muestra la llave Bre-B del PRINCIPAL de esta primada (snapshot pago.breB, fallback
+  // a la llave vigente del principal) + el monto que debe la persona + "Copiar" + "Ya pagué" (el que
+  // paga se autosirve y marca su propio pago). Sin comprobante en la app (se comparte por fuera).
+  function pagarSheet(state, ui) {
+    const p = S().activePrimada();
+    const a = p && (p.asistencias || []).find(x => x.personaId === (ui && ui.pagarPid));
+    const head = (titulo) => `<div class="sheet-head"><div class="sheet-title">${titulo}</div>
+      <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button></div>`;
+    if (!p || !a) return `<div class="sheet">${head('Pagar')}<div class="empty-soft">Sin datos</div></div>`;
+    const total = S().totalAsistencia(p, a);
+    const principalId = p.organizadorPrincipalId;
+    const llave = (p.pago && p.pago.breB) || (principalId ? (S().persona(principalId) || {}).breB : null) || '';
+    const nombrePrin = principalId ? nombrePersona(principalId) : '—';
+    const llaveBlock = llave
+      ? `<div class="pagar-llave">
+           <span class="pagar-llave-val">${e(llave)}</span>
+           <button class="mini ghost" data-act="copiar-llave" data-llave="${e(llave)}">${icon('copy')}Copiar</button>
+         </div>`
+      : `<div class="muted small">El principal aún no tiene una llave Bre-B.
+           <button class="link-inline" data-act="open-personas">Agregar en Personas</button></div>`;
+    const cuerpo = `
+      <div class="pagar-amount">${$peso(total)}</div>
+      <div class="pagar-to">Transfiere por Bre-B a <b>${e(nombrePrin)}</b></div>
+      ${llaveBlock}
+      <button class="btn" data-act="marcar-pagado" data-pid="${a.personaId}">${icon('check')}Ya pagué</button>`;
+    return `<div class="sheet">${head('Pagar a ' + e(nombrePrin))}<div class="sheet-body pagar">${cuerpo}</div></div>`;
   }
 
   // "+ Agregar" en operación = acción simple: abre una HOJA con el directorio (addAsisSheet).
@@ -411,7 +436,7 @@
       <div class="kv"><span>Recupera</span><b>${$peso(inf.recuperaPrincipal)}</b></div>
       <div class="kv total"><span>Entrega al Tesorero</span><b>${$peso(inf.entregaTesorero)}</b></div>
       <div class="kv"><span>Recaudado</span><b>${$peso(inf.recaudadoReal)}</b></div>
-      <div class="kv subkv"><span>· de terceros</span><b>${$peso(inf.abonosTerceros)}</b></div>
+      <div class="kv subkv"><span>· de terceros</span><b>${$peso(inf.pagadoTerceros)}</b></div>
       <div class="kv subkv"><span>· del principal</span><b>${$peso(inf.autoAbonoPrincipal)}</b></div>
       <div class="kv"><span>Pendiente</span><b class="${inf.saldoPendiente > 0 ? 'owe' : ''}">${$peso(inf.saldoPendiente)}</b></div>
       <div class="sub">Debe</div>
@@ -702,6 +727,7 @@
 
     // 3) overlay: wizard (prioridad) · config de primada · pantalla del engranaje (Personas / Ajustes)
     if (ui.wizard)                                              els.overlay.innerHTML = wizardSheet(state, ui);
+    else if (ui.overlay === 'pagar')                           els.overlay.innerHTML = pagarSheet(state, ui);
     else if (ui.overlay === 'selector-primada')                els.overlay.innerHTML = selectorSheet(state, ui);
     else if (ui.overlay === 'config-primada')                  els.overlay.innerHTML = configPrimadaSheet(state, ui);
     else if (ui.overlay === 'add-asis')                        els.overlay.innerHTML = addAsisSheet(state, ui);

@@ -7,7 +7,7 @@
 
   const CONFIG = {
     storageKey: 'laPrimada',
-    schemaVersion: 4,
+    schemaVersion: 5,
     locale: 'es-CO',
 
     // Backend Supabase. URL + anon key son PÚBLICAS por diseño (van en el bundle, como las fuentes):

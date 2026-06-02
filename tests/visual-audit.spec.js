@@ -400,3 +400,50 @@ test.describe('Selector de primada + nombre automático', () => {
     expect(nombre).toBe('Primada Ana + Beto');       // primer token de cada uno
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6 · PAGO binario: "Pagar" → hoja con llave Bre-B → "Ya pagué" (no hay "Abonar")
+// ─────────────────────────────────────────────────────────────────────────────
+test.describe('Pagar (binario) + llave Bre-B', () => {
+  test('G1 — NO existe "Abonar" en la app', async ({ page }) => {
+    await abrirApp(page);
+    await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
+    await crearPrimada(page, 'Ana');
+    expect(await page.locator('[data-act="abonar"]').count()).toBe(0);
+    expect(await page.locator('[data-act="remove-abono"]').count()).toBe(0);
+  });
+
+  test('G2 — Pagar muestra la llave del principal y "Ya pagué" marca pagado', async ({ page }) => {
+    await abrirApp(page);
+    await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }, { nombre: 'Beto', estado: 'invitado' }]);
+    // Ana (futura principal) tiene su llave Bre-B ANTES de crear → queda en el snapshot pago.breB.
+    await page.evaluate(() => {
+      const S = window.Store, ana = S.select.state().personas.find(p => p.nombre === 'Ana');
+      S.actions.setBreBPersona(ana.id, 'ana-bre-b-123');
+    });
+    await crearPrimada(page, 'Ana');
+    // Beto entra como asistente y consume → debe.
+    const betoId = await page.evaluate(() => {
+      const S = window.Store, st = S.select.state(), p = st.primadas[0];
+      const beto = st.personas.find(x => x.nombre === 'Beto');
+      S.actions.addAsistencia(p.id, beto.id);
+      S.actions.changeItem(p.id, beto.id, p.productos[0].id, 1);
+      return beto.id;
+    });
+    await page.click(`#screen [data-act="toggle-asis"][data-pid="${betoId}"]`);   // expandir su tarjeta
+    await expect(page.locator(`[data-act="open-pagar"][data-pid="${betoId}"]`)).toBeVisible();
+    await page.click(`[data-act="open-pagar"][data-pid="${betoId}"]`);
+    // la hoja muestra la llave Bre-B del principal
+    await expect(page.locator('.overlay .pagar-llave-val')).toContainText('ana-bre-b-123');
+    await page.click(`.overlay [data-act="marcar-pagado"][data-pid="${betoId}"]`);  // "Ya pagué"
+    await expect(page.locator('.overlay')).toBeHidden();                            // la hoja se cerró
+    const r = await page.evaluate((id) => {
+      const p = window.Store.select.state().primadas[0];
+      const a = p.asistencias.find(x => x.personaId === id);
+      return { pagado: a.pagado, saldo: window.Store.select.saldoDe(p, a) };
+    }, betoId);
+    expect(r.pagado).toBe(true);
+    expect(r.saldo).toBe(0);
+    await expect(page.locator('#screen')).toContainText('Pagado');                  // la tarjeta lo refleja
+  });
+});

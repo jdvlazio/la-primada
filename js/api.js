@@ -65,7 +65,7 @@
     rows = rows || {};
     const sd = (rows.settings && rows.settings[0] && rows.settings[0].data) || {};
     return {
-      schemaVersion: 4,
+      schemaVersion: 5,
       settings: { cover: sd.cover, defaultProducts: sd.defaultProducts },
       personas: (rows.personas || []).map(rowToPersona),
       primadas: (rows.primadas || []).map(rowToPrimada),
