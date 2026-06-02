@@ -302,9 +302,10 @@ organizadores, ej. "Juanda + Joha"). Esto distingue varias primadas del **mismo 
 mostrara "Junio", dos primadas de junio serían idénticas). Helper de Vista: `nombreCorto(nombre)`.
 
 **Cerrado (`.selrow`):** una fila con `[selector (flex:1)] [⚙ Configurar] [+ Nueva]`.
-- `.prm-selector` (botón tappable, `data-act="open-selector"`): **dos líneas** — **`.sel-main`** = punto
-  de estado + `"Mes Año"` (guía, `Util.monthYear`, peso 800/22px) sobre **`.sel-sub`** = **nombre corto**
-  (`nombreCorto`, `--ink-soft`, identidad). `.sel-caret` (chevron-down) rota 180° abierto.
+- `.prm-selector` (botón tappable, `data-act="open-selector"`): **dos líneas** — **`.sel-main`** =
+  **nombre corto** (`nombreCorto`, peso 800/22px, **IDENTIDAD primaria**) sobre **`.sel-sub`** = punto
+  de estado + `"Mes Año"` (`Util.monthYear`, `--ink-soft`, **GUÍA secundaria**). La primada no se llama
+  como el mes: el nombre manda, el mes orienta. `.sel-caret` (chevron-down) rota 180° abierto.
 - **`⚙`** (`.icon-btn`, `open-config-primada`): configuración (escondida, §2.8).
 - **`+`** (`.icon-btn.nueva`, ~32px, `new-primada`): abre el wizard de 3 pasos. **Secundario** — ícono
   pequeño, NO un `.btn` grande (crear no compite con operar). **Prohibido** el botón grande "Nueva primada".

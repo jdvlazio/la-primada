@@ -339,16 +339,17 @@ test.describe('Selector de primada + nombre automático', () => {
     expect(await page.locator('#screen .icon-btn.nueva[data-act="new-primada"]').count()).toBe(1);
   });
 
-  test('F2 — selector cerrado: "Mes Año" (guía) + nombre CORTO sin "Primada"; el "+" abre el wizard', async ({ page }) => {
+  test('F2 — selector cerrado: NOMBRE corto primario (sin "Primada") + mes guía; el "+" abre el wizard', async ({ page }) => {
     await abrirApp(page);
     await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
     await crearPrimada(page, 'Ana');
     const main = page.locator('.sel-main').first();
     const sub = page.locator('.sel-sub').first();
-    await expect(main).toBeVisible();                      // "Mes Año" (guía)
-    await expect(sub).toBeVisible();                       // el nombre NO se perdió (identidad)
-    await expect(sub).toContainText('Ana');               // el organizador identifica la primada
-    await expect(sub).not.toContainText('Primada');       // pero SIN la palabra "Primada" (reducido)
+    await expect(main).toBeVisible();                      // identidad (primaria) = el nombre
+    await expect(main).toContainText('Ana');              // el organizador identifica la primada
+    await expect(main).not.toContainText('Primada');      // SIN la palabra "Primada" (reducido)
+    await expect(sub).toBeVisible();                       // guía (secundaria) = el mes/año
+    await expect(sub).not.toContainText('Ana');           // el mes NO lleva el nombre
     // el "+" abre el wizard (no crea directo)
     await page.click('[data-act="new-primada"]');
     await expect(page.locator('.wz')).toBeVisible();

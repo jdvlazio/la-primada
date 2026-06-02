@@ -74,13 +74,13 @@
     const cerrada = p.estado === 'cerrada';
     const abierto = ui && ui.overlay === 'selector-primada';
     const inc = S().primadaIncompleta(p) ? ' ' + badge('sin principal', 'warn') : '';
-    // Identidad: el PERÍODO (Mes Año) como GUÍA primaria + el NOMBRE corto (sin "Primada") como
-    // identidad real, tenue. El mes orienta (habrá muchas al año); el nombre distingue cuál es.
+    // Jerarquía: el NOMBRE corto (sin "Primada") es la IDENTIDAD → primario, grande. El período
+    // (Mes Año) es la GUÍA → secundario, tenue, debajo. (La primada no se llama como el mes.)
     return `<div class="selrow">
       <button class="prm-selector" data-act="open-selector" aria-haspopup="listbox" aria-expanded="${abierto ? 'true' : 'false'}">
         <span class="sel-text">
-          <span class="sel-main"><span class="dot ${cerrada ? 'closed' : 'open'}"></span>${e(Util.monthYear(p.mesContable))}</span>
-          <span class="sel-sub">${e(nombreCorto(p.nombre))}${inc}</span>
+          <span class="sel-main">${e(nombreCorto(p.nombre))}</span>
+          <span class="sel-sub"><span class="dot ${cerrada ? 'closed' : 'open'}"></span>${e(Util.monthYear(p.mesContable))}${inc}</span>
         </span>
         <span class="sel-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
       </button>
