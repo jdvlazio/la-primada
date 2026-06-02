@@ -190,13 +190,15 @@
   .link-inline{background:none;border:none;padding:0;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline}
 
   /* inputs base */
-  .ti{font-family:inherit;font-size:14px;min-height:var(--tap-input);padding:var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper);color:var(--ink);width:100%}
-  .ti:focus{outline:none;border-color:var(--red)}
+  /* Inputs SUTILES (como en Personas): borde tenue en reposo, acento al enfocar. Sin caja marcada. */
+  .ti{font-family:inherit;font-size:14px;min-height:var(--tap-input);padding:var(--space-3);border:1px solid var(--line-soft);border-radius:var(--radius-md);background:var(--paper);color:var(--ink);width:100%}
+  .ti:focus{outline:none;border-color:var(--accent)}
   .ti.name{font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:18px}
   .ti:disabled{opacity:.6}
   /* Select con chevron-down de Lucide (appearance:none): una sola flecha, no las dobles nativas.
      Igual que el caret de fila (.acc-caret, --ink-soft). El <select> nativo sigue funcional. */
-  .sel{font-family:inherit;font-size:13px;min-height:var(--tap-input);padding:var(--space-2) calc(var(--space-3) + 22px) var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);color:var(--ink);appearance:none;-webkit-appearance:none;background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238aa3a0' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right var(--space-3) center;background-size:16px}
+  .sel{font-family:inherit;font-size:13px;min-height:var(--tap-input);padding:var(--space-2) calc(var(--space-3) + 22px) var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);color:var(--ink);appearance:none;-webkit-appearance:none;background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238aa3a0' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right var(--space-3) center;background-size:16px;border:1px solid var(--line-soft)}
+  .sel:focus{outline:none;border-color:var(--accent)}
   .sel:disabled{opacity:.6}
   .fld{display:flex;flex-direction:column;gap:var(--space-1);font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin:var(--space-3) 0}
@@ -425,13 +427,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-083703-2e478d7"></script>
-  <script src="js/util.js?v=20260602-083703-2e478d7"></script>
-  <script src="js/api.js?v=20260602-083703-2e478d7"></script>
-  <script src="js/auth.js?v=20260602-083703-2e478d7"></script>
-  <script src="js/store.js?v=20260602-083703-2e478d7"></script>
-  <script src="js/view.js?v=20260602-083703-2e478d7"></script>
-  <script src="js/controller.js?v=20260602-083703-2e478d7"></script>
+  <script src="js/config.js?v=20260602-085349-1e048e2"></script>
+  <script src="js/util.js?v=20260602-085349-1e048e2"></script>
+  <script src="js/api.js?v=20260602-085349-1e048e2"></script>
+  <script src="js/auth.js?v=20260602-085349-1e048e2"></script>
+  <script src="js/store.js?v=20260602-085349-1e048e2"></script>
+  <script src="js/view.js?v=20260602-085349-1e048e2"></script>
+  <script src="js/controller.js?v=20260602-085349-1e048e2"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
@@ -484,10 +486,32 @@
         });
       }
 
+      // FLUSH DEL COMPOSITOR (patrón Otrofestiv) — fix iOS standalone: la tabbar position:fixed
+      // aparece MAL POSICIONADA (muy arriba) hasta la primera interacción, porque el viewport/safe-area
+      // se asienta después del primer paint. Togglear transform en doble rAF fuerza al compositor a
+      // recalcular su posición al borde físico SIN esperar al toque. Se repite tras load y al volver
+      // de background (cuando el viewport se recalcula de nuevo).
+      function flushTabbar() {
+        var tb = document.getElementById('tabbar');
+        if (!tb) return;
+        tb.style.transform = 'translateY(0)';
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { tb.style.transform = ''; });
+        });
+      }
+      function flushTabbarRepetido() {
+        // varios intentos: algunos iOS asientan el viewport con retraso tras abrir.
+        flushTabbar();
+        [60, 200, 500].forEach(function (ms) { setTimeout(flushTabbar, ms); });
+      }
+      if (document.readyState === 'complete') flushTabbarRepetido();
+      else window.addEventListener('load', flushTabbarRepetido);
+
       checkVersion();                               // 1) cold start
       document.addEventListener('visibilitychange', function () {   // 1+3) volver de background
         if (document.visibilityState === 'visible' && !reloading) {
           checkVersion();
+          flushTabbarRepetido();                    // re-posicionar la tabbar tras volver de bg
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.ready.then(function (reg) { reg.update(); }).catch(function () {});
           }
