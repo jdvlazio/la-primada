@@ -97,7 +97,18 @@
         ui.loginEmail = email;
         Promise.resolve(Auth && Auth.signIn(email))
           .then(() => { ui.loginEstado = 'sent'; rerender(); })
-          .catch((err) => { View.toast(err && err.message ? err.message : 'No se pudo enviar el link'); ui.loginEstado = 'form'; rerender(); });
+          .catch((err) => { View.toast(err && err.message ? err.message : 'No se pudo enviar el código'); ui.loginEstado = 'form'; rerender(); });
+        return;
+      }
+      // Verifica el CÓDIGO pegado → sesión EN ESTE dispositivo. El onChange (gate) cierra la hoja y carga.
+      case 'login-verificar': {
+        const inp = document.getElementById('login-codigo');
+        const code = (inp && inp.value || '').replace(/\s/g, '').trim();
+        if (!/^\d{4,8}$/.test(code)) { View.toast('Código no válido'); return; }
+        b.disabled = true;
+        Promise.resolve(Auth && Auth.verifyOtp(ui.loginEmail, code))
+          .then(() => { View.toast('Sesión iniciada'); /* onChange cierra y recarga */ })
+          .catch((err) => { b.disabled = false; View.toast(err && err.message ? err.message : 'Código inválido o vencido'); });
         return;
       }
       case 'login-reset': ui.loginEstado = 'form'; rerender(); return;

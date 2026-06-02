@@ -755,17 +755,20 @@
     const cuerpo = enviado
       ? `<div class="login-sent">
            <div class="login-emoji">📧</div>
-           <p>Enlace enviado a<br><b>${e(email || 'tu correo')}</b></p>
+           <p>Código enviado a<br><b>${e(email || 'tu correo')}</b></p>
+           <input class="ti login-code" id="login-codigo" inputmode="numeric" autocomplete="one-time-code"
+                  pattern="[0-9]*" maxlength="6" placeholder="Código" aria-label="Código del correo">
+           <button class="btn" data-act="login-verificar">Verificar</button>
            <button class="btn ghost" data-act="login-reset">Otro correo</button>
          </div>`
       : `<div class="login-form">
-           <p class="muted small">Enlace por correo, sin contraseña.</p>
+           <p class="muted small">Te enviamos un código al correo para pegarlo aquí.</p>
            <input class="ti" id="login-email" type="email" inputmode="email" autocomplete="email"
                   placeholder="tu@correo.com" value="${e(email)}" aria-label="Correo">
-           <button class="btn" data-act="login-enviar">Entrar</button>
+           <button class="btn" data-act="login-enviar">Enviar código</button>
          </div>`;
     return `<div class="sheet login-sheet">
-        <div class="sheet-head"><div class="sheet-title">${enviado ? 'Revisa tu correo' : 'Entrar'}</div>
+        <div class="sheet-head"><div class="sheet-title">${enviado ? 'Escribe el código' : 'Entrar'}</div>
           <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button></div>
         <div class="sheet-body">${cuerpo}</div>
       </div>`;

@@ -36,7 +36,17 @@
     const c = client(); if (!c) throw new Error('Auth no disponible');
     const redirectTo = (typeof location !== 'undefined') ? (location.origin + location.pathname) : undefined;
     const { error } = await c.auth.signInWithOtp({ email: String(email || '').trim(), options: { emailRedirectTo: redirectTo } });
-    if (error) throw new Error(error.message || 'No se pudo enviar el link');
+    if (error) throw new Error(error.message || 'No se pudo enviar el código');
+    return true;
+  }
+
+  // Verifica el CÓDIGO (OTP) que llegó por correo → inicia sesión EN ESTE dispositivo (a diferencia
+  // del magic link, que se abre donde se hace clic). type:'email' = el mismo signInWithOtp passwordless.
+  // Requiere que el template de email de Supabase incluya el token ({{ .Token }}).
+  async function verifyOtp(email, token) {
+    const c = client(); if (!c) throw new Error('Auth no disponible');
+    const { error } = await c.auth.verifyOtp({ email: String(email || '').trim(), token: String(token || '').trim(), type: 'email' });
+    if (error) throw new Error(error.message || 'Código inválido o vencido');
     return true;
   }
 
@@ -60,7 +70,7 @@
     }
   }
 
-  const Auth = { enabled, getSession, getUser, signIn, signOut, onChange, cleanUrl };
+  const Auth = { enabled, getSession, getUser, signIn, verifyOtp, signOut, onChange, cleanUrl };
   root.Auth = Auth;
   if (typeof module !== 'undefined' && module.exports) module.exports = { Auth };
 })(typeof window !== 'undefined' ? window : globalThis);
