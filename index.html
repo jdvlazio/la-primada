@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260602-135406-8d26b25">
+<meta name="build" content="20260602-140240-833f785">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -293,7 +293,9 @@
   .sheet{background:var(--paper);width:100%;max-width:var(--content-max);max-height:92vh;overflow:auto;border-radius:var(--radius-xl);border:2px solid var(--line);padding:var(--space-4) var(--space-4) calc(var(--space-5) + max(env(safe-area-inset-bottom), 20px));box-shadow:0 -16px 40px -18px rgba(0,0,0,.5)}
   .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-5)}
   .sheet-title{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:22px}
-  .sheet.full{min-height:86vh}
+  /* Las hojas se AJUSTAN AL CONTENIDO (bottom-sheet): sin min-height forzado. El alto sale del
+     contenido, con tope max-height:92vh (.sheet) + scroll interno si es largo. .full ya no estira. */
+  .sheet.full{min-height:0}
   .sheet-body{display:block}
   /* Overlay Configurar: secciones agrupadas por AIRE (sin divisores). Cada sección abre con su
      etiqueta .sub; entre secciones, --space-5. */
@@ -439,13 +441,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-135406-8d26b25"></script>
-  <script src="js/util.js?v=20260602-135406-8d26b25"></script>
-  <script src="js/api.js?v=20260602-135406-8d26b25"></script>
-  <script src="js/auth.js?v=20260602-135406-8d26b25"></script>
-  <script src="js/store.js?v=20260602-135406-8d26b25"></script>
-  <script src="js/view.js?v=20260602-135406-8d26b25"></script>
-  <script src="js/controller.js?v=20260602-135406-8d26b25"></script>
+  <script src="js/config.js?v=20260602-140240-833f785"></script>
+  <script src="js/util.js?v=20260602-140240-833f785"></script>
+  <script src="js/api.js?v=20260602-140240-833f785"></script>
+  <script src="js/auth.js?v=20260602-140240-833f785"></script>
+  <script src="js/store.js?v=20260602-140240-833f785"></script>
+  <script src="js/view.js?v=20260602-140240-833f785"></script>
+  <script src="js/controller.js?v=20260602-140240-833f785"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).

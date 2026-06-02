@@ -213,8 +213,9 @@ Pantallas secundarias (Personas, Ajustes, wizard) entran como sheet desde abajo.
 
 | Clase | Propiedades canónicas |
 |---|---|
-| `.overlay` | `position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:50; display:flex; justify-content:center; align-items:flex-end` |
-| `.sheet` | `background:var(--paper); width:100%; max-width:var(--content-max); max-height:92vh; border-radius:var(--radius-xl); border:2px solid var(--line); padding-bottom:calc(var(--space-5) + max(env(safe-area-inset-bottom),20px))` |
+| `.overlay` | `position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1100; display:flex; justify-content:center; align-items:flex-end` (bottom-sheet) |
+| `.sheet` | `background:var(--paper); width:100%; max-width:var(--content-max); max-height:92vh; overflow:auto; border-radius:var(--radius-xl); border:2px solid var(--line); padding-bottom:calc(var(--space-5) + max(env(safe-area-inset-bottom),20px))` |
+| `.sheet.full` | `min-height:0` — **se AJUSTA AL CONTENIDO** (bottom-sheet que abraza su alto). **No** se fuerza a llenar la pantalla; si el contenido supera `max-height:92vh`, scrollea adentro. Una hoja corta (p. ej. el selector con pocas primadas) queda pegada abajo, ocupando solo lo necesario |
 | `.sheet-head` | título (`.sheet-title`, 800/22px) + cerrar (`x`); `margin-bottom:var(--space-5)` |
 
 ### 2.6 · Estado vacío (✅ CANÓNICO)
