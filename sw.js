@@ -10,7 +10,7 @@
    ============================================================ */
 'use strict';
 
-const CACHE_VERSION = '20260602-085349-1e048e2';
+const CACHE_VERSION = '20260602-094237-18ba45a';
 const CACHE_NAME = 'primadapp-' + CACHE_VERSION;
 
 // Núcleo a precachear (todo servido por GitHub Pages, rutas relativas al scope).
@@ -37,22 +37,20 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: borrar TODOS los cachés viejos, reclamar, y NAVEGAR los clientes SOLO en la primera
-// instalación (modelo de Otrofestiv). En updates posteriores NO se navega desde el SW: de eso se
-// encarga el check de version.json en index.html (location.reload duro), fiable en iOS. Navegar en
-// cada activate provocaba recargas espurias / loops.
+// Activate: borrar TODOS los cachés viejos, reclamar, y NAVEGAR los clientes EN CADA activate.
+// Un activate solo ocurre cuando un SW NUEVO toma control (un deploy real), no en cada apertura
+// → navegar aquí refresca las ventanas abiertas al HTML fresco SIN que el usuario haga nada, y
+// DESATASCA devices pegados a un SW viejo (apenas el SW nuevo entra, los reposiciona en la versión
+// nueva). Es la garantía dura que faltaba; no hay loop porque activate no se repite sin deploy.
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    const primeraInstalacion = !keys.some((k) => k.startsWith('primadapp-'));
     await Promise.all(
       keys.filter((k) => k.startsWith('primadapp-') && k !== CACHE_NAME).map((k) => caches.delete(k))
     );
     await self.clients.claim();
-    if (primeraInstalacion) {
-      const wins = await self.clients.matchAll({ type: 'window' });
-      await Promise.all(wins.map((c) => { try { return c.navigate(c.url); } catch (e) { return null; } }));
-    }
+    const wins = await self.clients.matchAll({ type: 'window' });
+    await Promise.all(wins.map((c) => { try { return c.navigate(c.url); } catch (e) { return null; } }));
   })());
 });
 

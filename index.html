@@ -427,13 +427,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260602-085349-1e048e2"></script>
-  <script src="js/util.js?v=20260602-085349-1e048e2"></script>
-  <script src="js/api.js?v=20260602-085349-1e048e2"></script>
-  <script src="js/auth.js?v=20260602-085349-1e048e2"></script>
-  <script src="js/store.js?v=20260602-085349-1e048e2"></script>
-  <script src="js/view.js?v=20260602-085349-1e048e2"></script>
-  <script src="js/controller.js?v=20260602-085349-1e048e2"></script>
+  <script src="js/config.js?v=20260602-094237-18ba45a"></script>
+  <script src="js/util.js?v=20260602-094237-18ba45a"></script>
+  <script src="js/api.js?v=20260602-094237-18ba45a"></script>
+  <script src="js/auth.js?v=20260602-094237-18ba45a"></script>
+  <script src="js/store.js?v=20260602-094237-18ba45a"></script>
+  <script src="js/view.js?v=20260602-094237-18ba45a"></script>
+  <script src="js/controller.js?v=20260602-094237-18ba45a"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
@@ -445,7 +445,12 @@
        3) reg.update() al volver de background → re-verifica sw.js contra el servidor. -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+      // updateViaCache:'none' → el navegador NUNCA sirve sw.js desde su caché HTTP al chequear
+      // updates; siempre lo baja fresco y DETECTA el SW nuevo. Sin esto, iOS servía el sw.js
+      // cacheado y nunca veía el cambio → el device quedaba pegado a un SW viejo.
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(function () {});
+      });
     }
     (function () {
       var KEY = 'laPrimada_build';      // último build visto
