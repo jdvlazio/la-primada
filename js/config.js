@@ -38,6 +38,23 @@
       { id: 'rollo',   nombre: 'Rollo de canela', emoji: '🌀',  costoNeto: 6000, precioVenta: 9000, aportadoPor: null },
       { id: 'rifa',    nombre: 'Boleta de rifa',  emoji: '🎟️', costoNeto: 0,    precioVenta: 5000, aportadoPor: null },
     ],
+
+    // Autosugerencia de emoji por palabra clave del nombre del producto (primer match gana; el cómo
+    // lo usa Util.emojiSugerido). Sabor natillera (Colombia). Si no hay match → fallback del que llama.
+    emojiKeywords: [
+      ['cerve|costeñ|costen|aguila|águila|club colombia|poker|póker|polar|corona|heineken|michelad|birra|pola', '🍺'],
+      ['vino', '🍷'],
+      ['aguardiente|guaro|ron|whisky|whiskey|tequila|vodka|cuba libre|coctel|cóctel|trago', '🍹'],
+      ['gaseosa|cola|refresco|postobon|postobón|colombiana|manzana postobon|soda|sprite|quatro', '🥤'],
+      ['agua', '💧'], ['jugo|hit', '🧃'], ['café|cafe|tinto|capuchino|cappuccino', '☕'],
+      ['brownie|chocolat|chocolatin', '🍫'], ['torta|pastel|ponqué|ponque|cheesecake|cake', '🍰'], ['galleta|cookie', '🍪'],
+      ['rollo|canela|cinnamon', '🌀'], ['dona|donut|rosquilla', '🍩'], ['helado|paleta|gelato', '🍦'],
+      ['arequipe|dulce|postre|flan|natilla', '🍮'], ['cupcake|muffin|magdalena', '🧁'],
+      ['empanada', '🥟'], ['arepa|pan|panad|buñuelo|bunuelo', '🫓'], ['hamburguesa|hot dog|perro|sandwich|sándwich', '🍔'],
+      ['pizza', '🍕'], ['papa|chip|snack|mecato|choclitos|platanitos|deditos', '🍟'], ['queso', '🧀'],
+      ['rifa|boleta|tómbola|tombola|sorteo|número|numero|premio', '🎟️'], ['juego|bingo|lotería|loteria|dado', '🎲'],
+      ['fruta|manzana|banano|fresa', '🍓'],
+    ],
   };
 
   root.CONFIG = CONFIG;
