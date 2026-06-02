@@ -89,8 +89,6 @@
   .btn.ghost{background:var(--paper-2);color:var(--ink);border:2px solid var(--line)}
   .btn.ghost:hover{border-color:var(--red);background:var(--paper-2)}
 
-  .panel{background:var(--paper-2);color:var(--ink);border-radius:var(--radius-lg);padding:var(--space-4);margin-bottom:var(--space-4);box-shadow:var(--shadow)}
-  .panel-title{font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:20px;margin-bottom:var(--space-2)}
   .kv{display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-3);padding:var(--space-1) 0;font-size:13px;border-top:1px solid var(--line-soft)}
   .kv:first-of-type{border-top:none}
   .kv span{color:var(--ink-soft)}
@@ -206,10 +204,7 @@
   .card.dark{background:var(--paper-3);color:var(--ink)}
   .card.dark .kv span{color:var(--ink-soft)}
   .card.dark .sub{color:var(--ink-soft)}
-  .card-head{display:flex;align-items:center;gap:var(--space-2)}
   .card-title{font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:16px;margin-bottom:var(--space-2)}
-  .state{font-size:12px;font-weight:700}
-  .state.closed{color:var(--ink-soft)}
   .kv.total{border-top:2px solid var(--line);margin-top:var(--space-1);padding-top:var(--space-2);font-weight:700}
   .card.dark .kv.total{border-top-color:rgba(255,255,255,.22)}
   .kv.total b{color:var(--red-deep);font-size:15px}
@@ -390,13 +385,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260601-191700-de75abf"></script>
-  <script src="js/util.js?v=20260601-191700-de75abf"></script>
-  <script src="js/api.js?v=20260601-191700-de75abf"></script>
-  <script src="js/auth.js?v=20260601-191700-de75abf"></script>
-  <script src="js/store.js?v=20260601-191700-de75abf"></script>
-  <script src="js/view.js?v=20260601-191700-de75abf"></script>
-  <script src="js/controller.js?v=20260601-191700-de75abf"></script>
+  <script src="js/config.js?v=20260601-191907-17c0662"></script>
+  <script src="js/util.js?v=20260601-191907-17c0662"></script>
+  <script src="js/api.js?v=20260601-191907-17c0662"></script>
+  <script src="js/auth.js?v=20260601-191907-17c0662"></script>
+  <script src="js/store.js?v=20260601-191907-17c0662"></script>
+  <script src="js/view.js?v=20260601-191907-17c0662"></script>
+  <script src="js/controller.js?v=20260601-191907-17c0662"></script>
 
   <!-- PWA: registrar el Service Worker (network-first; CACHE_VERSION se estampa en cada commit). -->
   <script>
