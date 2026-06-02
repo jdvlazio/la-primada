@@ -103,14 +103,21 @@ test.describe('Conformidad DESIGN.md — verde', () => {
     expect(color).toBe(ACCENT);
   });
 
-  test('C4 — tabbar anclada (position:fixed; bottom:0) (§6 safe areas)', async ({ page }) => {
+  test('C4 — app shell: body NO scrollea; tabbar anclada por estructura (§6)', async ({ page }) => {
     await abrirApp(page);
-    const tb = await page.evaluate(() => {
-      const cs = getComputedStyle(document.querySelector('.tabbar'));
-      return { position: cs.position, bottom: cs.bottom };
+    const r = await page.evaluate(() => {
+      const tb = document.querySelector('.tabbar');
+      const rect = tb.getBoundingClientRect();
+      return {
+        bodyOverflow: getComputedStyle(document.body).overflow,
+        hasScroller: !!document.querySelector('.app-scroll'),
+        tabbarBottom: Math.round(rect.bottom),
+        innerHeight: window.innerHeight,
+      };
     });
-    expect(tb.position).toBe('fixed');
-    expect(tb.bottom).toBe('0px');
+    expect(r.bodyOverflow).toBe('hidden');          // el body no scrollea (clave del anclaje iOS)
+    expect(r.hasScroller).toBe(true);               // el scroll vive en .app-scroll
+    expect(r.tabbarBottom).toBe(r.innerHeight);     // la tabbar toca el borde inferior del viewport
   });
 
   test('C5 — saldo en deuda usa color en el NÚMERO, no borde de fila (§2.1 / §3)', async ({ page }) => {
@@ -205,20 +212,22 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
     await expect(page.locator('.overlay [data-ch="venta-producto"]').first()).toBeVisible();
   });
 
-  test('E3 — tabbar fija: position:fixed, bottom:0, will-change (iOS), anclada bajo scroll', async ({ page }) => {
+  test('E3 — tabbar anclada por estructura: el scroll del contenido no la mueve', async ({ page }) => {
     await appConPrimadaAbierta(page);
     const r = await page.evaluate(() => {
       const tb = document.querySelector('.tabbar');
+      const scroller = document.querySelector('.app-scroll');
       const top0 = Math.round(tb.getBoundingClientRect().top);
+      // scrollear el contenedor interno (no el body) y el body por si acaso
+      scroller.scrollTop = 400;
       window.scrollTo(0, 400);
       const top1 = Math.round(tb.getBoundingClientRect().top);
-      const cs = getComputedStyle(tb);
-      return { position: cs.position, bottom: cs.bottom, willChange: cs.willChange, top0, top1 };
+      const bottom = Math.round(tb.getBoundingClientRect().bottom);
+      return { top0, top1, bottom, innerHeight: window.innerHeight, windowScrollY: window.scrollY };
     });
-    expect(r.position).toBe('fixed');
-    expect(r.bottom).toBe('0px');
-    expect(r.willChange).toContain('transform'); // promoción de capa (fix iOS fixed+backdrop)
-    expect(r.top0).toBe(r.top1);                  // no se mueve al scrollear
+    expect(r.windowScrollY).toBe(0);          // el body NO scrollea
+    expect(r.top0).toBe(r.top1);              // la tabbar no se mueve al scrollear el contenido
+    expect(r.bottom).toBe(r.innerHeight);     // sigue tocando el borde inferior del viewport
   });
 
   test('E4 — los <select> usan appearance:none + chevron (no flechas nativas)', async ({ page }) => {

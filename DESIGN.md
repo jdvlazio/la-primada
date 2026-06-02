@@ -320,14 +320,23 @@ tenue / dot. **Prohibidos** en la identidad de fila (§2.1). Decisión final pen
   genuina. **Nunca** para agrupar secciones, estados vacíos, ni barras de control.
 - Liviano pero **claro y con vida**: no esconder acciones esenciales; la principal siempre visible.
 
-### Safe areas (iOS / PWA standalone)
+### App shell y scroll (iOS / PWA standalone) — anclaje de la tabbar
+**El scroll vive en un contenedor interno, NO en el body.** En una PWA web pura de iOS, si el
+documento/body scrollea, una barra `position:fixed; bottom:0` se **desancla** con el scroll de
+inercia/rebote. (Otrofestiv no lo sufre porque corre como app **nativa Capacitor**: viewport fijo.)
+El equivalente robusto en PWA pura:
 1. `viewport-fit=cover` en el `<meta viewport>` (requisito; sin esto `env(...)` = 0).
-2. Header bajo el Island: `padding-top:env(safe-area-inset-top)` dentro de `@supports`.
-3. Fondo al borde: `body { min-height:100dvh }` (no `vh`).
-4. Mínimo inferior: navs/sheets/padding usan **`max(env(safe-area-inset-bottom),20px)`**
-   **directo** (no anidado en `calc(var()+max(...))`). Patrón de tabbar probado en iPhone
-   (réplica de Otrofestiv): `position:fixed; bottom:0; top:auto`, fondo semi-transparente para
-   que el `backdrop-filter` lea, activo en acento.
+2. **`html, body { height:100% }` + `body { overflow:hidden; overscroll-behavior:none }`** → el
+   body **no scrollea**.
+3. **`.app`** = columna a altura de viewport (`height:100dvh` con fallback `100vh`;
+   `display:flex; flex-direction:column; overflow:hidden`).
+4. **`.app-scroll`** = único contenedor de scroll (`flex:1; min-height:0; overflow-y:auto;
+   -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain`). Contiene topbar + `#screen`.
+5. **`.tabbar`** = ítem flex al fondo del `.app` (`flex:none`), **NO `position:fixed`** → anclada
+   por estructura: como el body no scrollea y el scroll vive en `.app-scroll`, no puede irse.
+6. Header bajo el Island: `padding-top:env(safe-area-inset-top)` dentro de `@supports`.
+7. Mínimo inferior: tabbar/sheets/padding usan **`max(env(safe-area-inset-bottom),20px)`**
+   **directo** (no anidado en `calc(var()+max(...))`).
 
 ### Acordeón (progressive disclosure)
 Cerrado por defecto: cada ítem es una **línea-resumen**; el detalle aparece al expandir.
