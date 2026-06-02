@@ -150,6 +150,9 @@
   const Api = {
     init, load, commit,
     mode: function () { return mode; },
+    // Cambia el modo de DATOS sin tocar el client de auth: 'supabase' solo si hay client. Permite
+    // tener el client (para el magic link) pero leer/escribir LOCAL hasta que haya sesión.
+    setMode: function (m) { mode = (m === 'supabase' && client) ? 'supabase' : 'local'; return mode; },
     client: function () { return client; },   // el módulo Auth reusa ESTE client (un solo GoTrueClient)
     // expuestos para tests (round-trip / serialización):
     _ser: { personaToRow, rowToPersona, primadaToRow, rowToPrimada, settingsToRow, fromRows },

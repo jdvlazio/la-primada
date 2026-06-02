@@ -727,6 +727,7 @@
 
     // 3) overlay: wizard (prioridad) · config de primada · pantalla del engranaje (Personas / Ajustes)
     if (ui.wizard)                                              els.overlay.innerHTML = wizardSheet(state, ui);
+    else if (ui.overlay === 'login')                           els.overlay.innerHTML = loginSheet(state, ui);
     else if (ui.overlay === 'pagar')                           els.overlay.innerHTML = pagarSheet(state, ui);
     else if (ui.overlay === 'selector-primada')                els.overlay.innerHTML = selectorSheet(state, ui);
     else if (ui.overlay === 'config-primada')                  els.overlay.innerHTML = configPrimadaSheet(state, ui);
@@ -746,29 +747,28 @@
   // Se renderiza en #screen; oculta tabbar/engranaje mientras no haya sesión.
   // Login = HOJA desde abajo (mismo lenguaje que el resto de la app: overlay + sheet), NO full-pantalla.
   // El topbar (la marca) queda visible detrás, atenuado; los botones de acción se ocultan (no hay sesión).
-  function renderLogin(estado, detalle) {
-    if (els.tabbar) els.tabbar.style.display = 'none';
-    const actions = document.querySelector('.header-actions'); if (actions) actions.style.display = 'none';
-    const topbar = document.querySelector('.topbar'); if (topbar) topbar.style.display = '';   // marca visible
-    els.screen.innerHTML = '';                                                                 // sin datos sin sesión
-    const enviado = estado === 'sent';
+  // Login = HOJA OPT-IN (overlay cerrable, se abre desde el ícono de perfil), NO un gate. La app
+  // sigue usable detrás; la hoja lleva su X. Estado por ui.loginEstado ('form' | 'sent').
+  function loginSheet(state, ui) {
+    const enviado = ui && ui.loginEstado === 'sent';
+    const email = (ui && ui.loginEmail) || '';
     const cuerpo = enviado
       ? `<div class="login-sent">
            <div class="login-emoji">📧</div>
-           <p>Enlace enviado a<br><b>${e(detalle || 'tu correo')}</b></p>
+           <p>Enlace enviado a<br><b>${e(email || 'tu correo')}</b></p>
            <button class="btn ghost" data-act="login-reset">Otro correo</button>
          </div>`
       : `<div class="login-form">
            <p class="muted small">Enlace por correo, sin contraseña.</p>
            <input class="ti" id="login-email" type="email" inputmode="email" autocomplete="email"
-                  placeholder="tu@correo.com" value="${e(detalle || '')}" aria-label="Correo">
+                  placeholder="tu@correo.com" value="${e(email)}" aria-label="Correo">
            <button class="btn" data-act="login-enviar">Entrar</button>
          </div>`;
-    els.overlay.innerHTML = `<div class="sheet login-sheet">
-        <div class="sheet-head"><div class="sheet-title">${enviado ? 'Revisa tu correo' : 'Entrar'}</div></div>
+    return `<div class="sheet login-sheet">
+        <div class="sheet-head"><div class="sheet-title">${enviado ? 'Revisa tu correo' : 'Entrar'}</div>
+          <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button></div>
         <div class="sheet-body">${cuerpo}</div>
       </div>`;
-    els.overlay.hidden = false;
   }
 
   // Actualiza el ícono del botón de cuenta según el estado de auth:
@@ -802,6 +802,6 @@
     if (hayError) toast(s.error);
   }
 
-  root.View = { cache, render, renderLogin, showAppChrome, renderAuthButton, renderSync, toast };
+  root.View = { cache, render, showAppChrome, renderAuthButton, renderSync, toast };
   if (typeof module !== 'undefined' && module.exports) module.exports = { View: root.View };
 })(typeof window !== 'undefined' ? window : globalThis);

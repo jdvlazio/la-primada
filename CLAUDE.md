@@ -95,7 +95,11 @@ alrededor de cada primada mensual, no a diario.
 **Autenticación — magic link, sin registro.**
 - Supabase Auth con **magic link por email (passwordless)**. **Nadie se registra:** el **admin siembra los emails** de los
   ahorradores. Al entrar, Supabase manda un link al correo → clic → adentro. **No hay formulario de registro.**
-- La app exige **estar autenticado antes de mostrar datos** (auth gate en el bootstrap).
+- **Login OPT-IN (no gate):** la app **entra directo y es usable**; el login se abre **desde el ícono de perfil**
+  (hoja cerrable, con X), no bloquea al arrancar. **Datos LOCALES hasta que haya sesión** (el client Supabase se crea
+  igual, para el magic link); al iniciar sesión, `Api.setMode('supabase')` y se recargan los datos. Al volver del link
+  (`onChange`) se cierra la hoja y se recarga. *(Fase de prueba; el endurecimiento — admin sembrado, cierre de signups,
+  y/o gate obligatorio — se decide después.)*
 
 **Roles y permisos.**
 - **admin** = email designado, **sembrado a mano** en Supabase. **Todos los demás** = acceso **completo de lectura y escritura**

@@ -50,7 +50,9 @@
   //   (mismo patrón que personasAbiertas; clon del componente de Personas)
   const ui = { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, wizard: null,
                personasAbiertas: new Set(), nuevaPersona: false,
-               configAsis: new Set(), configProd: new Set(), pagarPid: null };
+               configAsis: new Set(), configProd: new Set(), pagarPid: null,
+               loginEstado: 'form', loginEmail: '' };
+  let sesionActiva = false;   // hay sesión Supabase (el login es opt-in: no bloquea al entrar)
 
   function rerender() { View.render(Store.select.state(), ui); }
 
@@ -68,10 +70,13 @@
     const tab = ev.target.closest('[data-tab]');
     if (tab) { ui.tab = tab.dataset.tab; ui.overlay = null; rerender(); return; }
     if (ev.target.closest('#gearBtn')) { ui.overlay = ui.overlay ? null : 'personas'; rerender(); return; }
-    // Botón de cuenta (auth). Con backend habilitado: cerrar sesión. Sin backend: placeholder informativo.
+    // Botón de cuenta (auth) = OPT-IN: el login NO bloquea al entrar; se abre desde acá.
+    // Con sesión → cerrar sesión. Sin sesión → abrir la hoja de login (cerrable). Sin backend → aviso.
     if (ev.target.closest('#authBtn')) {
-      if (Auth && Auth.enabled()) { Auth.signOut(); View.toast('Sesión cerrada'); }
-      else View.toast('Sesión no disponible');
+      if (Auth && Auth.enabled()) {
+        if (sesionActiva) { Auth.signOut(); View.toast('Sesión cerrada'); }
+        else { ui.overlay = 'login'; ui.loginEstado = 'form'; rerender(); }
+      } else { View.toast('Sesión no disponible'); }
       return;
     }
 
@@ -83,18 +88,19 @@
     const A = Store.actions;
 
     switch (act) {
-      // ----- auth (pantalla de login) -----
+      // ----- auth (hoja de login, opt-in desde el ícono de perfil) -----
       case 'login-enviar': {
         const inp = document.getElementById('login-email');
         const email = (inp && inp.value || '').trim();
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { View.toast('Correo no válido'); return; }
         b.disabled = true;
+        ui.loginEmail = email;
         Promise.resolve(Auth && Auth.signIn(email))
-          .then(() => View.renderLogin('sent', email))
-          .catch((err) => { View.toast(err && err.message ? err.message : 'No se pudo enviar el link'); View.renderLogin('form', email); });
+          .then(() => { ui.loginEstado = 'sent'; rerender(); })
+          .catch((err) => { View.toast(err && err.message ? err.message : 'No se pudo enviar el link'); ui.loginEstado = 'form'; rerender(); });
         return;
       }
-      case 'login-reset': View.renderLogin('form'); return;
+      case 'login-reset': ui.loginEstado = 'form'; rerender(); return;
 
       // ----- selector de primada (navegación: abre la hoja agrupada por año→mes) -----
       case 'open-selector': ui.overlay = 'selector-primada'; rerender(); return;
@@ -303,21 +309,31 @@
     appIniciada = true;
     if (View.showAppChrome) View.showAppChrome();
     // Ícono del botón de cuenta: 'in' si hay sesión real; 'user' (placeholder) si el backend está off.
-    if (View.renderAuthButton) View.renderAuthButton(Auth && Auth.enabled() ? 'in' : 'placeholder');
+    if (View.renderAuthButton) View.renderAuthButton(Auth && Auth.enabled() ? (sesionActiva ? 'in' : 'out') : 'placeholder');
     rerender();                                // "Cargando…" mientras hidrata
     await Store.load();                        // hidrata el AppState desde Api (async)
     rerender();
   }
 
-  // Auth gate: con auth habilitada (modo supabase), exige sesión antes de mostrar datos.
-  // Sin auth (tests/offline, modo local) → entra directo (los 216 tests no tienen gate).
+  // Auth OPT-IN (no gate): la app SIEMPRE entra; el login se abre desde el ícono de perfil.
+  // Con sesión, los datos vienen de Supabase; sin sesión, lo que el backend permita (RLS). Al cambiar
+  // la sesión (login/logout, o al volver del magic link) se recargan los datos y se actualiza el ícono.
   async function gate() {
-    if (!Auth || !Auth.enabled()) { await iniciarApp(); return; }
-    Auth.cleanUrl();                           // limpia el token del magic link de la URL
-    Auth.onChange((session) => { if (session) iniciarApp(); else { appIniciada = false; View.renderLogin('form'); } });
-    const session = await Auth.getSession();
-    if (session) await iniciarApp();
-    else View.renderLogin('form');
+    if (Auth && Auth.enabled()) {
+      Auth.cleanUrl();                         // limpia el token del magic link de la URL
+      Auth.onChange((session) => {
+        sesionActiva = !!session;
+        if (root.Api && root.Api.setMode) root.Api.setMode(sesionActiva ? 'supabase' : 'local');
+        if (View.renderAuthButton) View.renderAuthButton(sesionActiva ? 'in' : 'out');
+        if (ui.overlay === 'login' && sesionActiva) ui.overlay = null;   // cerrar la hoja al iniciar sesión
+        appIniciada = false; iniciarApp();     // recargar datos de la fuente correcta
+      });
+      const session = await Auth.getSession();
+      sesionActiva = !!session;
+      // Datos LOCALES hasta que haya sesión (el client sigue vivo para el login opt-in).
+      if (root.Api && root.Api.setMode) root.Api.setMode(sesionActiva ? 'supabase' : 'local');
+    }
+    await iniciarApp();                         // entra directo (login opt-in, no bloquea)
   }
 
   // Bootstrap único (async). evento → acción → commit (render optimista + upsert async) → notifica → render.
