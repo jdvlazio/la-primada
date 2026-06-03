@@ -397,16 +397,19 @@
   function reparto(p, ui) {
     const sel = S();
     const gan = sel.ganancia(p);
+    const ahorr = sel.asistenciasAhorradoras(p);
     const abierto = ui && ui.resumen && ui.resumen.has('reparto');
+    const subTeaser = ahorr.length
+      ? `${$peso(gan)} · parte igual ${$peso(sel.parteIgual(p))}`
+      : `${$peso(gan)}`;
     const head = `<button class="acc-head" data-act="toggle-resumen" data-sec="reparto" aria-expanded="${abierto ? 'true' : 'false'}">
         <span class="acc-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
         <span class="acc-id-stack">
-          <span class="acc-id"><b>Reparto</b></span>
-          <span class="acc-sub">Ganancia ${$peso(gan)}</span>
+          <span class="acc-id"><b>Ganancia</b></span>
+          <span class="acc-sub">${subTeaser}</span>
         </span>
       </button>`;
     if (!abierto) return `<div class="card dark acc-card">${head}</div>`;
-    const ahorr = sel.asistenciasAhorradoras(p);
     const pi = sel.parteIgual(p);
     const sob = sel.sobranteFondo(p);
     const lista = ahorr.length
