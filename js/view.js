@@ -50,6 +50,8 @@
     'x':          '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     'chevron-down':'<path d="m6 9 6 6 6-6"/>',
     'info':       '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    'eye':        '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    'edit':       '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   };
   // icon(name, cls?) → <svg> inline. La clase .icon dimensiona; cls extra opcional.
   function icon(name, cls) {
@@ -498,7 +500,7 @@
     const cerrarCTA = (p.estado === 'abierta' && !inf.incompleta && inf.recaudadoTeorico > 0 && inf.saldoPendiente === 0)
       ? `<button class="cerrar-cta" data-act="cerrar-primada" data-id="${p.id}">${icon('check')}Todos pagaron · Cerrar primada</button>`
       : '';
-    return `${cerrarCTA}<div class="sec-head">
+    return `${cerrarCTA}${presenciaLinea(ui)}<div class="sec-head">
         <h2 class="h2">Asistentes <span class="muted">${p.asistencias.length}</span></h2>
         ${pickerAsistentes(p, ui)}
       </div>
@@ -507,6 +509,20 @@
           ? p.asistencias.map(a => asistenciaCard(p, a, ui)).join('')
           : '<div class="empty-soft">Sin asistentes</div>'}
       </div>`;
+  }
+
+  // PRESENCE (Fase C): línea DISCRETA con quién más está en la primada; si alguien apuntó hace poco
+  // (<4s) lo marca "apuntando…". Auto-coordinación, NO bloqueo. ui.presentes = los OTROS (sin mí).
+  function presenciaLinea(ui) {
+    const otros = (ui && ui.presentes) || [];
+    if (!otros.length) return '';
+    let ahora = 0; try { ahora = Date.now(); } catch (e) {}
+    const apuntando = otros.filter(o => o.apuntando && (ahora - o.apuntando < 4000)).map(o => o.nombre);
+    const nombres = otros.map(o => o.nombre);
+    const txt = apuntando.length
+      ? `${apuntando.join(', ')} apuntando…`
+      : `${nombres.join(', ')} ${nombres.length > 1 ? 'están' : 'está'} aquí`;
+    return `<div class="presencia ${apuntando.length ? 'apuntando' : ''}">${icon(apuntando.length ? 'edit' : 'eye', 'sm')}<span>${e(txt)}</span></div>`;
   }
 
   // Gestión de productos PROPIOS de la primada (overlay Configurar). CLON del componente de Personas:

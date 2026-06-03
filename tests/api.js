@@ -53,11 +53,16 @@ function makeFakeSupabase() {
     _tablas: tablas,
     _channels: channels,
     // Realtime fake: channel().on().subscribe(cb) → cb('SUBSCRIBED'); _emit(payload) simula un cambio.
-    channel(name) {
-      const hs = []; const chan = {
-        on(type, cfg, cb) { hs.push(cb); return chan; },
+    channel(name, opts) {
+      const hs = []; const presenceCbs = []; const presence = {};
+      const selfKey = (opts && opts.config && opts.config.presence && opts.config.presence.key) || 'self';
+      const chan = {
+        on(type, cfg, cb) { if (type === 'presence') presenceCbs.push(cb); else hs.push(cb); return chan; },
         subscribe(statusCb) { if (statusCb) statusCb('SUBSCRIBED'); return chan; },
+        track(meta) { presence[selfKey] = [meta]; presenceCbs.forEach(cb => cb()); return Promise.resolve('ok'); },
+        presenceState() { return presence; },
         _emit(payload) { hs.forEach(cb => cb(payload)); },
+        _join(k, meta) { presence[k] = [meta]; presenceCbs.forEach(cb => cb()); },   // simula otro cliente
       };
       channels.push(chan); return chan;
     },
@@ -327,6 +332,24 @@ section('load() async contra Supabase (fake en memoria)');
     check('evento DELETE trae el id', eventos[1].op === 'DELETE' && eventos[1].id === 'a1');
     let threw = false; try { unsub(); } catch (e) { threw = true; }
     check('unsubscribe no lanza', !threw);
+  }
+
+  /* ====================== 9. Presence (Fase C): subscribePresence ====================== */
+  section('Presence (Fase C): rastrea mi presencia y reporta a los demás');
+  {
+    const fake = makeFakeSupabase();
+    Api.init({ client: fake });
+    const estados = [];
+    const pres = Api.subscribePresence('prm_1', { key: 'me', nombre: 'Yo', apuntando: 0 }, (lista, ownKey) => estados.push({ lista, ownKey }));
+    check('presence: al (re)conectar hace track → me reporta a MÍ', estados.length >= 1 && estados[estados.length - 1].lista.some(m => m.nombre === 'Yo'));
+    eq('presence: ownKey = mi key (para excluirme)', estados[estados.length - 1].ownKey, 'me');
+    const chan = fake._channels[fake._channels.length - 1];
+    chan._join('otra', { nombre: 'Ana', apuntando: 0 });
+    const ult = estados[estados.length - 1].lista;
+    check('presence: aparece otro cliente (Ana)', ult.some(m => m.nombre === 'Ana'));
+    check('presence: cada meta trae _key', ult.every(m => '_key' in m));
+    let ok = true; try { pres.setMeta({ apuntando: 123 }); pres.unsubscribe(); } catch (e) { ok = false; }
+    check('presence: setMeta/unsubscribe no lanzan', ok);
   }
 
   /* ---------- Resumen ---------- */

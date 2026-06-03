@@ -332,12 +332,14 @@ Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
 - [x] Directorio de personas en UI (pantalla propia tras el engranaje): alta, edición de nombre, cambio de estado
       ahorrador↔invitado (vigente, sin reescribir snapshots), llave `breB`, y nº de primadas donde aparece.
       Verificado en navegador real (INVARIANTE #1: misma persona, dos primadas, dos snapshots distintos).
-- [~] **EN CURSO (sesión dedicada) — Backend Supabase** (localStorage → nube; OTP por código, RLS, híbrido, arranque limpio).
+- [x] **HECHO (sesión dedicada) — Backend Supabase** (localStorage → nube; OTP por código, RLS, híbrido, arranque limpio).
       **Fase A HECHA:** modelo v6 (consumos-como-filas) + RLS (ver anon / editar autenticado / admin en settings·personas /
       cerrada solo-lectura, verificado) + gate invertido + editor sembrado (jdvlazio admin).
       **Fase B HECHA:** sync en vivo (Postgres Changes + snapshot/incremental + reconexión), verificado contra Supabase real
-      (INSERT/DELETE en vivo entre clientes; DELETE entregado por id por el gotcha de RLS). **Falta Fase C** (cola offline +
-      presence + botón de auditoría).
+      (INSERT/DELETE en vivo entre clientes; DELETE entregado por id por el gotcha de RLS).
+      **Fase C HECHA:** (C1) cola de reintento OFFLINE persistente (tránsito, separada del dominio; flush al reconectar;
+      descarta rechazos definitivos); (C2) botón ⓘ de AUDITORÍA (detalle por evento: hora + quién apuntó, bajo demanda);
+      (C3) PRESENCE ("X está apuntando", auto-coordinación). **Migración Supabase COMPLETA.**
       Auth por **CÓDIGO OTP** (no solo magic link): plantilla de email con `{{ .Token }}` + `signInWithOtp` sin `emailRedirectTo`.
 - [ ] Tab "Próximamente" (placeholder). *(Resumen y Fondo ya muestran placeholder en PASO 2.)*
 - [ ] **Futuro:** módulo de **Ahorro/Tesorería** (aportes mensuales, retiros, préstamos, inversiones, actividades extra).

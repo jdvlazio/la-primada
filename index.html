@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260603-085145-41e7b5a">
+<meta name="build" content="20260603-090522-6c98208">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -106,6 +106,10 @@
   .cerrar-cta{display:flex;align-items:center;justify-content:center;gap:var(--space-2);width:100%;min-height:var(--tap-btn);margin-bottom:var(--space-4);border:none;cursor:pointer;border-radius:var(--radius-md);background:var(--pos-bg);color:var(--pos);font-family:inherit;font-weight:700;font-size:14px;padding:var(--space-3)}
   .cerrar-cta:active{transform:scale(.98)}
   .cerrar-cta .icon{width:18px;height:18px;margin-right:0}
+  /* Presence (C3): línea discreta de quién más está en la primada / quién apunta. */
+  .presencia{display:flex;align-items:center;gap:var(--space-2);font-size:12px;color:var(--ink-soft);margin-bottom:var(--space-3);min-height:20px}
+  .presencia .icon{width:14px;height:14px;flex:none}
+  .presencia.apuntando{color:var(--accent)}
 
   .kv{display:flex;justify-content:space-between;align-items:baseline;gap:var(--space-3);padding:var(--space-1) 0;font-size:13px;border-top:1px solid var(--line-soft)}
   .kv:first-of-type{border-top:none}
@@ -479,13 +483,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260603-085145-41e7b5a"></script>
-  <script src="js/util.js?v=20260603-085145-41e7b5a"></script>
-  <script src="js/api.js?v=20260603-085145-41e7b5a"></script>
-  <script src="js/auth.js?v=20260603-085145-41e7b5a"></script>
-  <script src="js/store.js?v=20260603-085145-41e7b5a"></script>
-  <script src="js/view.js?v=20260603-085145-41e7b5a"></script>
-  <script src="js/controller.js?v=20260603-085145-41e7b5a"></script>
+  <script src="js/config.js?v=20260603-090522-6c98208"></script>
+  <script src="js/util.js?v=20260603-090522-6c98208"></script>
+  <script src="js/api.js?v=20260603-090522-6c98208"></script>
+  <script src="js/auth.js?v=20260603-090522-6c98208"></script>
+  <script src="js/store.js?v=20260603-090522-6c98208"></script>
+  <script src="js/view.js?v=20260603-090522-6c98208"></script>
+  <script src="js/controller.js?v=20260603-090522-6c98208"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).

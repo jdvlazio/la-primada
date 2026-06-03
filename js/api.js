@@ -262,8 +262,30 @@
     return function () { try { client.removeChannel(ch); } catch (e) {} };
   }
 
+  /* ---------- PRESENCE (Fase C): "X está apuntando" (auto-coordinación, no bloqueo) ----------
+     Canal de presencia por primada. Cada cliente publica su meta { nombre, apuntando } y recibe la
+     lista de TODOS los presentes en cada 'sync'. setMeta re-publica (p. ej. al marcar "apuntando"). */
+  function subscribePresence(primadaId, meta, onSync) {
+    if (mode !== 'supabase' || !client || typeof client.channel !== 'function') return { setMeta: function () {}, unsubscribe: function () {} };
+    const key = (meta && meta.key) || ('k' + Math.random().toString(36).slice(2));
+    let current = Object.assign({}, meta || {});
+    const ch = client.channel('presence:' + primadaId, { config: { presence: { key: key } } });
+    ch.on('presence', { event: 'sync' }, function () {
+      try {
+        const st = ch.presenceState ? ch.presenceState() : {};
+        const list = [];
+        Object.keys(st).forEach(function (k) { (st[k] || []).forEach(function (m) { list.push(Object.assign({ _key: k }, m)); }); });
+        if (onSync) onSync(list, key);
+      } catch (e) {}
+    }).subscribe(function (status) { if (status === 'SUBSCRIBED') { try { ch.track(current); } catch (e) {} } });
+    return {
+      setMeta: function (m) { current = Object.assign({}, current, m); try { ch.track(current); } catch (e) {} },
+      unsubscribe: function () { try { client.removeChannel(ch); } catch (e) {} },
+    };
+  }
+
   const Api = {
-    init, load, commit, fetchConsumos, fetchApuntadores, subscribeConsumos,
+    init, load, commit, fetchConsumos, fetchApuntadores, subscribeConsumos, subscribePresence,
     onQueueChange, flush, queueState: function () { return { pendientes: cola.length, error: colaError }; },
     mode: function () { return mode; },
     // Cambia el modo de DATOS sin tocar el client de auth: 'supabase' solo si hay client. Permite

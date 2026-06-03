@@ -53,9 +53,10 @@
   const ui = { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, wizard: null,
                personasAbiertas: new Set(), nuevaPersona: false,
                configAsis: new Set(), configProd: new Set(), pagarPid: null,
-               resumen: new Set(), auditPid: null, apuntadores: {},
+               resumen: new Set(), auditPid: null, apuntadores: {}, presentes: [],
                loginEstado: 'form', loginEmail: '' };
   let sesionActiva = false;   // hay sesión Supabase (gate INVERTIDO: lectura sin sesión, escritura requiere login)
+  let miEmail = null;         // email de la sesión (para presence "quién está apuntando")
 
   // Acciones que ESCRIBEN datos de dominio (gate invertido: sin sesión se abre el login en vez de mutar).
   // Lectura/navegación (tabs, selector, abrir tarjetas, colapsar Resumen, Configurar, copiar llave,
@@ -68,7 +69,34 @@
   function backendOn() { return !!(Auth && Auth.enabled()); }     // hay backend Supabase (RLS es la frontera real)
   function pedirLogin() { ui.overlay = 'login'; ui.loginEstado = 'form'; rerender(); }
 
-  function rerender() { View.render(Store.select.state(), ui); sincronizarVivo(); }
+  function rerender() { View.render(Store.select.state(), ui); sincronizarVivo(); sincronizarPresencia(); }
+
+  // PRESENCE (Fase C): publica mi presencia en la primada ACTIVA y mantiene ui.presentes (los OTROS).
+  // "Auto-coordinación, no bloqueo": solo informa quién está y quién apunta. Re-suscribe al cambiar de
+  // primada o cuando se conoce mi nombre (tras login). Sin client (local/tests) → noop.
+  let presencia = null, presenciaKey = null, apuntandoTimer = null;
+  function miNombre() { return miEmail ? String(miEmail).split('@')[0] : 'alguien'; }
+  function sincronizarPresencia() {
+    if (!(root.Api && root.Api.subscribePresence)) return;
+    const p = Store.select.activePrimada();
+    const id = p ? p.id : null;
+    const key = id ? (id + '|' + miNombre()) : null;
+    if (key === presenciaKey) return;                 // misma primada + mismo nombre → nada que hacer
+    if (presencia) { try { presencia.unsubscribe(); } catch (e) {} presencia = null; }
+    presenciaKey = key;
+    if (!id) { if (ui.presentes && ui.presentes.length) { ui.presentes = []; } return; }
+    presencia = root.Api.subscribePresence(id, { nombre: miNombre(), apuntando: 0 }, (lista, ownKey) => {
+      ui.presentes = (lista || []).filter(m => m._key !== ownKey);
+      rerender();
+    });
+  }
+  // Avisa "estoy apuntando" al registrar consumo (se apaga solo a los ~3s).
+  function marcarApuntando() {
+    if (!presencia) return;
+    presencia.setMeta({ apuntando: Date.now() });
+    if (apuntandoTimer) clearTimeout(apuntandoTimer);
+    apuntandoTimer = setTimeout(() => { if (presencia) presencia.setMeta({ apuntando: 0 }); }, 3000);
+  }
 
   // SYNC EN VIVO (Fase B): mantiene UNA suscripción a los consumos de la primada ACTIVA (Postgres
   // Changes). Al cambiar de primada → re-suscribe; al (re)conectar el canal → re-snapshota (reconcilia
@@ -224,8 +252,8 @@
         if (!root.confirm || root.confirm('¿Quitar al asistente?')) { A.removeAsistencia(prm, pid); ui.abiertos.delete(pid); }
         break;
       case 'toggle-exonerado':  A.toggleCoverExonerado(prm, pid); break;
-      case 'item-plus':         A.changeItem(prm, pid, b.dataset.prod, +1); break;
-      case 'item-minus':        A.changeItem(prm, pid, b.dataset.prod, -1); break;
+      case 'item-plus':         A.changeItem(prm, pid, b.dataset.prod, +1); marcarApuntando(); break;
+      case 'item-minus':        A.changeItem(prm, pid, b.dataset.prod, -1); marcarApuntando(); break;
 
       // ----- acordeón de asistencias (estado efímero de UI) -----
       case 'toggle-asis': {
@@ -252,7 +280,7 @@
       case 'open-pickprod':  ui.pickProd = pid; rerender(); return;
       case 'close-pickprod': if (ui.pickProd === pid) ui.pickProd = null; rerender(); return;
       case 'add-item': {
-        A.changeItem(prm, pid, b.dataset.prod, +1);   // 0→1: aparece con stepper
+        A.changeItem(prm, pid, b.dataset.prod, +1); marcarApuntando();   // 0→1: aparece con stepper
         // si ya no quedan productos por agregar, cerramos el picker
         const p = Store.select.activePrimada();
         const a = p && p.asistencias.find(x => x.personaId === pid);
@@ -412,6 +440,13 @@
 
   // Auth OPT-IN (no gate): la app SIEMPRE entra; el login se abre desde el ícono de perfil.
   // Con sesión, los datos vienen de Supabase; sin sesión, lo que el backend permita (RLS). Al cambiar
+  // Carga el email de la sesión (presencia). Al obtenerlo, re-render → re-suscribe la presencia con el nombre real.
+  function cargarMiEmail() {
+    if (!(Auth && Auth.getUser)) return;
+    if (!sesionActiva) { miEmail = null; return; }
+    Promise.resolve(Auth.getUser()).then(u => { const nuevo = u && u.email; if (nuevo !== miEmail) { miEmail = nuevo; rerender(); } }).catch(() => {});
+  }
+
   // la sesión (login/logout, o al volver del magic link) se recargan los datos y se actualiza el ícono.
   async function gate() {
     if (Auth && Auth.enabled()) {
@@ -422,12 +457,14 @@
       if (root.Api && root.Api.setMode) root.Api.setMode('supabase');
       Auth.onChange((session) => {
         sesionActiva = !!session;
+        cargarMiEmail();                        // para la presencia ("quién está apuntando")
         if (View.renderAuthButton) View.renderAuthButton(sesionActiva ? 'in' : 'out');
         if (ui.overlay === 'login' && sesionActiva) ui.overlay = null;   // cerrar la hoja al iniciar sesión
         appIniciada = false; iniciarApp();     // recargar (la escritura recién habilitada puede traer más)
       });
       const session = await Auth.getSession();
       sesionActiva = !!session;
+      cargarMiEmail();
     }
     await iniciarApp();                         // entra directo en LECTURA (login solo al editar)
   }
