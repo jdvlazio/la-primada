@@ -214,7 +214,7 @@
     const dis = cerrada ? 'disabled' : '';
     const consumidos = S().consumidosDe(p, a);
     const filas = consumidos.map(prod => {
-      const q = a.items[prod.id] || 0;
+      const q = S().cantidadDe(p, a, prod);   // v6: cantidad = Σ filas de consumo
       return `<div class="prod has">
         <span class="prod-name">${e(prod.emoji)} ${e(prod.nombre)} <i>${$peso(prod.precioVenta)}</i></span>
         <span class="stepper">

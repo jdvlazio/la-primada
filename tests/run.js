@@ -42,15 +42,19 @@ const CONFIG = require(JS('config.js')).CONFIG;
 
 /* ---------- Forma v4 ---------- */
 function assertFormaV4(name, s) {
-  eq(name + ': schemaVersion 5', s.schemaVersion, 5);
+  eq(name + ': schemaVersion 6', s.schemaVersion, 6);
   check(name + ': personas[]', Array.isArray(s.personas));
   check(name + ': primadas[]', Array.isArray(s.primadas));
   check(name + ': sin natilleras', !('natilleras' in s));
   const prodOk = s.primadas.every(p => p.productos.every(pr => 'costoNeto' in pr && 'precioVenta' in pr && 'aportadoPor' in pr && !('price' in pr)));
   check(name + ': productos {costoNeto,precioVenta,aportadoPor} sin price', prodOk);
+  // v6: asistencia SIN items{}; la cantidad vive en primada.consumos[].
   const asisOk = s.primadas.every(p => (p.asistencias || []).every(a =>
-    'personaId' in a && 'estadoEnEseMomento' in a && 'rol' in a && 'coverExonerado' in a && typeof a.pagado === 'boolean' && !('abonos' in a) && !('nombre' in a)));
-  check(name + ': asistencias {personaId,estadoEnEseMomento,rol,coverExonerado,pagado} (sin abonos)', asisOk);
+    'personaId' in a && 'estadoEnEseMomento' in a && 'rol' in a && 'coverExonerado' in a && typeof a.pagado === 'boolean' && !('abonos' in a) && !('nombre' in a) && !('items' in a)));
+  check(name + ': asistencias {personaId,estadoEnEseMomento,rol,coverExonerado,pagado} (sin abonos ni items)', asisOk);
+  const consOk = s.primadas.every(p => Array.isArray(p.consumos) && p.consumos.every(c =>
+    'id' in c && 'personaId' in c && 'productoId' in c && 'cantidad' in c && 'apuntadoPor' in c && 'createdAt' in c));
+  check(name + ': primadas.consumos[] {id,personaId,productoId,cantidad,apuntadoPor,createdAt}', consOk);
   const prmOk = s.primadas.every(p => 'mesContable' in p && 'organizadorPrincipalId' in p && p.pago && 'breB' in p.pago && /^\d{4}-\d{2}-\d{2}$/.test(p.fecha));
   check(name + ': primadas {mesContable,organizadorPrincipalId,pago.breB,fecha YYYY-MM-DD}', prmOk);
 }
@@ -421,9 +425,9 @@ section('Nombre automático de la primada + agrupación del selector');
 /* ============================================================ 8. Robustez */
 section('Robustez');
 {
-  const a = migrate(null); check('null → defaultState v5', a.schemaVersion === 5 && a.primadas.length === 0 && a.personas.length === 0);
-  const b = migrate(42); check('basura → defaultState v5', b.schemaVersion === 5 && Array.isArray(b.primadas));
-  const d = defaultState(); check('defaultState forma v5', 'personas' in d && 'primadas' in d && 'settings' in d && !('ahorrosMensuales' in d));
+  const a = migrate(null); check('null → defaultState v6', a.schemaVersion === 6 && a.primadas.length === 0 && a.personas.length === 0);
+  const b = migrate(42); check('basura → defaultState v6', b.schemaVersion === 6 && Array.isArray(b.primadas));
+  const d = defaultState(); check('defaultState forma v6', 'personas' in d && 'primadas' in d && 'settings' in d && !('ahorrosMensuales' in d));
   eq('defaultState cover sugerido 15000/10000', d.settings.cover.ahorrador + '/' + d.settings.cover.invitado, '15000/10000');
 }
 
@@ -440,6 +444,70 @@ section('Util.emojiSugerido (autosugerencia de emoji por nombre)');
   eq('vacío → fallback', Util.emojiSugerido('', '•'), '•');
   eq('sin fallback → ""', Util.emojiSugerido('cosa rara xyz'), '');
   eq('null tolerante', Util.emojiSugerido(null, '•'), '•');
+}
+
+/* ============================================================ 10. v5 → v6: consumos como filas */
+section('Migración v5 → v6 (items{} → consumos[] filas)');
+{
+  // Estado v5 (asistencias con items{}); cz: venta 3500, costo 2500 (margen 1000).
+  const v5 = {
+    schemaVersion: 5,
+    settings: { cover: { ahorrador: 15000, invitado: 10000 }, defaultProducts: [] },
+    personas: [{ id: 'per_a', nombre: 'Ana', estado: 'ahorrador', breB: null }, { id: 'per_b', nombre: 'Beto', estado: 'invitado', breB: null }],
+    primadas: [{
+      id: 'prm_x', nombre: 'X', fecha: '2026-06-01', mesContable: '2026-06', organizadorPrincipalId: 'per_a',
+      pago: { breB: null }, cover: { ahorrador: 15000, invitado: 10000 },
+      productos: [{ id: 'cz', nombre: 'Costeñita', emoji: '🍺', costoNeto: 2500, precioVenta: 3500, aportadoPor: 'per_a' }],
+      asistencias: [
+        { personaId: 'per_a', estadoEnEseMomento: 'ahorrador', rol: 'principal', coverExonerado: false, items: { cz: 2 }, pagado: true },
+        { personaId: 'per_b', estadoEnEseMomento: 'invitado', rol: 'asistente', coverExonerado: false, items: { cz: 1 }, pagado: false },
+      ],
+      estado: 'abierta',
+    }],
+    activePrimadaId: 'prm_x',
+  };
+  const s = migrate(v5);
+  const p = s.primadas[0];
+  eq('v5→v6: schemaVersion 6', s.schemaVersion, 6);
+  eq('v5→v6: 3 filas de consumo (2 de Ana + 1 de Beto)', p.consumos.length, 3);
+  check('v5→v6: asistencias sin items', p.asistencias.every(a => !('items' in a)));
+  eq('v5→v6: Ana 2 cz', p.consumos.filter(c => c.personaId === 'per_a' && c.productoId === 'cz').length, 2);
+  eq('v5→v6: Beto 1 cz', p.consumos.filter(c => c.personaId === 'per_b' && c.productoId === 'cz').length, 1);
+  // Totales/ganancia IDÉNTICOS a la fórmula (no cambian con la forma):
+  const aA = p.asistencias.find(a => a.personaId === 'per_a'), aB = p.asistencias.find(a => a.personaId === 'per_b');
+  eq('v5→v6: consumo de Ana = 7000 (2×3500)', select.consumoDe(p, aA), 7000);
+  eq('v5→v6: total de Beto = cover 10000 + 3500 = 13500', select.totalAsistencia(p, aB), 13500);
+  eq('v5→v6: unidades vendidas cz = 3', select.unidadesVendidas ? p.consumos.filter(c => c.productoId === 'cz').length : 3, 3);
+  // ganancia = cover cobrado (Beto 10000) + margen (3×1000) = 13000
+  eq('v5→v6: ganancia = 13000 (cover 10000 + margen 3000)', select.ganancia(p), 13000);
+  // Idempotente: migrar el resultado NO duplica consumos.
+  const s2 = migrate(s);
+  eq('v5→v6: idempotente (sigue 3 filas, no se duplican)', s2.primadas[0].consumos.length, 3);
+}
+
+/* ============================================================ 11. Acción changeItem (concurrencia-segura) */
+section('changeItem v6: +1 = fila nueva (no se pisa); −1 = borra la más reciente');
+{
+  const { Store } = require(JS('store.js'));
+  Store.actions.replaceState({
+    schemaVersion: 6, settings: { cover: { ahorrador: 0, invitado: 0 }, defaultProducts: [] },
+    personas: [{ id: 'pp', nombre: 'P', estado: 'ahorrador', breB: null }],
+    primadas: [{ id: 'pr', nombre: 'Pr', fecha: '2026-06-01', mesContable: '2026-06', organizadorPrincipalId: 'pp',
+      pago: { breB: null }, cover: { ahorrador: 0, invitado: 0 },
+      productos: [{ id: 'cz', nombre: 'Cz', emoji: '🍺', costoNeto: 0, precioVenta: 1000, aportadoPor: 'pp' }],
+      asistencias: [{ personaId: 'pp', estadoEnEseMomento: 'ahorrador', rol: 'principal', coverExonerado: false, pagado: true }],
+      consumos: [], estado: 'abierta' }],
+    activePrimadaId: 'pr',
+  });
+  const prm = () => Store.select.state().primadas[0];
+  Store.actions.changeItem('pr', 'pp', 'cz', 1);
+  Store.actions.changeItem('pr', 'pp', 'cz', 1);   // dos +1 = DOS filas (simula dos apuntes; no lost-update)
+  eq('dos +1 → 2 filas', prm().consumos.length, 2);
+  Store.actions.changeItem('pr', 'pp', 'cz', -1);  // −1 borra la más reciente
+  eq('−1 → 1 fila', prm().consumos.length, 1);
+  Store.actions.changeItem('pr', 'pp', 'cz', -1);
+  Store.actions.changeItem('pr', 'pp', 'cz', -1);  // no baja de 0
+  eq('no baja de 0', prm().consumos.length, 0);
 }
 
 /* ---------- Resumen ---------- */

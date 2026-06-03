@@ -2,13 +2,17 @@
    MODELO — Store (único dueño del estado) · esquema v4 DEFINITIVO
    Se carga tras CONFIG y Util.
    ------------------------------------------------------------
-   AppState  { schemaVersion:5, settings{cover,defaultProducts}, personas[], primadas[], activePrimadaId }
+   AppState  { schemaVersion:6, settings{cover,defaultProducts}, personas[], primadas[], activePrimadaId }
    Persona   { id, nombre, estado:'ahorrador'|'invitado', breB }
    Primada   { id, nombre, fecha:'YYYY-MM-DD', mesContable:'YYYY-MM', organizadorPrincipalId,
-               pago{breB}, cover{ahorrador,invitado}, productos[], asistencias[], estado }
+               pago{breB}, cover{ahorrador,invitado}, productos[], asistencias[], consumos[], estado }
    Producto  { id, nombre, emoji, costoNeto, precioVenta, aportadoPor }
    Asistencia{ personaId, estadoEnEseMomento, rol:'principal'|'organizador'|'asistente',
-               coverExonerado, items{prodId:cant}, pagado:bool }   // pagado = saldó su total (binario)
+               coverExonerado, pagado:bool }   // pagado = saldó su total (binario). SIN items (v6).
+   Consumo   { id, personaId, productoId, cantidad:1, apuntadoPor, createdAt }   // 1 fila = 1 pedido (v6,
+              append-only). Cantidad de un producto = Σ filas de (personaId, productoId). Resuelve el
+              lost-update del viejo items{} (dos +1 simultáneos = dos INSERT, no se pisan). +1=fila nueva;
+              −1=borra la fila más reciente. Total/ganancia/cover/informe NO cambian: solo la forma del dato.
    ------------------------------------------------------------
    Flujo: evento → acción → commit (guarda) → notifica → render.
    Las ACCIONES hacen cumplir los invariantes (ver CLAUDE.md).
@@ -69,17 +73,54 @@
     productos.forEach(prod => { items[prod.id] = Math.max(0, parseInt((raw || {})[prod.id]) || 0); });
     return items;
   }
-  /* ---------- Migración: cualquier dato viejo → v5 ---------- */
-  function migrate(raw) {
-    if (raw == null) return defaultState();
+  // Normaliza filas de consumo (v6). Tolerante: descarta filas sin persona/producto.
+  function normConsumos(arr) {
+    return (arr || []).filter(c => c && c.personaId != null && c.productoId != null).map(c => ({
+      id: c.id || Util.uid('cns'),
+      personaId: c.personaId,
+      productoId: c.productoId,
+      cantidad: Math.max(1, parseInt(c.cantidad) || 1),
+      apuntadoPor: c.apuntadoPor != null ? c.apuntadoPor : null,
+      createdAt: c.createdAt != null ? c.createdAt : null,
+    }));
+  }
+  // Timestamp ISO para acciones en runtime. (En migrate() NO se usa: la historia queda con createdAt null.)
+  function nowIso() { try { return new Date().toISOString(); } catch (e) { return null; } }
 
-    // Ya tiene forma v4 (personas[] + primadas[]) → normalizar tolerante (sube también borradores parciales)
+  // ensureV6: post-procesador que converge CUALQUIER estado ya normalizado (v5 con items{} o v6 con
+  // consumos[]) a la forma v6. Si la primada ya trae consumos[] → los normaliza; si no → los DERIVA del
+  // viejo items{} (k unidades → k filas) y SUELTA items de las asistencias. Idempotente.
+  function ensureV6(s) {
+    (s.primadas || []).forEach(p => {
+      if (Array.isArray(p.consumos)) {
+        p.consumos = normConsumos(p.consumos);
+      } else {
+        const consumos = [];
+        (p.asistencias || []).forEach(a => {
+          const items = a.items || {};
+          Object.keys(items).forEach(prodId => {
+            const k = Math.max(0, parseInt(items[prodId]) || 0);
+            for (let n = 0; n < k; n++) consumos.push({ id: Util.uid('cns'), personaId: a.personaId, productoId: prodId, cantidad: 1, apuntadoPor: null, createdAt: null });
+          });
+        });
+        p.consumos = consumos;
+      }
+      (p.asistencias || []).forEach(a => { delete a.items; });   // v6: la cantidad vive en consumos[]
+    });
+    s.schemaVersion = CONFIG.schemaVersion;
+    return s;
+  }
+  /* ---------- Migración: cualquier dato viejo → v6 (ensureV6 converge la forma de consumos) ---------- */
+  function migrate(raw) {
+    if (raw == null) return ensureV6(defaultState());
+
+    // Ya tiene forma v4/v5/v6 (personas[] + primadas[]) → normalizar tolerante (sube también borradores parciales)
     if (typeof raw === 'object' && Array.isArray(raw.personas) && Array.isArray(raw.primadas)) {
-      return normV4(raw);
+      return ensureV6(normV4(raw));
     }
     // v3: primadas[] con asistentes{tipo,nombre} y Producto.price
     if (typeof raw === 'object' && Array.isArray(raw.primadas)) {
-      return migrateV3toV4(raw);
+      return ensureV6(migrateV3toV4(raw));
     }
     // v1 (arreglo pelado) / v2 ({products, people}) → envolver como una primada (cover 0, no había) y migrar como v3
     let products = catalogoHistorico(), people = [];
@@ -101,7 +142,7 @@
       }],
       activePrimadaId: null,
     };
-    return migrateV3toV4(pseudoV3);
+    return ensureV6(migrateV3toV4(pseudoV3));
   }
 
   // v3 → v4: levanta el directorio de personas desde los asistentes y congela el snapshot por asistencia.
@@ -156,6 +197,7 @@
         cover: normCover(p.cover),                     // SNAPSHOT preservado (no se reescribe historia)
         productos,
         asistencias,
+        consumos: p.consumos,                          // v3 no trae → ensureV6 los deriva de items
         estado: p.estado === 'cerrada' ? 'cerrada' : 'abierta',
       };
     });
@@ -224,6 +266,7 @@
         cover: normCover(p.cover),
         productos,
         asistencias,
+        consumos: p.consumos,                          // v6: se respetan; v4/v5: undefined → ensureV6 deriva de items
         estado: p.estado === 'cerrada' ? 'cerrada' : 'abierta',
       };
     });
@@ -323,7 +366,11 @@
   function subscribe(fn) { listeners.push(fn); }
 
   /* ---------- Helpers de derivación ---------- */
-  function unidadesVendidas(primada, prod) { return (primada.asistencias || []).reduce((sum, a) => sum + (a.items[prod.id] || 0), 0); }
+  // v6: las cantidades se cuentan desde consumos[] (Σ filas), no desde el viejo items{}.
+  function cantidadConsumo(primada, personaId, prodId) {
+    return (primada.consumos || []).reduce((n, c) => (c.personaId === personaId && c.productoId === prodId ? n + (Number(c.cantidad) || 1) : n), 0);
+  }
+  function unidadesVendidas(primada, prod) { return (primada.consumos || []).reduce((sum, c) => (c.productoId === prod.id ? sum + (Number(c.cantidad) || 1) : sum), 0); }
   function aportanteEfectivo(primada, prod) { return prod.aportadoPor || primada.organizadorPrincipalId || null; }
   function findPrimada(id) { return state ? (state.primadas.find(p => p.id === id) || null) : null; }
 
@@ -343,11 +390,28 @@
     esOrganizador: (a) => a.rol === 'principal' || a.rol === 'organizador',
     aplicaCover: (a) => a.rol === 'asistente' && !a.coverExonerado,
     coverDe(primada, a) { return select.aplicaCover(a) ? (primada.cover[a.estadoEnEseMomento] || 0) : 0; },
-    consumoDe(primada, a) { return primada.productos.reduce((sum, prod) => sum + (prod.precioVenta || 0) * (a.items[prod.id] || 0), 0); },
+    // Cantidad de un producto para una asistencia (v6: Σ filas de consumo).
+    cantidadDe(primada, a, prod) { return cantidadConsumo(primada, a.personaId, prod.id); },
+    consumoDe(primada, a) {
+      return (primada.consumos || []).reduce((sum, c) => {
+        if (c.personaId !== a.personaId) return sum;
+        const prod = primada.productos.find(p => p.id === c.productoId);
+        return sum + (prod ? (prod.precioVenta || 0) : 0) * (Number(c.cantidad) || 1);
+      }, 0);
+    },
     // Progressive disclosure del consumo: lo consumido (cantidad>0) vs lo disponible para agregar (cantidad=0).
     // Puros y en orden del catálogo de la primada. consumidosDe.length + disponiblesPara.length === productos.length.
-    consumidosDe(primada, a) { return primada.productos.filter(prod => (a.items[prod.id] || 0) > 0); },
-    disponiblesPara(primada, a) { return primada.productos.filter(prod => (a.items[prod.id] || 0) === 0); },
+    consumidosDe(primada, a) { return primada.productos.filter(prod => cantidadConsumo(primada, a.personaId, prod.id) > 0); },
+    disponiblesPara(primada, a) { return primada.productos.filter(prod => cantidadConsumo(primada, a.personaId, prod.id) === 0); },
+    // VISTA POR DEFECTO (resumen sumado): [{prod, cantidad}] de lo consumido por la asistencia.
+    resumenConsumoDe(primada, a) { return select.consumidosDe(primada, a).map(prod => ({ prod, cantidad: cantidadConsumo(primada, a.personaId, prod.id) })); },
+    // AUDITORÍA (bajo demanda): cada fila con su hora y quién la apuntó, ordenada por hora.
+    detalleConsumoDe(primada, a) {
+      return (primada.consumos || [])
+        .filter(c => c.personaId === a.personaId)
+        .map(c => ({ prod: primada.productos.find(p => p.id === c.productoId) || null, cantidad: Number(c.cantidad) || 1, apuntadoPor: c.apuntadoPor, createdAt: c.createdAt }))
+        .sort((x, y) => String(x.createdAt || '') < String(y.createdAt || '') ? -1 : 1);
+    },
     totalAsistencia(primada, a) { return select.coverDe(primada, a) + select.consumoDe(primada, a); },
     esPrincipal(primada, a) { return a.personaId != null && a.personaId === primada.organizadorPrincipalId; },
     // Saldo BINARIO: el principal está auto-saldado (plata en mano); un asistente debe su total
@@ -478,7 +542,6 @@
           estadoEnEseMomento: per ? normEstado(per.estado) : 'ahorrador',
           rol: pid === principalId ? 'principal' : 'organizador',
           coverExonerado: false,
-          items: normItems(productos_, {}),
           pagado: false,
         };
       });
@@ -490,7 +553,7 @@
         organizadorPrincipalId: principalId || null,
         pago: { breB: principalPer ? principalPer.breB : null },
         cover: { ...state.settings.cover },        // SNAPSHOT del cover vigente
-        productos: productos_, asistencias,
+        productos: productos_, asistencias, consumos: [],
         estado: 'abierta',
       };
       state.primadas.unshift(prm);
@@ -514,7 +577,7 @@
     addProducto(primadaId, prod) {
       const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
       const np = normProducts([prod])[0]; if (!np.aportadoPor) np.aportadoPor = p.organizadorPrincipalId || null;
-      p.productos.push(np); p.asistencias.forEach(a => { if (a.items[np.id] == null) a.items[np.id] = 0; });
+      p.productos.push(np);   // v6: sin items que inicializar; las cantidades viven en consumos[]
       commit({ kind: 'primada', id: primadaId });
     },
     setPreciosProducto(primadaId, prodId, { costoNeto, precioVenta } = {}) {
@@ -532,8 +595,9 @@
     removeProducto(primadaId, prodId) {
       const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
       p.productos = p.productos.filter(x => x.id !== prodId);
-      p.asistencias.forEach(a => { delete a.items[prodId]; });
+      p.consumos = (p.consumos || []).filter(c => c.productoId !== prodId);   // v6: borra sus consumos (no huérfanos)
       commit({ kind: 'primada', id: primadaId });
+      commit({ kind: 'consumo', op: 'delete-prod', primadaId, prodId });       // limpieza remota de las filas
     },
 
     // ----- asistencias (INVARIANTE #4: bloqueado si cerrada) -----
@@ -541,14 +605,16 @@
       const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
       if (p.asistencias.some(a => a.personaId === personaId)) return;
       const per = select.persona(personaId); if (!per) return;
-      p.asistencias.push({ personaId, estadoEnEseMomento: normEstado(per.estado), rol: 'asistente', coverExonerado: false, items: normItems(p.productos, {}), pagado: false });
+      p.asistencias.push({ personaId, estadoEnEseMomento: normEstado(per.estado), rol: 'asistente', coverExonerado: false, pagado: false });
       commit({ kind: 'primada', id: primadaId });
     },
     removeAsistencia(primadaId, personaId) {
       const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
       p.asistencias = p.asistencias.filter(a => a.personaId !== personaId);
+      p.consumos = (p.consumos || []).filter(c => c.personaId !== personaId);   // v6: borra sus consumos
       if (p.organizadorPrincipalId === personaId) { p.organizadorPrincipalId = null; p.pago = { breB: null }; }
       commit({ kind: 'primada', id: primadaId });
+      commit({ kind: 'consumo', op: 'delete-persona', primadaId, personaId });   // limpieza remota
     },
     setRol(primadaId, personaId, rol) {
       const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
@@ -571,10 +637,24 @@
       const a = p.asistencias.find(x => x.personaId === personaId); if (!a) return;
       a.coverExonerado = !a.coverExonerado; commit({ kind: 'primada', id: primadaId });
     },
+    // v6: cada +1 = INSERT una fila de consumo (granular, evita el lost-update); cada −1 = DELETE la
+    // fila MÁS RECIENTE de (persona, producto). El commit granular {kind:'consumo'} no upserta la primada.
     changeItem(primadaId, personaId, prodId, delta) {
       const p = findPrimada(primadaId); if (!p || p.estado === 'cerrada') return;
-      const a = p.asistencias.find(x => x.personaId === personaId); if (!a) return;
-      a.items[prodId] = Math.max(0, (a.items[prodId] || 0) + delta); commit({ kind: 'primada', id: primadaId });
+      if (!p.asistencias.some(x => x.personaId === personaId)) return;
+      if (!Array.isArray(p.consumos)) p.consumos = [];
+      const n = Math.trunc(Number(delta)) || 0;
+      for (let k = 0; k < n; k++) {                 // +n: n filas nuevas (cada una granular)
+        const c = { id: Util.uid('cns'), personaId, productoId: prodId, cantidad: 1, apuntadoPor: null, createdAt: nowIso() };
+        p.consumos.push(c);
+        commit({ kind: 'consumo', op: 'insert', id: c.id, primadaId });
+      }
+      for (let k = 0; k < -n; k++) {                 // −n: borra n filas más recientes de (persona, producto)
+        let idx = -1;
+        for (let i = p.consumos.length - 1; i >= 0; i--) { if (p.consumos[i].personaId === personaId && p.consumos[i].productoId === prodId) { idx = i; break; } }
+        if (idx < 0) break;
+        const id = p.consumos[idx].id; p.consumos.splice(idx, 1); commit({ kind: 'consumo', op: 'delete', id, primadaId });
+      }
     },
 
     // ----- pago (BINARIO; INVARIANTE #4: permitido AUNQUE la primada esté cerrada: los pagos llegan

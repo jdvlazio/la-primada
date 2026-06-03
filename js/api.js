@@ -59,16 +59,32 @@
   function settingsToRow(s) {
     return { id: 'singleton', data: { cover: (s || {}).cover, defaultProducts: (s || {}).defaultProducts } };
   }
+  // Consumos (v6): tabla RELACIONAL aparte (1 fila = 1 pedido). apuntado_por lo pone el server por
+  // defecto (auth.uid()); created_at se manda desde el cliente para que local y nube coincidan.
+  function consumoToRow(primadaId, c) {
+    const row = { id: c.id, primada_id: primadaId, persona_id: c.personaId, producto_id: c.productoId, cantidad: c.cantidad != null ? c.cantidad : 1 };
+    if (c.createdAt) row.created_at = c.createdAt;
+    if (c.apuntadoPor) row.apuntado_por = c.apuntadoPor;   // normalmente null → el server pone auth.uid()
+    return row;
+  }
+  function rowToConsumo(r) {
+    return { id: r.id, personaId: r.persona_id, productoId: r.producto_id, cantidad: r.cantidad != null ? r.cantidad : 1, apuntadoPor: (r.apuntado_por != null ? r.apuntado_por : null), createdAt: (r.created_at != null ? r.created_at : null) };
+  }
 
   // Ensambla un AppState CRUDO desde filas. NO migra: el Store aplica migrate() (reusa el normalizador).
   function fromRows(rows) {
     rows = rows || {};
     const sd = (rows.settings && rows.settings[0] && rows.settings[0].data) || {};
+    const primadas = (rows.primadas || []).map(rowToPrimada);
+    // Agrupa consumos por primada_id y los cuelga de cada primada (forma v6 que espera el normalizador).
+    const porPrimada = {};
+    (rows.consumos || []).forEach(r => { (porPrimada[r.primada_id] = porPrimada[r.primada_id] || []).push(rowToConsumo(r)); });
+    primadas.forEach(p => { p.consumos = porPrimada[p.id] || []; });
     return {
-      schemaVersion: 5,
+      schemaVersion: (CONFIG && CONFIG.schemaVersion) || 6,
       settings: { cover: sd.cover, defaultProducts: sd.defaultProducts },
       personas: (rows.personas || []).map(rowToPersona),
-      primadas: (rows.primadas || []).map(rowToPrimada),
+      primadas,
       activePrimadaId: null,   // local por dispositivo → el Store lo superpone desde el espejo
     };
   }
@@ -112,12 +128,13 @@
      Devuelve un AppState CRUDO (o null); el Store le aplica migrate(). */
   async function load() {
     if (mode === 'supabase' && client) {
-      const [pe, pr, se] = await Promise.all([
+      const [pe, pr, se, co] = await Promise.all([
         run(client.from('personas').select('*'), 'load.personas'),
         run(client.from('primadas').select('*'), 'load.primadas'),
         run(client.from('settings').select('*'), 'load.settings'),
+        run(client.from('consumos').select('*'), 'load.consumos'),
       ]);
-      return fromRows({ personas: pe.data, primadas: pr.data, settings: se.data });
+      return fromRows({ personas: pe.data, primadas: pr.data, settings: se.data, consumos: co.data });
     }
     return cacheRead();
   }
@@ -145,6 +162,17 @@
     if (kind === 'settings') {
       return run(client.from('settings').upsert(settingsToRow(state.settings)), 'upsert.settings');
     }
+    // Consumos (v6): granular. insert (1 fila) / delete (por id) / delete-prod / delete-persona (limpieza).
+    if (kind === 'consumo') {
+      const op = target.op;
+      if (op === 'delete') return run(client.from('consumos').delete().eq('id', id), 'delete.consumo');
+      if (op === 'delete-prod') return run(client.from('consumos').delete().eq('primada_id', target.primadaId).eq('producto_id', target.prodId), 'delete.consumos.prod');
+      if (op === 'delete-persona') return run(client.from('consumos').delete().eq('primada_id', target.primadaId).eq('persona_id', target.personaId), 'delete.consumos.persona');
+      // insert: la fila ya está en el estado (la primada que la contiene); la localizamos por id.
+      const prm = (state.primadas || []).find(p => (p.consumos || []).some(c => c.id === id));
+      const c = prm && prm.consumos.find(x => x.id === id); if (!c) return;
+      return run(client.from('consumos').insert(consumoToRow(prm.id, c)), 'insert.consumo');
+    }
   }
 
   const Api = {
@@ -155,7 +183,7 @@
     setMode: function (m) { mode = (m === 'supabase' && client) ? 'supabase' : 'local'; return mode; },
     client: function () { return client; },   // el módulo Auth reusa ESTE client (un solo GoTrueClient)
     // expuestos para tests (round-trip / serialización):
-    _ser: { personaToRow, rowToPersona, primadaToRow, rowToPrimada, settingsToRow, fromRows },
+    _ser: { personaToRow, rowToPersona, primadaToRow, rowToPrimada, settingsToRow, consumoToRow, rowToConsumo, fromRows },
     _cacheRead: cacheRead, _cacheWrite: cacheWrite,
   };
 

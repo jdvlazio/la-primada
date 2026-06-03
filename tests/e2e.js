@@ -149,16 +149,18 @@ click('[data-act="close-overlay"]');
 
 /* ---------- 5. Consumos ± (progressive disclosure) ---------- */
 section('Consumos: primer ítem por el chip-picker, luego steppers ±');
+// v6: la cantidad se cuenta desde consumos[] (Σ filas), no desde el viejo items{}.
+const cervezas = () => (prm().consumos || []).filter(c => c.personaId === beto.id && c.productoId === 'cerveza').reduce((n, c) => n + (c.cantidad || 1), 0);
 abrir(beto.id);   // idempotente: asegura su tarjeta expandida
 // Progressive disclosure: sin cantidad>0 NO hay stepper; el primer consumo entra por "+ Agregar" → chip.
 click(`[data-act="open-pickprod"][data-pid="${beto.id}"]`);
-click(`[data-act="add-item"][data-pid="${beto.id}"][data-prod="cerveza"]`);   // 0→1 vía chip
-eq('Beto lleva 1 cerveza (agregada por chip)', prm().asistencias.find(a => a.personaId === beto.id).items.cerveza, 1);
+click(`[data-act="add-item"][data-pid="${beto.id}"][data-prod="cerveza"]`);   // 0→1 vía chip (INSERT fila)
+eq('Beto lleva 1 cerveza (agregada por chip)', cervezas(), 1);
 // Ya con cantidad>0 aparece el stepper: subir a 2 con +
 click(`[data-act="item-plus"][data-pid="${beto.id}"][data-prod="cerveza"]`);
-eq('Beto lleva 2 cervezas', prm().asistencias.find(a => a.personaId === beto.id).items.cerveza, 2);
+eq('Beto lleva 2 cervezas', cervezas(), 2);
 click(`[data-act="item-minus"][data-pid="${beto.id}"][data-prod="cerveza"]`);
-eq('Stepper baja a 1', prm().asistencias.find(a => a.personaId === beto.id).items.cerveza, 1);
+eq('Stepper baja a 1 (borró la fila más reciente)', cervezas(), 1);
 click(`[data-act="item-plus"][data-pid="${beto.id}"][data-prod="cerveza"]`);   // de vuelta a 2
 
 /* ---------- 6. Cover automático + exoneración ---------- */
@@ -210,11 +212,11 @@ click('[data-act="close-overlay"]');
 Store.actions.cerrarPrimada(prm().id);
 click('[data-tab="resumen"]'); click('[data-tab="primadas"]');   // forzar re-render de la operación
 eq('Primada cerrada', prm().estado, 'cerrada');
-const before = betoAsis().items.cerveza;
+const before = cervezas();
 const plus = q(`[data-act="item-plus"][data-pid="${beto.id}"][data-prod="cerveza"]`);
 check('Steppers deshabilitados al cerrar', !!plus && plus.disabled === true);
 if (plus) click(plus);   // aunque hagamos click, la acción debe ignorarlo
-eq('Consumo congelado tras cerrar', betoAsis().items.cerveza, before);
+eq('Consumo congelado tras cerrar', cervezas(), before);
 
 /* ---------- 8b. Pago BINARIO vía UI con la cuenta CERRADA (INVARIANTE #4) ---------- */
 section('Pago: "Pagar" → hoja con llave → "Ya pagué", con la primada cerrada');
@@ -276,8 +278,9 @@ check('Vuelve a Primadas', /Asistentes/.test(q('#screen').innerHTML));
 /* ---------- 10. Persistencia (lo escrito quedó en localStorage v4) ---------- */
 section('Persistencia');
 const saved = JSON.parse(window.localStorage.getItem('laPrimada'));
-check('localStorage tiene schemaVersion 5', saved && saved.schemaVersion === 5);
+check('localStorage tiene schemaVersion 6', saved && saved.schemaVersion === 6);
 check('Persistió la primada con sus 2 asistencias', saved.primadas[0].asistencias.length === 2);
+check('v6: el espejo local guarda consumos[] en la primada', Array.isArray(saved.primadas[0].consumos));
 
 /* ---------- 11. Historial: abrir una primada vieja muestra valores CONGELADOS ---------- */
 section('Historial: abrir una primada pasada muestra sus snapshots (no recalcula con hoy)');
