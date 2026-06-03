@@ -168,7 +168,7 @@
       case 'login-verificar': {
         const inp = document.getElementById('login-codigo');
         const code = (inp && inp.value || '').replace(/\s/g, '').trim();
-        if (!/^\d{4,8}$/.test(code)) { View.toast('Código no válido'); return; }
+        if (!/^\d{4,10}$/.test(code)) { View.toast('Código no válido'); return; }   // Supabase OTP = 6–10 dígitos
         b.disabled = true;
         Promise.resolve(Auth && Auth.verifyOtp(ui.loginEmail, code))
           .then(() => { View.toast('Sesión iniciada'); /* onChange cierra y recarga */ })

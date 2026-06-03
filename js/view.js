@@ -839,7 +839,7 @@
            <div class="login-emoji">📧</div>
            <p>Código enviado a<br><b>${e(email || 'tu correo')}</b></p>
            <input class="ti login-code" id="login-codigo" inputmode="numeric" autocomplete="one-time-code"
-                  pattern="[0-9]*" maxlength="6" placeholder="Código" aria-label="Código del correo">
+                  pattern="[0-9]*" maxlength="10" placeholder="Código" aria-label="Código del correo">
            <button class="btn" data-act="login-verificar">Verificar</button>
            <button class="btn ghost" data-act="login-reset">Otro correo</button>
          </div>`
