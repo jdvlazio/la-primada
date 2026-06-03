@@ -32,10 +32,12 @@
 
   // Envía el magic link al email. redirectTo = la propia app (vuelve aquí autenticado).
   // No crea cuentas nuevas si el proyecto está en "invite only"; con signups abiertos, crea al entrar.
+  // Envía el CÓDIGO por correo. COPIA EXACTA de Otrofestiv: SIN emailRedirectTo (pasarlo hace que
+  // Supabase mande magic link en vez de código) + shouldCreateUser:true. Para que el correo muestre
+  // los 6 dígitos, la plantilla "Magic Link" del proyecto debe renderizar {{ .Token }}.
   async function signIn(email) {
     const c = client(); if (!c) throw new Error('Auth no disponible');
-    const redirectTo = (typeof location !== 'undefined') ? (location.origin + location.pathname) : undefined;
-    const { error } = await c.auth.signInWithOtp({ email: String(email || '').trim(), options: { emailRedirectTo: redirectTo } });
+    const { error } = await c.auth.signInWithOtp({ email: String(email || '').trim(), options: { shouldCreateUser: true } });
     if (error) throw new Error(error.message || 'No se pudo enviar el código');
     return true;
   }
