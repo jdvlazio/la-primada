@@ -629,7 +629,7 @@
     const ahorradores = S().ahorradores();
     const opcionPrincipal = ahorradores.length
       ? `<select class="sel" id="wz-principal">
-           <option value="">— elige al principal —</option>
+           <option value="">—</option>
            ${ahorradores.map(p => `<option value="${p.id}" ${w.principalId === p.id ? 'selected' : ''}>${e(p.nombre)}</option>`).join('')}
          </select>`
       : `<div class="muted small">Sin ahorradores. <button class="link-inline" data-act="open-personas">Agregar en Personas</button></div>`;
