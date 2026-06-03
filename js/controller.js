@@ -51,6 +51,7 @@
   const ui = { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, wizard: null,
                personasAbiertas: new Set(), nuevaPersona: false,
                configAsis: new Set(), configProd: new Set(), pagarPid: null,
+               resumen: new Set(),
                loginEstado: 'form', loginEmail: '' };
   let sesionActiva = false;   // hay sesión Supabase (el login es opt-in: no bloquea al entrar)
 
@@ -193,6 +194,12 @@
       case 'toggle-asis': {
         if (ui.abiertos.has(pid)) { ui.abiertos.delete(pid); if (ui.pickProd === pid) ui.pickProd = null; }
         else ui.abiertos.add(pid);
+        rerender(); return;
+      }
+      // ----- Resumen: cards-acordeón colapsadas por defecto -----
+      case 'toggle-resumen': {
+        const sec = b.dataset.sec;
+        if (ui.resumen.has(sec)) ui.resumen.delete(sec); else ui.resumen.add(sec);
         rerender(); return;
       }
       // ----- chip-picker "+ Agregar" producto al asistente -----

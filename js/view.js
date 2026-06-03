@@ -393,29 +393,42 @@
     </div>`;
   }
 
-  function reparto(p) {
+  // Card-acordeón de Resumen: COLAPSADA por defecto (titular de un vistazo) + se expande al tocar.
+  // El detalle es denso ("ver la plata"); el titular basta para el día a día. ui.resumen = Set de
+  // secciones abiertas ('reparto'|'informe').
+  function reparto(p, ui) {
     const sel = S();
     const gan = sel.ganancia(p);
+    const abierto = ui && ui.resumen && ui.resumen.has('reparto');
+    const head = `<button class="acc-head" data-act="toggle-resumen" data-sec="reparto" aria-expanded="${abierto ? 'true' : 'false'}">
+        <span class="acc-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
+        <span class="acc-id-stack">
+          <span class="acc-id"><b>Reparto</b></span>
+          <span class="acc-sub">Ganancia ${$peso(gan)}</span>
+        </span>
+      </button>`;
+    if (!abierto) return `<div class="card dark acc-card">${head}</div>`;
     const ahorr = sel.asistenciasAhorradoras(p);
     const pi = sel.parteIgual(p);
     const sob = sel.sobranteFondo(p);
     const lista = ahorr.length
       ? ahorr.map(a => `<div class="kv"><span>${e(nombrePersona(a.personaId))}</span><b>${$peso(pi)}</b></div>`).join('')
       : `<div class="muted small">Sin ahorradores</div>`;
-    return `<div class="card dark">
-      <div class="card-title">Reparto</div>
-      <div class="kv"><span>Cover</span><b>${$peso(sel.coverCobrado(p))}</b></div>
-      <div class="kv"><span>Margen</span><b>${$peso(sel.margenTotal(p))}</b></div>
-      <div class="kv total"><span>Ganancia</span><b>${$peso(gan)}</b></div>
-      <div class="kv"><span>Ahorradores</span><b>${ahorr.length}</b></div>
-      <div class="kv"><span>Parte igual</span><b>${$peso(pi)}</b></div>
-      <div class="kv"><span>Sobrante</span><b>${$peso(sob)}</b></div>
-      <div class="sub">Por persona</div>
-      ${lista}
+    return `<div class="card dark acc-card open">${head}
+      <div class="acc-body">
+        <div class="kv"><span>Cover</span><b>${$peso(sel.coverCobrado(p))}</b></div>
+        <div class="kv"><span>Margen</span><b>${$peso(sel.margenTotal(p))}</b></div>
+        <div class="kv total"><span>Ganancia</span><b>${$peso(gan)}</b></div>
+        <div class="kv"><span>Ahorradores</span><b>${ahorr.length}</b></div>
+        <div class="kv"><span>Parte igual</span><b>${$peso(pi)}</b></div>
+        <div class="kv"><span>Sobrante</span><b>${$peso(sob)}</b></div>
+        <div class="sub">Por persona</div>
+        ${lista}
+      </div>
     </div>`;
   }
 
-  function informe(p) {
+  function informe(p, ui) {
     const sel = S();
     const inf = sel.informePrincipal(p);
     if (inf.incompleta) {
@@ -425,22 +438,32 @@
       </div>`;
     }
     const prinId = p.organizadorPrincipalId;
+    const abierto = ui && ui.resumen && ui.resumen.has('informe');
+    const head = `<button class="acc-head" data-act="toggle-resumen" data-sec="informe" aria-expanded="${abierto ? 'true' : 'false'}">
+        <span class="acc-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
+        <span class="acc-id-stack">
+          <span class="acc-id"><b>Principal — ${e(nombrePersona(prinId))}</b></span>
+          <span class="acc-sub">Entrega ${$peso(inf.entregaTesorero)} · Pendiente ${$peso(inf.saldoPendiente)}</span>
+        </span>
+      </button>`;
+    if (!abierto) return `<div class="card acc-card">${head}</div>`;
     const deud = sel.deudores(p).filter(d => d.personaId !== prinId);
     const deudList = deud.length
       ? deud.map(d => `<div class="kv"><span>${e(nombrePersona(d.personaId))}</span><b class="owe">${$peso(d.saldo)}</b></div>`).join('')
       : `<div class="muted small">Nadie debe</div>`;
-    return `<div class="card">
-      <div class="card-title">Principal — ${e(nombrePersona(prinId))}</div>
-      <div class="kv"><span>Bre-B</span><b>${p.pago.breB ? e(p.pago.breB) : '—'}</b></div>
-      <div class="kv"><span>Recaudo teórico</span><b>${$peso(inf.recaudadoTeorico)}</b></div>
-      <div class="kv"><span>Recupera</span><b>${$peso(inf.recuperaPrincipal)}</b></div>
-      <div class="kv total"><span>Entrega al Tesorero</span><b>${$peso(inf.entregaTesorero)}</b></div>
-      <div class="kv"><span>Recaudado</span><b>${$peso(inf.recaudadoReal)}</b></div>
-      <div class="kv subkv"><span>· de terceros</span><b>${$peso(inf.pagadoTerceros)}</b></div>
-      <div class="kv subkv"><span>· del principal</span><b>${$peso(inf.autoAbonoPrincipal)}</b></div>
-      <div class="kv"><span>Pendiente</span><b class="${inf.saldoPendiente > 0 ? 'owe' : ''}">${$peso(inf.saldoPendiente)}</b></div>
-      <div class="sub">Debe</div>
-      ${deudList}
+    return `<div class="card acc-card open">${head}
+      <div class="acc-body">
+        <div class="kv"><span>Bre-B</span><b>${p.pago.breB ? e(p.pago.breB) : '—'}</b></div>
+        <div class="kv"><span>Recaudo teórico</span><b>${$peso(inf.recaudadoTeorico)}</b></div>
+        <div class="kv"><span>Recupera</span><b>${$peso(inf.recuperaPrincipal)}</b></div>
+        <div class="kv total"><span>Entrega al Tesorero</span><b>${$peso(inf.entregaTesorero)}</b></div>
+        <div class="kv"><span>Recaudado</span><b>${$peso(inf.recaudadoReal)}</b></div>
+        <div class="kv subkv"><span>· de terceros</span><b>${$peso(inf.pagadoTerceros)}</b></div>
+        <div class="kv subkv"><span>· del principal</span><b>${$peso(inf.autoAbonoPrincipal)}</b></div>
+        <div class="kv"><span>Pendiente</span><b class="${inf.saldoPendiente > 0 ? 'owe' : ''}">${$peso(inf.saldoPendiente)}</b></div>
+        <div class="sub">Debe</div>
+        ${deudList}
+      </div>
     </div>`;
   }
 
@@ -540,8 +563,8 @@
         <div class="prm-name">${e(p.nombre)}</div>
         <div class="muted small">${e(Util.monthLabel(p.mesContable))} · ${cap(p.estado)}</div>
       </div>
-      ${reparto(p)}
-      ${informe(p)}`;
+      ${reparto(p, ui)}
+      ${informe(p, ui)}`;
   }
 
   /* ============================================================
