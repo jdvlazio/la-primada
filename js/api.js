@@ -195,12 +195,23 @@
   function subscribeConsumos(primadaId, opts) {
     opts = opts || {};
     if (mode !== 'supabase' || !client || typeof client.channel !== 'function') return function () {};
+    // SIN filtro server-side (los filtros de Postgres Changes NO aplican fiable a DELETE). Filtramos en
+    // el CLIENTE. CLAVE: con RLS habilitado, el payload de DELETE trae SOLO la primary key (id), sin
+    // primada_id → NO se puede filtrar por primada. Como los ids de consumo son ÚNICOS globales,
+    // entregamos el DELETE por id y applyRemoteConsumo lo quita SOLO si está en la primada activa (no-op
+    // si pertenece a otra). INSERT/UPDATE sí traen la fila completa → se filtran por primada_id.
     const ch = client.channel('consumos:' + primadaId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'consumos', filter: 'primada_id=eq.' + primadaId }, function (payload) {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'consumos' }, function (payload) {
         try {
           const op = payload.eventType || payload.type;
-          const row = (op === 'DELETE') ? payload.old : payload.new;
-          if (opts.onChange) opts.onChange({ op: op, consumo: row ? rowToConsumo(row) : null, id: row ? row.id : (payload.old && payload.old.id) });
+          if (op === 'DELETE') {
+            const id = payload.old && payload.old.id;
+            if (id != null && opts.onChange) opts.onChange({ op: 'DELETE', id: id });
+            return;
+          }
+          const row = payload.new;
+          if (!row || row.primada_id !== primadaId) return;   // INSERT/UPDATE: fila completa → filtro por primada
+          if (opts.onChange) opts.onChange({ op: op, consumo: rowToConsumo(row), id: row.id });
         } catch (e) {}
       })
       .subscribe(function (status) { if (status === 'SUBSCRIBED' && opts.onSubscribed) { try { opts.onSubscribed(); } catch (e) {} } });
