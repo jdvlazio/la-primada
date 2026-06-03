@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260603-102051-26578f7">
+<meta name="build" content="20260603-183454-9eaf631">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -487,13 +487,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260603-102051-26578f7"></script>
-  <script src="js/util.js?v=20260603-102051-26578f7"></script>
-  <script src="js/api.js?v=20260603-102051-26578f7"></script>
-  <script src="js/auth.js?v=20260603-102051-26578f7"></script>
-  <script src="js/store.js?v=20260603-102051-26578f7"></script>
-  <script src="js/view.js?v=20260603-102051-26578f7"></script>
-  <script src="js/controller.js?v=20260603-102051-26578f7"></script>
+  <script src="js/config.js?v=20260603-183454-9eaf631"></script>
+  <script src="js/util.js?v=20260603-183454-9eaf631"></script>
+  <script src="js/api.js?v=20260603-183454-9eaf631"></script>
+  <script src="js/auth.js?v=20260603-183454-9eaf631"></script>
+  <script src="js/store.js?v=20260603-183454-9eaf631"></script>
+  <script src="js/view.js?v=20260603-183454-9eaf631"></script>
+  <script src="js/controller.js?v=20260603-183454-9eaf631"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
@@ -504,13 +504,11 @@
        2) controllerchange (no-iOS) → reload cuando un SW nuevo toma control.
        3) reg.update() al volver de background → re-verifica sw.js contra el servidor. -->
   <script>
-    // NATIVO = corriendo dentro del caparazón Capacitor (App Store / Play). Ahí NO aplica el modelo web
-    // de actualización (SW + poll de version.json): el bundle es local y la verdad de versión la maneja
-    // el OTA nativo → si corriera el poll, el build embebido (más viejo que el de Pages) haría reload
-    // infinito. Guard web-safe: en navegador window.Capacitor no existe → ESNATIVO=false → todo igual.
-    var ESNATIVO = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-
-    if ('serviceWorker' in navigator && !ESNATIVO) {
+    // MODELO UNIFICADO (decisión: nativo = server.url cargando el sitio VIVO, SIN OTA/Capgo). Como el
+    // nativo carga el mismo sitio que la web, el SW es la ÚNICA autoridad de actualización en TODOS los
+    // runtimes (PWA + iOS + Android). Por eso el SW se registra y el poll de versión corre SIEMPRE — no
+    // se gatea por plataforma. (Con server.url no hay bundle embebido viejo → el poll no puede loopear.)
+    if ('serviceWorker' in navigator) {
       // updateViaCache:'none' → el navegador NUNCA sirve sw.js desde su caché HTTP al chequear
       // updates; siempre lo baja fresco y DETECTA el SW nuevo. Sin esto, iOS servía el sw.js
       // cacheado y nunca veía el cambio → el device quedaba pegado a un SW viejo.
@@ -520,7 +518,6 @@
     }
 
     (function () {
-      if (ESNATIVO) return;                           // nativo: sin poll de versión ni SW-reload (lo hace el OTA)
       // BUILD = build de ESTE HTML (meta sellado). Es la VERDAD de qué versión corre — NO localStorage,
       // que podía quedar "mintiendo" (guardaba el build nuevo antes de confirmar que el reload trajo el
       // HTML nuevo; si el CDN servía viejo, el check veía "coinciden" y nunca recargaba → atasco).
