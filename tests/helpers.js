@@ -27,6 +27,7 @@ const SEL = {
   wzCancelar: '[data-act="wz-cancelar"]',
   accHead: '.acc-head',     // cabecera de fila de asistente (acordeón)
   prmName: '.prm-name',     // nombre de la primada activa (dashboard Resumen)
+  cara: (key) => `[data-act="set-cara"][data-cara="${key}"]`,   // switch de cara (Consumos | Resumen)
 };
 
 // Arranca la app desde cero: limpia localStorage para un estado determinista.

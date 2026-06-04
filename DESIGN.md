@@ -324,6 +324,28 @@ AÑO → MES** (reciente arriba; `Store.select.primadasPorAnio`). El **historial
 > N2 = segundo organizador; 1 solo → "Primada {N1}"; 3+ → solo los dos primeros. **Editable** (✎ =
 > `renombrarPrimada`, override manual). Aplica a primadas nuevas; las viejas conservan su nombre.
 
+### 2.11.1 · Conmutador de CARA — Consumos | Resumen (✅ CANÓNICO)
+
+**El Resumen ya NO es un tab.** La tabbar inferior tiene **2 tabs** (Primadas · Fondo). "Ver la plata"
+(reparto del fondo + informe del principal) y "operar" (consumos) son **dos CARAS de la misma primada
+activa**, no destinos de navegación global. Se conmutan con un **seg-nav centrado** (`.cara-switch`)
+que vive **bajo el selector** (§2.11), encima de la cara que pinta. Patrón Tricount: separar "ver" de
+"operar" sin sacar al usuario del contexto de la primada.
+
+| Elemento | Canónico |
+|---|---|
+| `.cara-switch` | wrapper `display:flex; justify-content:center; margin:var(--space-3) 0 var(--space-4)` — centra el seg-nav y lo separa de la cara |
+| `.seg-nav` › `.seg` | el segmented control estándar (§2.9, mismo que ahorrador\|invitado): **"Consumos"** (`data-cara="operacion"`) \| **"Resumen"** (`data-cara="resumen"`). El activo lleva `.seg.on` |
+| acción | `data-act="set-cara"` — **navegación, NO escritura** (no pasa por el gate de login; un viewer sin sesión conmuta y VE el resumen) |
+
+**Cara por defecto = ESTADO de la primada** (`fijarCaraPorEstado` en el Controller): una **abierta** abre
+en **Consumos** (operar es lo diario); una **cerrada** abre en **Resumen** (su archivo). Se fija al
+**seleccionar / crear / cargar / cerrar / reabrir**. Una cerrada conserva el switch presente y la cara
+**Consumos accesible en solo-lectura** (los steppers quedan deshabilitados por INVARIANTE #4, no se ocultan).
+El **cálculo no cambia** (ganancia/cover/saldos idénticos): es el mismo `reparto` + `informe`, solo se movió
+de un tab a una cara. La identidad (nombre/mes/estado) ya la muestra el selector → la cara Resumen **no
+repite cabecera** (se eliminó `.resumen-head`).
+
 ### 2.12 · Pago BINARIO — "Pagar" + hoja con la llave Bre-B (✅ CANÓNICO)
 
 **No hay "Abonar" ni pagos parciales.** Cada asistencia está `pagado` o no. El que paga **se autosirve**.

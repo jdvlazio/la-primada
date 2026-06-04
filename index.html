@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260603-183454-9eaf631">
+<meta name="build" content="20260604-063209-a6e9804">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -337,8 +337,9 @@
 
   /* Identidad de la primada activa (título grande) — usado por el dashboard Resumen */
   .prm-name{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:22px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .resumen-head{margin-bottom:var(--space-4)}
-  .resumen-head .prm-name{white-space:normal}
+  /* Conmutador de CARA de la primada (Consumos | Resumen): el Resumen ya no es un tab, es una cara.
+     seg-nav centrado bajo el selector, separado de la cara que pinta debajo. */
+  .cara-switch{display:flex;justify-content:center;margin:var(--space-3) 0 var(--space-4)}
 
   /* ---------- SELECTOR de primada (barra superior del tab Primadas, DESIGN.md §2.11) ----------
      Navegación principal: selector tappable (flex:1) + engranaje (config) + "+" chico (nueva).
@@ -469,7 +470,6 @@
   <!-- Tabbar (3 tabs): hijo FLEX al fondo de .app (cuyo alto = window.innerHeight). Queda pegada al
        borde físico sin position:fixed → inmune al cold-start de iOS PWA. -->
   <nav class="tabbar" id="tabbar">
-    <button class="tab" data-tab="resumen">Resumen</button>
     <button class="tab active" data-tab="primadas">Primadas</button>
     <button class="tab" data-tab="fondo">Fondo</button>
   </nav>
@@ -487,13 +487,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260603-183454-9eaf631"></script>
-  <script src="js/util.js?v=20260603-183454-9eaf631"></script>
-  <script src="js/api.js?v=20260603-183454-9eaf631"></script>
-  <script src="js/auth.js?v=20260603-183454-9eaf631"></script>
-  <script src="js/store.js?v=20260603-183454-9eaf631"></script>
-  <script src="js/view.js?v=20260603-183454-9eaf631"></script>
-  <script src="js/controller.js?v=20260603-183454-9eaf631"></script>
+  <script src="js/config.js?v=20260604-063209-a6e9804"></script>
+  <script src="js/util.js?v=20260604-063209-a6e9804"></script>
+  <script src="js/api.js?v=20260604-063209-a6e9804"></script>
+  <script src="js/auth.js?v=20260604-063209-a6e9804"></script>
+  <script src="js/store.js?v=20260604-063209-a6e9804"></script>
+  <script src="js/view.js?v=20260604-063209-a6e9804"></script>
+  <script src="js/controller.js?v=20260604-063209-a6e9804"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).

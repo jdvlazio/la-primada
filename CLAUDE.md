@@ -188,17 +188,19 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
   Todo lo demás (consumos ±, roles, abonos, alta/baja, navegación) usa `commit` normal (persiste **y** re-renderiza).
   Regla: una acción nueva de **edición de texto en un input** usa `commitQuiet`; cualquier cambio **estructural** usa `commit`.
 
-## Navegación (DECIDIDA) — 3 tabs inferiores + engranaje
+## Navegación (DECIDIDA) — 2 tabs inferiores + engranaje
 - **Barra de tabs inferior (fija):**
-  - **Resumen** — dashboard del fondo (totales, estado). *[se construye después de Primadas]*
   - **Primadas** — lista de eventos: la **activa arriba**, las **pasadas debajo** (el **historial vive aquí**, no es un tab aparte).
-    Es el **corazón** de la app; se construye **primero**. Aquí: crear/seleccionar primada, organizadores y principal,
+    Es el **corazón** de la app. Aquí: crear/seleccionar primada, organizadores y principal,
     asistencias, consumos (±), cover automático por tipo con exoneración, resumen de ganancia + informe del principal.
+    Tiene **dos CARAS** conmutables (seg-nav, NO tabs): **Consumos** (operar) y **Resumen** (ver la plata: reparto del
+    fondo + informe del principal). El **Resumen dejó de ser un tab** — es una cara de la primada activa (ver `DESIGN.md` §2.11.1).
+    La cara por defecto sale del **estado**: abierta → Consumos; **cerrada → Resumen** (su archivo, solo-lectura).
   - **Fondo** — tesorería futura, estado **"Próximamente"**.
 - **Detrás del engranaje (⚙ en el encabezado) — NO son tabs:**
   - **Personas** — directorio (alta, cambio de estado invitado↔ahorrador, `breB`). También se accede **al agregar un asistente**.
   - **Ajustes** — cover vigente, productos por defecto.
-- Toda feature nueva debe caber en esta navegación. Si no cabe → **pausar y consultar** (no inventar un cuarto tab).
+- Toda feature nueva debe caber en esta navegación. Si no cabe → **pausar y consultar** (no inventar un tercer tab).
 
 ## Modelo de datos (esquema v6 — DEFINITIVO)
 ```
@@ -283,7 +285,7 @@ Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
 
 ## Protocolo de cambio (cumplirlo SIEMPRE antes de cada commit)
 1. Si el cambio afecta el **esquema de datos** → subir `schemaVersion` + escribir migración + **tests primero**.
-2. Si es **feature nueva** → verificar que cabe en la IA de 3 tabs; si no, **pausar y consultar**.
+2. Si es **feature nueva** → verificar que cabe en la IA de 2 tabs (+ caras de Primadas); si no, **pausar y consultar**.
 3. Si es **UI** → el `Store.action` y `Store.select` correspondientes deben **existir y estar testeados** antes de que la Vista los use.
 4. Ante cualquier **decisión de producto ambigua** → **preguntar, no inventar**.
 5. Antes de cada commit: `node --check` (cada `js/*.js`), tests de migración + reglas, test e2e con `jsdom` (cuando exista UI).

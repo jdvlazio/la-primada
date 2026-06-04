@@ -50,7 +50,10 @@
   // - overlay 'add-asis': hoja simple para agregar asistentes del directorio
   // - configAsis / configProd: Sets de filas-acordeón expandidas en el overlay Configurar
   //   (mismo patrón que personasAbiertas; clon del componente de Personas)
-  const ui = { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, wizard: null,
+  // - cara: CARA visible del tab Primadas — 'operacion' (Consumos) | 'resumen'. El Resumen dejó de ser
+  //   un tab: es una cara de la primada activa. Default por ESTADO (cerrada → 'resumen', abierta →
+  //   'operacion'), fijada al seleccionar/crear/cargar/cerrar/reabrir vía fijarCaraPorEstado().
+  const ui = { tab: 'primadas', cara: 'operacion', overlay: null, abiertos: new Set(), pickProd: null, wizard: null,
                personasAbiertas: new Set(), nuevaPersona: false,
                configAsis: new Set(), configProd: new Set(), pagarPid: null,
                resumen: new Set(), auditPid: null, apuntadores: {}, presentes: [],
@@ -124,6 +127,14 @@
 
   function activeId() { const p = Store.select.activePrimada(); return p ? p.id : null; }
 
+  // La CARA por defecto de Primadas sale del ESTADO de la primada activa: una cerrada abre en su
+  // 'resumen' (archivo, solo-lectura); una abierta abre en 'operacion' (Consumos). Se fija al cambiar
+  // de primada activa (seleccionar/crear/cargar) y al cerrar/reabrir. set-cara la conmuta a mano.
+  function fijarCaraPorEstado() {
+    const p = Store.select.activePrimada();
+    ui.cara = (p && p.estado === 'cerrada') ? 'resumen' : 'operacion';
+  }
+
   /* ---------- Clicks (delegados en document) ---------- */
   function onClick(ev) {
     // Navegación: tabs y engranaje
@@ -180,6 +191,9 @@
       // ----- selector de primada (navegación: abre la hoja agrupada por año→mes) -----
       case 'open-selector': ui.overlay = 'selector-primada'; rerender(); return;
 
+      // ----- cara del tab Primadas (Consumos | Resumen): navegación, NO escritura (no entra al gate) -----
+      case 'set-cara': ui.cara = (b.dataset.cara === 'resumen') ? 'resumen' : 'operacion'; rerender(); return;
+
       // ----- wizard "Nueva primada" (3 pasos, estado efímero en ui.wizard) -----
       case 'new-primada':   ui.wizard = nuevoWizard(); rerender(); return;
       case 'wz-cancelar':   ui.wizard = null; rerender(); return;
@@ -221,21 +235,25 @@
           });
           ui.wizard = null;
           A.seleccionarPrimada(id);
-          View.toast('Primada creada');
+          fijarCaraPorEstado();            // recién creada → abierta → cara 'operacion'
+          View.toast('Primada creada'); rerender();   // pintar con la cara ya fijada (el commit rindió con la vieja)
         } catch (err) { View.toast(err && err.message ? err.message : 'No se pudo crear'); }
         return;
       }
       // Elegir una primada desde la hoja del selector: activa y cierra la hoja.
-      case 'select-primada':   A.seleccionarPrimada(id); ui.overlay = null; rerender(); return;
+      case 'select-primada':   A.seleccionarPrimada(id); fijarCaraPorEstado(); ui.overlay = null; rerender(); return;
       // Config de la primada (escondida tras el engranaje de la cabecera).
       case 'open-config-primada': ui.overlay = 'config-primada'; rerender(); return;
       // Acciones destructivas: con confirmación (la cuenta cerrada congela consumos).
+      // cerrar/reabrir cambian el ESTADO → la cara por defecto cambia. La acción commitea y dispara un
+      // rerender por el subscribe, pero con la cara aún vieja; fijamos la cara y RE-renderizamos explícito
+      // (return) para que el pintado final refleje el nuevo estado (cerrada → 'resumen', abierta → 'operacion').
       case 'cerrar-primada':
         if (!root.confirm || root.confirm('¿Cerrar la cuenta?')) {
-          A.cerrarPrimada(id); View.toast('Cuenta cerrada');
+          A.cerrarPrimada(id); fijarCaraPorEstado(); View.toast('Cuenta cerrada'); rerender();
         }
-        break;
-      case 'reabrir-primada':  A.reabrirPrimada(id); View.toast('Cuenta reabierta'); break;
+        return;
+      case 'reabrir-primada':  A.reabrirPrimada(id); fijarCaraPorEstado(); View.toast('Cuenta reabierta'); rerender(); return;
       case 'borrar-primada':
         if (!root.confirm || root.confirm('¿Borrar la primada?')) {
           A.borrarPrimada(id); ui.overlay = null; View.toast('Primada borrada'); rerender(); return;
@@ -435,6 +453,7 @@
     if (View.renderAuthButton) View.renderAuthButton(Auth && Auth.enabled() ? (sesionActiva ? 'in' : 'out') : 'placeholder');
     rerender();                                // "Cargando…" mientras hidrata
     await Store.load();                        // hidrata el AppState desde Api (async)
+    fijarCaraPorEstado();                      // cara inicial por estado de la primada activa cargada
     rerender();
   }
 

@@ -594,25 +594,24 @@
         <div>Aquí vivirán tus encuentros y sus cuentas.</div>
         <button class="btn auto mt-3" data-act="new-primada">${icon('plus-circle')}Crear primada</button>
       </div>`;
-    return `${primadaSelectorRow(state, ui)}
-      ${activa ? primadaDetalle(activa, ui) : vacio}`;
+    if (!activa) return `${primadaSelectorRow(state, ui)}${vacio}`;
+    // El RESUMEN ya NO es un tab: es una CARA de la primada (junto a la operación). Se conmuta con un
+    // seg-nav. ui.cara = 'operacion' | 'resumen'. Una cerrada abre en 'resumen' (su archivo); la cara
+    // 'Consumos' sigue accesible en solo-lectura (la operación ya congela edición si está cerrada).
+    const cara = (ui && ui.cara === 'resumen') ? 'resumen' : 'operacion';
+    const seg = (key, label) => `<button class="seg ${cara === key ? 'on' : ''}" data-act="set-cara" data-cara="${key}">${label}</button>`;
+    const switcher = `<div class="cara-switch"><div class="seg-nav">${seg('operacion', 'Consumos')}${seg('resumen', 'Resumen')}</div></div>`;
+    const face = cara === 'resumen' ? resumenPrimada(activa, ui) : primadaDetalle(activa, ui);
+    return `${primadaSelectorRow(state, ui)}${switcher}${face}`;
   }
 
   /* ============================================================
-     TAB RESUMEN — dashboard de la plata de la primada activa
-     (reparto del fondo + informe del principal + quién debe).
-     Separar "ver la plata" de "operar" (patrón Tricount).
+     RESUMEN — CARA de la primada (no es destino propio): reparto del fondo + informe del principal.
+     Mismos selectores que antes → ganancia/cover/saldos idénticos. La identidad (nombre/mes/estado) ya
+     la muestra el selector de arriba, así que aquí no se repite cabecera.
      ============================================================ */
-  function tabResumen(state, ui) {
-    const p = S().activePrimada();
-    if (!p) return `<div class="empty-soft big"><div class="ph-title">Resumen</div>
-      <div>Sin primada</div></div>`;
-    return `<div class="resumen-head">
-        <div class="prm-name">${e(p.nombre)}</div>
-        <div class="muted small">${e(Util.monthLabel(p.mesContable))} · ${cap(p.estado)}</div>
-      </div>
-      ${reparto(p, ui)}
-      ${informe(p, ui)}`;
+  function resumenPrimada(p, ui) {
+    return `${reparto(p, ui)}${informe(p, ui)}`;
   }
 
   /* ============================================================
@@ -799,12 +798,11 @@
         t.classList.toggle('active', t.dataset.tab === ui.tab));
     }
 
-    // 2) contenido del tab
+    // 2) contenido del tab. El Resumen ya NO es un tab: es una CARA dentro de Primadas (ver tabPrimadas).
     let html;
-    if (!state)                    html = '<div class="empty-soft">Cargando…</div>';   // primer pintado: aún hidratando (load async)
-    else if (ui.tab === 'resumen') html = tabResumen(state, ui);                  // dashboard de la plata
-    else if (ui.tab === 'fondo')   html = placeholder('Fondo', 'Tesorería');
-    else                           html = tabPrimadas(state, ui);
+    if (!state)                  html = '<div class="empty-soft">Cargando…</div>';   // primer pintado: aún hidratando (load async)
+    else if (ui.tab === 'fondo') html = placeholder('Fondo', 'Tesorería');
+    else                         html = tabPrimadas(state, ui);
     els.screen.innerHTML = html;
 
     // 3) overlay: wizard (prioridad) · config de primada · pantalla del engranaje (Personas / Ajustes)

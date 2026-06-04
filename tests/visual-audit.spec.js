@@ -42,11 +42,12 @@ test.describe('Evidencia visual', () => {
     await expect(page.locator(SEL.nuevaPrimada)).toBeVisible();
   });
 
-  test('V2 — tab Resumen', async ({ page }) => {
-    await abrirApp(page);
-    await page.click(SEL.tab('resumen'));
+  test('V2 — cara Resumen (ya no es tab: se conmuta dentro de Primadas)', async ({ page }) => {
+    await appConPrimadaAbierta(page);
+    await page.click(SEL.cara('resumen'));
     await page.screenshot({ path: `${VISUAL}/resumen.png`, fullPage: false });
-    await expect(page.locator(`${SEL.tab('resumen')}.active`)).toBeVisible();
+    await expect(page.locator(`${SEL.cara('resumen')}.on`)).toBeVisible();
+    await expect(page.locator(SEL.screen)).toContainText('Ganancia');
   });
 
   test('V3 — tab Fondo (placeholder)', async ({ page }) => {
