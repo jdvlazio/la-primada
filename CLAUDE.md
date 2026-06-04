@@ -193,11 +193,11 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
   - **Primadas** — lista de eventos: la **activa arriba**, las **pasadas debajo** (el **historial vive aquí**, no es un tab aparte).
     Es el **corazón** de la app. Aquí: crear/seleccionar primada, organizadores y principal,
     asistencias, consumos (±), cover automático por tipo con exoneración, resumen de ganancia + informe del principal.
-    Tiene **dos CARAS** conmutables (seg-nav, NO tabs): **Consumos** (operar) y **Balance** (ver la plata: reparto del
-    fondo + informe del principal). El **Balance dejó de ser un tab** — es una cara de la primada activa (ver `DESIGN.md` §2.11.1).
-    La cara por defecto sale del **estado**: abierta → Consumos; **cerrada → Balance** (documento final, solo-lectura). El
-    Balance lleva la **cifra héroe siempre visible** (Ganancia / Pendiente o Entrega) + el desglose en acorde, y es **state-aware**
-    (abierta = provisional; cerrada = definitivo).
+    Tiene **dos CARAS** conmutables (seg-nav, NO tabs): **Consumos** (operar) y **Balance** (ver la plata). El **Balance
+    dejó de ser un tab** — es una cara de la primada activa (ver `DESIGN.md` §2.11.1). La cara por defecto sale del
+    **estado**: abierta → Consumos; **cerrada → Balance** (documento final, solo-lectura). El Balance son dos tarjetas con
+    **cifra héroe siempre visible** + desglose en acorde: **Ganancia** (resultado del grupo, "Provisional" en abierta) y
+    **Recaudo** (proceso de cobro; ABIERTA = "Por cobrar" en ámbar, CERRADA = "Entregado" en teal). State-aware por `p.estado`.
   - **Fondo** — tesorería futura, estado **"Próximamente"**.
 - **Detrás del engranaje (⚙ en el encabezado) — NO son tabs:**
   - **Personas** — directorio (alta, cambio de estado invitado↔ahorrador, `breB`). También se accede **al agregar un asistente**.

@@ -213,18 +213,23 @@ eq('Cover de Beto ahora 0', Store.select.coverDe(prm(), betoAsis()), 0);
 eq('Ganancia baja al margen puro (2.000)', Store.select.ganancia(prm()), 2000);
 click('[data-act="close-overlay"]');
 
-/* ---------- 7. Balance: ganancia e informe del principal ---------- */
-section('Balance: ganancia + informe del principal');
+/* ---------- 7. Balance: Ganancia y Recaudo ---------- */
+section('Balance: Ganancia + Recaudo (proceso de cobro)');
 const inf = Store.select.informePrincipal(prm());
 check('Informe completo (ya hay principal)', inf.incompleta === false);
 eq('Entrega al Tesorero = ganancia', inf.entregaTesorero, Store.select.ganancia(prm()));
 eq('Parte igual a la única ahorradora (Ana) = ganancia', Store.select.parteIgual(prm()), 2000);
 eq('Sobrante indivisible = 0', Store.select.sobranteFondo(prm()), 0);
-// El informe también vive ahora en la cara Balance (no en la operación).
+// La 2ª tarjeta se llama RECAUDO (proceso de cobro), sin nombre ni rol.
 click('[data-act="set-cara"][data-cara="balance"]');
-check('Informe del principal renderizado con el nombre (cara Balance)', /Principal — Ana/.test(q('#screen').innerHTML));
-// Beto debe (cover 0, pero 2 cervezas = 7.000 sin pagar) → el HÉROE del informe es "Pendiente" (urgencia).
-check('Informe ABIERTA con deuda: héroe = "Pendiente"', /Pendiente/.test(q('#screen').innerHTML));
+check('2ª tarjeta titulada "Recaudo" (sin nombre/rol)', /Recaudo/.test(q('#screen').innerHTML) && !/Principal — Ana/.test(q('#screen').innerHTML));
+// Beto debe (cover 0, pero 2 cervezas = 7.000 sin pagar) → ABIERTA: héroe = "Por cobrar" (NO "provisional").
+check('Recaudo ABIERTA: microcopy "Por cobrar"', /Por cobrar/.test(q('#screen').innerHTML));
+check('Recaudo ABIERTA: el héroe usa tono proceso (.por-cobrar), NO --alert/.owe',
+  /class="bal-amount por-cobrar"/.test(q('#screen').innerHTML) && !/bal-amount owe/.test(q('#screen').innerHTML));
+check('Recaudo ABIERTA: teaser con ambos números (Entrega … · Por cobrar …)', /Entrega .*al Tesorero · Por cobrar/.test(q('#screen').innerHTML));
+check('Recaudo: "provisional" NO aparece en esta tarjeta (sí queda en Ganancia)',
+  (q('#screen').innerHTML.match(/provisional/gi) || []).length === 1);   // solo la nota de Ganancia
 click('[data-act="set-cara"][data-cara="operacion"]');
 
 /* ---------- 8. Cerrar congela consumos pero la UI sigue viva ---------- */
@@ -285,9 +290,11 @@ check('Switch de cara presente (Consumos | Balance)',
   !!q('[data-act="set-cara"][data-cara="operacion"]') && !!q('[data-act="set-cara"][data-cara="balance"]'));
 check('Seg Balance marcado activo (on) al abrir cerrada',
   /class="seg on"[^>]*data-cara="balance"/.test(q('#screen').innerHTML));
-// STATE-AWARE en CERRADA: documento final → SIN nota provisional; el héroe del informe es "Entrega al Tesorero".
-check('Cerrada: SIN nota "Provisional"', !/Provisional/.test(q('#screen').innerHTML));
-check('Cerrada: héroe del informe = "Entrega al Tesorero"', /Entrega al Tesorero/.test(q('#screen').innerHTML));
+// STATE-AWARE en CERRADA: documento final → SIN nota provisional (Ganancia); Recaudo = lo ENTREGADO.
+check('Cerrada: SIN nota "Provisional" (ni en Ganancia ni en Recaudo)', !/[Pp]rovisional/.test(q('#screen').innerHTML));
+check('Cerrada Recaudo: héroe tono "entregado" (teal/--accent)', /class="bal-amount entregado"/.test(q('#screen').innerHTML));
+check('Cerrada Recaudo: teaser en pasado "Entregó … al Tesorero"', /Entregó .*al Tesorero/.test(q('#screen').innerHTML));
+check('Cerrada Recaudo: nota "Entregado", sin "Por cobrar"', /Entregado/.test(q('#screen').innerHTML) && !/Por cobrar/.test(q('#screen').innerHTML));
 click('[data-act="set-cara"][data-cara="operacion"]');           // la cara Consumos sigue accesible…
 check('Cara Consumos accesible con la cuenta cerrada', /Asistentes/.test(q('#screen').innerHTML));
 const congelado = q(`[data-act="item-plus"][data-pid="${beto.id}"][data-prod="cerveza"]`);

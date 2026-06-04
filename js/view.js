@@ -423,8 +423,8 @@
     const abierto = ui && ui.balance && ui.balance.has('reparto');
     const cerrada = p.estado === 'cerrada';
     const teaser = ahorr.length
-      ? `parte igual ${$peso(pi)} · ${ahorr.length} ${ahorr.length === 1 ? 'ahorrador' : 'ahorradores'}`
-      : 'sin ahorradores';
+      ? `Entrega ${$peso(pi)} a ${ahorr.length} ${ahorr.length === 1 ? 'Ahorrador' : 'Ahorradores'}`
+      : 'Sin ahorradores';
     const lista = ahorr.length
       ? ahorr.map(a => `<div class="kv"><span>${e(nombrePersona(a.personaId))}</span><b>${$peso(pi)}</b></div>`).join('')
       : `<div class="muted small">Sin ahorradores</div>`;
@@ -450,35 +450,38 @@
     return `<div class="card dark acc-card ${abierto ? 'open' : ''}">${hero}${toggle}${body}</div>`;
   }
 
-  // Bloque INFORME DEL PRINCIPAL del Balance. HÉROE state-aware: si hay deuda y la primada está ABIERTA →
-  // "Pendiente" (urgencia de acción, en rojo); si el saldo es 0 O la primada está CERRADA → "Entrega al
-  // Tesorero" (resultado). El desglose (Bre-B, recaudos, deudores) va dentro del acc-body toggleable.
+  // Bloque RECAUDO del Balance (el proceso de cobro del evento, no una persona). HÉROE state-aware POR
+  // ESTADO (no por urgencia): ABIERTA → lo que falta cobrar ("Por cobrar", tono ÁMBAR = proceso en curso,
+  // NUNCA --alert: no es deuda de nadie ni alarma); CERRADA → lo entregado al Tesorero (tono TEAL/--accent =
+  // definitivo). El "provisional" NO aplica aquí: el recaudo es el estado REAL del cobro. El desglose
+  // (Bre-B, recaudos, deudores) va dentro del acc-body toggleable.
   function informe(p, ui) {
     const sel = S();
     const inf = sel.informePrincipal(p);
     if (inf.incompleta) {
       return `<div class="card">
-        <div class="card-title">Principal</div>
+        <div class="card-title">Recaudo</div>
         <div class="muted small">Sin principal</div>
       </div>`;
     }
     const prinId = p.organizadorPrincipalId;
     const abierto = ui && ui.balance && ui.balance.has('informe');
     const cerrada = p.estado === 'cerrada';
-    const heroEsPendiente = inf.saldoPendiente > 0 && !cerrada;   // urgencia solo mientras está en flujo
-    const heroLabel = heroEsPendiente ? 'Pendiente' : 'Entrega al Tesorero';
-    const heroAmount = heroEsPendiente ? inf.saldoPendiente : inf.entregaTesorero;
+    // ABIERTA: el héroe es lo que FALTA cobrar (Por cobrar). CERRADA: lo que se entregó al Tesorero.
+    const heroAmount = cerrada ? inf.entregaTesorero : inf.saldoPendiente;
+    const heroTone = cerrada ? 'entregado' : 'por-cobrar';   // teal (definitivo) vs ámbar (proceso)
+    const heroNote = cerrada ? 'Entregado' : 'Por cobrar';
     const deud = sel.deudores(p).filter(d => d.personaId !== prinId);
-    const teaser = heroEsPendiente
-      ? `Entrega ${$peso(inf.entregaTesorero)} al Tesorero`
-      : (deud.length ? `${deud.length} ${deud.length === 1 ? 'deudor' : 'deudores'} · ${$peso(inf.saldoPendiente)}` : 'Todos al día');
+    const teaser = cerrada
+      ? `Entregó ${$peso(inf.entregaTesorero)} al Tesorero`
+      : `Entrega ${$peso(inf.entregaTesorero)} al Tesorero · Por cobrar ${$peso(inf.saldoPendiente)}`;
     const deudList = deud.length
       ? deud.map(d => `<div class="kv"><span>${e(nombrePersona(d.personaId))}</span><b class="owe">${$peso(d.saldo)}</b></div>`).join('')
       : `<div class="muted small">Nadie debe</div>`;
     const hero = `<div class="bal-hero">
-        <div class="bal-label"><span class="dot ${cerrada ? 'closed' : ''}"></span>Principal — ${e(nombrePersona(prinId))}</div>
-        <div class="bal-amount ${heroEsPendiente ? 'owe' : ''}">${$peso(heroAmount)}</div>
-        <div class="bal-note">${heroLabel}${cerrada ? '' : ' · provisional'}</div>
+        <div class="bal-label"><span class="dot ${cerrada ? 'closed' : ''}"></span>Recaudo</div>
+        <div class="bal-amount ${heroTone}">${$peso(heroAmount)}</div>
+        <div class="bal-note">${heroNote}</div>
       </div>`;
     const toggle = `<button class="acc-head bal-toggle" data-act="toggle-balance" data-sec="informe" aria-expanded="${abierto ? 'true' : 'false'}">
         <span class="acc-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
@@ -492,7 +495,7 @@
         <div class="kv"><span>Recaudado</span><b>${$peso(inf.recaudadoReal)}</b></div>
         <div class="kv subkv"><span>· de terceros</span><b>${$peso(inf.pagadoTerceros)}</b></div>
         <div class="kv subkv"><span>· del principal</span><b>${$peso(inf.autoAbonoPrincipal)}</b></div>
-        <div class="kv"><span>Pendiente</span><b class="${inf.saldoPendiente > 0 ? 'owe' : ''}">${$peso(inf.saldoPendiente)}</b></div>
+        <div class="kv"><span>Por cobrar</span><b>${$peso(inf.saldoPendiente)}</b></div>
         <div class="sub">Debe</div>
         ${deudList}
       </div>` : '';

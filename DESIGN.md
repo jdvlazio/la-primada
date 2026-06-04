@@ -352,18 +352,34 @@ El Balance son **dos cards** (`balancePrimada` → `reparto` + `informe`), cada 
 SIEMPRE visible** (la cifra que importa, fuera del acorde) y un **acorde con la derivación** (cómo se
 calculó). El número clave nunca se esconde tras un acorde colapsado; el desglose sí.
 
+**Dos conceptos distintos — GANANCIA (resultado) vs. RECAUDO (proceso):**
+- **Ganancia** (`reparto`) = el **resultado** colectivo del evento: cuánto se generó para el fondo y cómo se
+  reparte entre los ahorradores. Es una cifra que **puede cambiar mientras la primada está abierta** (los
+  consumos siguen entrando) → por eso lleva la nota **"Provisional"** en abierta. Es plata del **grupo**.
+- **Recaudo** (`informe`) = el **proceso de cobro** del evento (la pregunta del tesorero: *"¿cómo va el
+  recaudo?"*). **No** es una persona ni un rol: por eso la tarjeta se llama **"Recaudo"**, sin nombre. El
+  recaudo es el **estado REAL del cobro**, no una estimación → **nunca** lleva "provisional".
+
 | Elemento | Canónico |
 |---|---|
 | `.bal-hero` | bloque superior de la card: `.bal-label` (etiqueta + `.dot` de estado) sobre `.bal-amount` (cifra grande, `font-weight:800; font-size:34px`, iguala al wordmark — sin tokens nuevos) y `.bal-note` opcional |
-| `.bal-amount.owe` | la cifra héroe en `--alert` cuando representa deuda (Pendiente) |
-| `.bal-toggle` | la fila acorde (`.acc-head` + `data-act="toggle-balance"`, `data-sec="reparto"\|"informe"`), separada del héroe por `border-top`. El desglove (`.acc-body`) sigue **toggleable** (`ui.balance` = Set de secciones abiertas), **colapsado por defecto** |
+| `.bal-amount.por-cobrar` / `.bal-amount.entregado` | tono **state-aware** del héroe del Recaudo: **ámbar** (`--amber`, proceso en curso — **NUNCA `--alert`**: el pendiente no es alarma ni deuda de nadie) vs **teal** (`--accent`, definitivo). Reusa tokens existentes |
+| `.bal-toggle` | la fila acorde (`.acc-head` + `data-act="toggle-balance"`, `data-sec="reparto"\|"informe"`), separada del héroe por `border-top`. El desglose (`.acc-body`) sigue **toggleable** (`ui.balance` = Set de secciones abiertas), **colapsado por defecto** |
 
-- **`reparto` (card oscura):** héroe = **Ganancia**. Derivación: cover, margen, ahorradores, parte igual, sobrante, lista por persona.
-- **`informe` (card clara):** héroe **state-aware** → **Pendiente** (en `--alert`) cuando hay saldo > 0 **y** la primada está **abierta** (urgencia de acción); **Entrega al Tesorero** cuando saldo = 0 **o** la primada está **cerrada** (resultado). Derivación: Bre-B, recaudo teórico, recupera, recaudado real (terceros/principal), pendiente, lista de deudores.
+- **`reparto` — Ganancia (card oscura):** héroe = **Ganancia** (resultado del grupo). Teaser colapsado:
+  **"Entrega $X a N Ahorradores"** (verbo claro; "parte igual" era jerga interna). Derivación: cover, margen,
+  ahorradores, parte igual, sobrante, lista por persona.
+- **`informe` — Recaudo (card clara):** héroe **state-aware POR ESTADO** (no por urgencia):
+  - **ABIERTA** → héroe = lo que **falta cobrar** (`saldoPendiente`), tono **ámbar** (`.por-cobrar`), nota
+    **"Por cobrar"**. Teaser: **"Entrega $X al Tesorero · Por cobrar $Y"** (los dos números de un vistazo:
+    qué se compromete y qué falta).
+  - **CERRADA** → héroe = lo **entregado** al Tesorero (`entregaTesorero`), tono **teal** (`.entregado`), nota
+    **"Entregado"**. Teaser en pasado: **"Entregó $X al Tesorero"**.
+  - Derivación (acorde): Bre-B, recaudo teórico, recupera, recaudado real (terceros/principal), por cobrar, lista de deudores ("Debe", en `.owe`: el "quién debe" sí es protagonista).
 
 **State-aware por `p.estado`** (pura vista; `p.estado` ya llega a `reparto`/`informe`):
-- **ABIERTA** = en vivo, provisional → `.bal-note` "Provisional — se confirma al cerrar" (reparto) / "· provisional" (informe); `.dot` verde.
-- **CERRADA** = documento final → **sin** nota provisional; héroe del informe = Entrega; `.dot.closed` (gris). Reutiliza el `.dot`/`.dot.closed` del selector, sin componentes nuevos.
+- **ABIERTA** = en vivo → Ganancia lleva nota **"Provisional"** (puede cambiar); Recaudo en **ámbar "Por cobrar"**; `.dot` verde.
+- **CERRADA** = documento final → **sin** "provisional"; Recaudo en **teal "Entregado"** (pasado); `.dot.closed` (gris). Reutiliza el `.dot`/`.dot.closed` del selector, sin componentes nuevos.
 
 ### 2.12 · Pago BINARIO — "Pagar" + hoja con la llave Bre-B (✅ CANÓNICO)
 
