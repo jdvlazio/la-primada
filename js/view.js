@@ -53,14 +53,16 @@
     const lineas = (p.asistencias || []).map(a => {
       const consumos = sel.resumenConsumoDe(p, a);                 // [{prod, cantidad}]
       const cover = sel.coverDe(p, a);
-      if (!consumos.length && cover <= 0) return '';               // omite quien no consumió ni paga entrada
-      const prods = consumos.map(({ prod, cantidad }) =>
-        `<div class="informe-line"><span>${e(prod.emoji)} ${e(prod.nombre)} ×${cantidad}</span><span>${$peso((Number(prod.precioVenta) || 0) * cantidad)}</span></div>`
-      ).join('');
-      const entrada = cover > 0 ? `<div class="informe-line"><span>Entrada</span><span>${$peso(cover)}</span></div>` : '';
+      if (!consumos.length && cover <= 0) return '';               // omite quien no consumió ni paga cover
+      // COMPACTO (reduce altura con muchas personas): productos en una sola línea inline (emoji+nombre+×N,
+      // SIN subtotal por ítem) + el cover ("Cover $X") como chip; el TOTAL de la persona cierra la sección.
+      // El desglose por ítem ya está en la app — la imagen es el resumen accionable (cuánto debo + Bre-B).
+      const chips = consumos.map(({ prod, cantidad }) => `${e(prod.emoji)} ${e(prod.nombre)} ×${cantidad}`);
+      if (cover > 0) chips.push(`Cover ${$peso(cover)}`);
+      const detalle = chips.length ? `<div class="informe-prods">${chips.join(' · ')}</div>` : '';
       return `<div class="informe-asis">
           <div class="informe-nombre">${e(nombrePersona(a.personaId))}</div>
-          ${prods}${entrada}
+          ${detalle}
           <div class="informe-total"><span>Total</span><b>${$peso(sel.totalAsistencia(p, a))}</b></div>
         </div>`;
     }).join('');

@@ -251,17 +251,17 @@ check('Trigger "Compartir informe" visible con datos', !!q('[data-act="compartir
 const informe = window.View.informeTemplateHTML(prm());
 check('Informe: marca "Primadapp" + período', /informe-brand">Primadapp/.test(informe) && /Junio 2026/.test(informe));
 check('Informe: título = nombre de la primada', new RegExp('informe-title">' + prm().nombre).test(informe));
-check('Informe: Beto con su producto (emoji + nombre + ×cantidad)', /🍺 Costeñita ×2/.test(informe));
-check('Informe: subtotal del producto (2×3.500 = 7.000)', /×2<\/span><span>\$7\.000/.test(informe));
+// COMPACTO: productos inline (emoji+nombre+×N) en .informe-prods, SIN subtotal por ítem.
+check('Informe: Beto con su producto inline (emoji + nombre + ×cantidad)', /informe-prods">🍺 Costeñita ×2/.test(informe));
+check('Informe: SIN subtotal por producto (no hay "×2…$7.000" en la fila)', !/×2<\/span><span>\$7\.000/.test(informe));
 check('Informe: total de la persona "Total $7.000"', /informe-total"><span>Total<\/span><b>\$7\.000/.test(informe));
 check('Informe: Ana (principal, sin consumo ni cover) OMITIDA', !new RegExp('informe-nombre">' + ana.nombre).test(informe));
 check('Informe ABIERTA: resumen "Por cobrar" en ámbar (.cobrar), no "Ganancia"',
   /informe-resumen cobrar">Por cobrar \$7\.000/.test(informe) && !/informe-resumen gan/.test(informe));
-// El cover se rotula "Entrada", no "Cover". Quito la exoneración de Beto → recupera cover 10.000.
+// El cover se rotula "Cover" (no "Entrada"), como chip inline con su monto. Quito la exoneración → cover 10.000.
 Store.actions.toggleCoverExonerado(prm().id, beto.id);
 const conCover = window.View.informeTemplateHTML(prm());
-check('Informe: cover rotulado "Entrada · $cover" (no "Cover")',
-  /informe-line"><span>Entrada<\/span><span>\$10\.000/.test(conCover) && !/Cover/.test(conCover));
+check('Informe: cover como chip "Cover $X" (no "Entrada")', /· Cover \$10\.000/.test(conCover) && !/Entrada/.test(conCover));
 Store.actions.toggleCoverExonerado(prm().id, beto.id);   // restaurar exoneración (cover 0) para el resto del flujo
 check('Informe: footer "Generado con Primadapp"', /informe-foot">Generado con Primadapp/.test(informe));
 // Bre-B del principal (snapshot p.pago.breB): línea destacada 🔑 tras el título. Sin breB → omitida.
