@@ -226,11 +226,14 @@ check('2ª tarjeta titulada "Recaudo" (sin nombre/rol)', /Recaudo/.test(q('#scre
 // Beto debe (cover 0, pero 2 cervezas = 7.000 sin pagar) → ABIERTA: héroe en tono proceso "por-cobrar".
 check('Recaudo ABIERTA: el héroe usa tono proceso (.por-cobrar), NO --alert/.owe',
   /class="bal-amount por-cobrar"/.test(q('#screen').innerHTML) && !/bal-amount owe/.test(q('#screen').innerHTML));
-check('Recaudo ABIERTA: teaser con ambos números (Entrega … · Por cobrar …)', /Entrega .*al Tesorero · Por cobrar/.test(q('#screen').innerHTML));
+// El TEASER no repite el héroe: el héroe ya es el "por cobrar" (saldoPendiente) → el teaser solo añade
+// el OTRO número (lo que se entrega), sin "· Por cobrar $Y".
+check('Recaudo ABIERTA: teaser solo "Entrega … al Tesorero" (no repite el número del héroe)',
+  /Entrega .*al Tesorero/.test(q('#screen').innerHTML) && !/al Tesorero · Por cobrar/.test(q('#screen').innerHTML));
 // MICROCOPY no repite el concepto del héroe: la nota añade CONTEXTO ("de N personas"), no "Por cobrar".
 check('Recaudo ABIERTA: microcopy = contexto "de 1 persona" (Beto debe)', /de 1 persona/.test(q('#screen').innerHTML));
-check('Recaudo ABIERTA: "Por cobrar" aparece UNA sola vez (teaser), no repetido en la nota',
-  (q('#screen').innerHTML.match(/Por cobrar/g) || []).length === 1);
+check('Recaudo ABIERTA: el texto "Por cobrar" ya NO aparece (0 veces, acorde colapsado)',
+  (q('#screen').innerHTML.match(/Por cobrar/g) || []).length === 0);
 check('Recaudo: "provisional" NO aparece en esta tarjeta (sí queda en Ganancia)',
   (q('#screen').innerHTML.match(/provisional/gi) || []).length === 1);   // solo la nota de Ganancia
 click('[data-act="set-cara"][data-cara="operacion"]');
