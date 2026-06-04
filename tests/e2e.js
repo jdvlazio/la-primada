@@ -223,11 +223,14 @@ eq('Sobrante indivisible = 0', Store.select.sobranteFondo(prm()), 0);
 // La 2ª tarjeta se llama RECAUDO (proceso de cobro), sin nombre ni rol.
 click('[data-act="set-cara"][data-cara="balance"]');
 check('2ª tarjeta titulada "Recaudo" (sin nombre/rol)', /Recaudo/.test(q('#screen').innerHTML) && !/Principal — Ana/.test(q('#screen').innerHTML));
-// Beto debe (cover 0, pero 2 cervezas = 7.000 sin pagar) → ABIERTA: héroe = "Por cobrar" (NO "provisional").
-check('Recaudo ABIERTA: microcopy "Por cobrar"', /Por cobrar/.test(q('#screen').innerHTML));
+// Beto debe (cover 0, pero 2 cervezas = 7.000 sin pagar) → ABIERTA: héroe en tono proceso "por-cobrar".
 check('Recaudo ABIERTA: el héroe usa tono proceso (.por-cobrar), NO --alert/.owe',
   /class="bal-amount por-cobrar"/.test(q('#screen').innerHTML) && !/bal-amount owe/.test(q('#screen').innerHTML));
 check('Recaudo ABIERTA: teaser con ambos números (Entrega … · Por cobrar …)', /Entrega .*al Tesorero · Por cobrar/.test(q('#screen').innerHTML));
+// MICROCOPY no repite el concepto del héroe: la nota añade CONTEXTO ("de N personas"), no "Por cobrar".
+check('Recaudo ABIERTA: microcopy = contexto "de 1 persona" (Beto debe)', /de 1 persona/.test(q('#screen').innerHTML));
+check('Recaudo ABIERTA: "Por cobrar" aparece UNA sola vez (teaser), no repetido en la nota',
+  (q('#screen').innerHTML.match(/Por cobrar/g) || []).length === 1);
 check('Recaudo: "provisional" NO aparece en esta tarjeta (sí queda en Ganancia)',
   (q('#screen').innerHTML.match(/provisional/gi) || []).length === 1);   // solo la nota de Ganancia
 click('[data-act="set-cara"][data-cara="operacion"]');
@@ -294,7 +297,8 @@ check('Seg Balance marcado activo (on) al abrir cerrada',
 check('Cerrada: SIN nota "Provisional" (ni en Ganancia ni en Recaudo)', !/[Pp]rovisional/.test(q('#screen').innerHTML));
 check('Cerrada Recaudo: héroe tono "entregado" (teal/--accent)', /class="bal-amount entregado"/.test(q('#screen').innerHTML));
 check('Cerrada Recaudo: teaser en pasado "Entregó … al Tesorero"', /Entregó .*al Tesorero/.test(q('#screen').innerHTML));
-check('Cerrada Recaudo: nota "Entregado", sin "Por cobrar"', /Entregado/.test(q('#screen').innerHTML) && !/Por cobrar/.test(q('#screen').innerHTML));
+// CERRADA: sin "Por cobrar"; y el microcopy se OMITE (el teaser ya lo dice todo) → no hay .bal-note en Recaudo.
+check('Cerrada Recaudo: sin "Por cobrar"', !/Por cobrar/.test(q('#screen').innerHTML));
 click('[data-act="set-cara"][data-cara="operacion"]');           // la cara Consumos sigue accesible…
 check('Cara Consumos accesible con la cuenta cerrada', /Asistentes/.test(q('#screen').innerHTML));
 const congelado = q(`[data-act="item-plus"][data-pid="${beto.id}"][data-prod="cerveza"]`);

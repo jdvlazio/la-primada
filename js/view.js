@@ -470,8 +470,12 @@
     // ABIERTA: el héroe es lo que FALTA cobrar (Por cobrar). CERRADA: lo que se entregó al Tesorero.
     const heroAmount = cerrada ? inf.entregaTesorero : inf.saldoPendiente;
     const heroTone = cerrada ? 'entregado' : 'por-cobrar';   // teal (definitivo) vs ámbar (proceso)
-    const heroNote = cerrada ? 'Entregado' : 'Por cobrar';
     const deud = sel.deudores(p).filter(d => d.personaId !== prinId);
+    // MICROCOPY = solo CONTEXTO que el número no dice (regla DESIGN.md): NUNCA repite el concepto del
+    // héroe ("Por cobrar"/"Entregado", que ya viven en el tono y en el teaser). ABIERTA → "de N personas"
+    // cuando hay deudores; si nadie debe, no hay qué añadir → se omite. CERRADA → el teaser ("Entregó $X
+    // al Tesorero") ya lo dice todo → se omite.
+    const heroNote = !cerrada && deud.length ? `de ${deud.length} ${deud.length === 1 ? 'persona' : 'personas'}` : '';
     const teaser = cerrada
       ? `Entregó ${$peso(inf.entregaTesorero)} al Tesorero`
       : `Entrega ${$peso(inf.entregaTesorero)} al Tesorero · Por cobrar ${$peso(inf.saldoPendiente)}`;
@@ -481,7 +485,7 @@
     const hero = `<div class="bal-hero">
         <div class="bal-label"><span class="dot ${cerrada ? 'closed' : ''}"></span>Recaudo</div>
         <div class="bal-amount ${heroTone}">${$peso(heroAmount)}</div>
-        <div class="bal-note">${heroNote}</div>
+        ${heroNote ? `<div class="bal-note">${heroNote}</div>` : ''}
       </div>`;
     const toggle = `<button class="acc-head bal-toggle" data-act="toggle-balance" data-sec="informe" aria-expanded="${abierto ? 'true' : 'false'}">
         <span class="acc-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>

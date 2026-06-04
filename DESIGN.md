@@ -370,12 +370,20 @@ calculó). El número clave nunca se esconde tras un acorde colapsado; el desglo
   **"Entrega $X a N Ahorradores"** (verbo claro; "parte igual" era jerga interna). Derivación: cover, margen,
   ahorradores, parte igual, sobrante, lista por persona.
 - **`informe` — Recaudo (card clara):** héroe **state-aware POR ESTADO** (no por urgencia):
-  - **ABIERTA** → héroe = lo que **falta cobrar** (`saldoPendiente`), tono **ámbar** (`.por-cobrar`), nota
-    **"Por cobrar"**. Teaser: **"Entrega $X al Tesorero · Por cobrar $Y"** (los dos números de un vistazo:
-    qué se compromete y qué falta).
-  - **CERRADA** → héroe = lo **entregado** al Tesorero (`entregaTesorero`), tono **teal** (`.entregado`), nota
-    **"Entregado"**. Teaser en pasado: **"Entregó $X al Tesorero"**.
+  - **ABIERTA** → héroe = lo que **falta cobrar** (`saldoPendiente`), tono **ámbar** (`.por-cobrar`). El
+    concepto "por cobrar" lo dan el tono y el teaser **"Entrega $X al Tesorero · Por cobrar $Y"** (los dos
+    números de un vistazo: qué se compromete y qué falta). Microcopy `.bal-note` = **contexto** "de N
+    personas" cuando hay deudores; **se omite** si nadie debe.
+  - **CERRADA** → héroe = lo **entregado** al Tesorero (`entregaTesorero`), tono **teal** (`.entregado`).
+    Teaser en pasado: **"Entregó $X al Tesorero"**. Microcopy `.bal-note` = **omitido** (el teaser ya lo dice todo).
   - Derivación (acorde): Bre-B, recaudo teórico, recupera, recaudado real (terceros/principal), por cobrar, lista de deudores ("Debe", en `.owe`: el "quién debe" sí es protagonista).
+
+> **REGLA del microcopy (`.bal-note`) — no repetir el héroe.** El microcopy bajo el héroe **nunca repite el
+> concepto del héroe**. Su función es **añadir contexto que el número solo no comunica** (estado, destinatario,
+> condición). **Si no hay contexto que añadir, se omite** (no se renderiza el `.bal-note`). Ejemplos: en Recaudo
+> abierta la nota es "de N personas" (quiénes deben), no "Por cobrar" (que ya es el concepto del héroe); en
+> Recaudo cerrada se omite. En Ganancia abierta la nota "Provisional — se confirma al cerrar" sí cumple: añade
+> una **condición** (la cifra puede cambiar), no repite "Ganancia".
 
 **State-aware por `p.estado`** (pura vista; `p.estado` ya llega a `reparto`/`informe`):
 - **ABIERTA** = en vivo → Ganancia lleva nota **"Provisional"** (puede cambiar); Recaudo en **ámbar "Por cobrar"**; `.dot` verde.
