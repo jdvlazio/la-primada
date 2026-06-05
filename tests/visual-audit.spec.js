@@ -15,7 +15,7 @@
  * Fuente de verdad: DESIGN.md §1 (tokens), §2 (componentes canónicos), §3 (jerarquía).
  */
 const { test, expect } = require('@playwright/test');
-const { SEL, abrirApp, sembrarPersonas, crearPrimada } = require('./helpers');
+const { SEL, abrirApp, sembrarPersonas, crearPrimada, abrirConfig } = require('./helpers');
 
 const ACCENT = 'rgb(45, 212, 191)';   // --accent #2DD4BF resuelto
 const VISUAL = 'test-results/visual';
@@ -225,7 +225,7 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
     await abrirApp(page);
     await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
     await crearPrimada(page, 'Ana');
-    await page.click('[data-act="open-config-primada"]');
+    await abrirConfig(page);
     await expect(page.locator('.overlay')).toBeVisible();
     await page.click('.overlay [data-act="config-tab"][data-ctab="productos"]'); // tab Productos
     // Filas de producto = mismas clases que Personas (.prow + .acc-head). Colapsadas: sin inputs.
@@ -241,7 +241,7 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
     await abrirApp(page);
     await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
     await crearPrimada(page, 'Ana');
-    await page.click('[data-act="open-config-primada"]');
+    await abrirConfig(page);
     // Tab ASISTENTES (default): lista COMPACTA agrupada, SIN acordeón de asistente.
     expect(await page.locator('.overlay .asis-compact').count()).toBeGreaterThan(0);
     expect(await page.locator('.overlay [data-act="toggle-cfg-asis"]').count()).toBe(0);
@@ -312,7 +312,7 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
       const S = window.Store, st = S.select.state(), p = st.primadas[0];
       st.personas.forEach(per => { if (per.id !== p.organizadorPrincipalId) S.actions.addAsistencia(p.id, per.id); });
     });
-    await page.click('[data-act="open-config-primada"]');       // tab Asistentes (default)
+    await abrirConfig(page);       // tab Asistentes (default)
     const rows = page.locator('.overlay .asis-compact');        // filas compactas de asistente
     const before = await rows.count();
     expect(before).toBeGreaterThan(1);

@@ -298,14 +298,17 @@ Estado de una primada = **punto de color** (`.dot` / `.dot.closed`) + texto (`.e
 **No** un badge con borde. Abierta → `--pos`; cerrada → `--ink-soft`. Mismo patrón en el
 detalle (`.prm-meta`) y en el historial (`.estado-tag`).
 
-### 2.8 · Configurar primada = DOS tabs operativos (Asistentes · Productos) (✅ CANÓNICO)
+### 2.8 · Configurar el evento activo = Asistentes · Productos (✅ CANÓNICO)
 
-**Dos capas de configuración, fronteras claras** (principio: *una sola intención por pantalla*):
-- **Gear de la PRIMADA** (`settings-2` en el selector) → `configPrimadaSheet`: **dos tabs operativos** sobre el
-  **evento activo** — **Asistentes** (participación) · **Productos** (precios). **Nada más.** Sin identidad
-  (nombre/fecha/mes), sin acciones administrativas. seg-nav interno (`data-act="config-tab"` + `data-ctab`;
-  ⚠️ NO `data-tab` — colisiona con la tabbar inferior, §2.11). `ui.configTab` = pestaña activa (default `asistentes`).
-- **Gear GLOBAL** (`⚙` en el header) → capa administrativa del grupo (3 tabs, §2.8.1).
+**UN SOLO punto de configuración** (principio: *minimalismo — un solo engranaje en pantalla*). El segundo
+engranaje (`settings-2` en el selector) se **ELIMINÓ**: la config del evento activo vive **dentro del gear
+global › Primadas** (§2.8.1), embebida arriba del calendario vía `configPrimadaBody`. El selector queda 100%
+navegación (nombre + compartir). El gear abre **context-aware**: con una primada activa, aterriza en **Primadas**
+→ configurar la activa queda en ~1 tap.
+- **Cuerpo de config** (`configPrimadaBody`): **dos tabs operativos** sobre el **evento activo** — **Asistentes**
+  (participación) · **Productos** (precios). **Nada más.** Sin identidad (nombre/fecha/mes), sin acciones
+  administrativas. seg-nav interno (`data-act="config-tab"` + `data-ctab`; ⚠️ NO `data-tab` — colisiona con la
+  tabbar inferior, §2.11). `ui.configTab` = pestaña activa (default `asistentes`).
 
 **Tab ASISTENTES — lista COMPACTA agrupada (NO acordeón).** Principio **"muestra la excepción, no la regla":**
 el cover común al grupo va UNA vez en el encabezado; la fila solo marca lo que DIFIERE.
@@ -337,17 +340,21 @@ las mismas clases que la fila de Personas — mismo componente acordeón.
 
 **❌ ELIMINADAS** (el acordeón de asistente de Configurar ya no existe): `toggle-cfg-asis`, `asistenteConfigRow`,
 `coverLinea`, `rolSelect` (el `select.sel` de rol desapareció). La lógica de precios y de cover **no** cambia;
-solo **dónde** se editan (rol → creación; exoneración → Agregar; identidad → creación/programada).
+solo **dónde** se editan (rol → creación; exoneración → Agregar; identidad → creación).
 
-### 2.8.1 · Gear GLOBAL = capa administrativa del grupo, TRES tabs (✅ CANÓNICO)
+### 2.8.1 · Gear GLOBAL = ÚNICA configuración, TRES tabs (✅ CANÓNICO)
 
-`overlaySheet` con seg-nav **Personas | Primadas | Ajustes** (`data-act="overlay-tab"` + `data-overlay`).
+`overlaySheet` con seg-nav **Personas | Primadas | Ajustes** (`data-act="overlay-tab"` + `data-overlay`). **Un
+solo engranaje en pantalla** (el `settings-2` del selector se eliminó). El gear abre **context-aware** (`#gearBtn`):
+con primada activa → **Primadas**; sin activa → **Personas**.
 - **Personas** (§2.9) — directorio. **Ajustes** — cover vigente, versión, legal, cuenta.
-- **Primadas** (`primadasAdminBody`) — el **calendario + historial + acciones** sobre las primadas (lo que salió
-  de Configurar). **ÚNICO punto de creación:** **"Nueva primada"** arriba (`.add-link`, `new-primada` → lanza el
-  wizard de 3 pasos SOBRE el gear; al crear/cancelar, el wizard y el gear se cierran). Debajo, lista de TODAS
-  agrupada (**Activa** · **Pasadas** gris; el dot deriva de actividad, `dotClase`). Cada fila `.padm-fila` (NO
-  navega, EDITA): nombre + meta + acciones **Reabrir** (cerradas) y **Eliminar** (`borrar-primada`, confirmación;
+- **Primadas** (`primadasAdminBody`) — **DOS zonas claras**, separadas por divisor:
+  1. **`Configurar · {nombre}`** (si hay activa): el cuerpo **Asistentes | Productos** del evento activo
+     (`configPrimadaBody`, §2.8) embebido arriba. Es la config que antes vivía tras el segundo engranaje.
+  2. **`Calendario`**: **"Nueva primada"** (ÚNICO punto de creación; `.add-link`, `new-primada` → wizard SOBRE
+     el gear; al crear/cancelar, wizard y gear se cierran) + lista de TODAS agrupada (**Activa** · **Pasadas**
+     gris; el dot deriva de actividad, `dotClase`). Cada fila `.padm-fila` (NO navega, EDITA): nombre + meta +
+     acciones **Reabrir** (cerradas) y **Eliminar** (`borrar-primada`, confirmación;
   `data-activa` en la activa para advertencia más fuerte). El **selector** (§2.11) sigue siendo navegación pura.
 
 ### 2.9 · Fila de persona — Directorio (✅ CANÓNICO)
@@ -390,7 +397,9 @@ mostrara "Junio", dos primadas de junio serían idénticas). Helper de Vista: `n
   **nombre corto** (`nombreCorto`, peso 800/22px, **IDENTIDAD primaria**) sobre **`.sel-sub`** = punto
   de estado + `"Mes Año"` (`Util.monthYear`, `--ink-soft`, **GUÍA secundaria**). La primada no se llama
   como el mes: el nombre manda, el mes orienta. `.sel-caret` (chevron-down) rota 180° abierto.
-- **`⚙`** (`.icon-btn`, `open-config-primada`): configuración (escondida, §2.8).
+- **(SIN engranaje de config.)** El `settings-2` del selector se **ELIMINÓ**: la config del evento activo vive
+  en el gear global › Primadas (§2.8/§2.8.1) — **un solo engranaje en pantalla**. El selector es solo navegación
+  (+ Compartir informe cuando hay datos).
 - **(SIN `+` de crear.)** El "+" de la cabecera se **ELIMINÓ**: crear es una decisión administrativa y vive en el
   **ÚNICO punto** = gear global › Primadas › **"Nueva primada"** (§2.8.1). La cabecera del selector es solo navegación.
 

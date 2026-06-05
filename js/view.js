@@ -150,7 +150,6 @@
         <span class="sel-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
       </button>
       ${hayDatosInforme(p) ? `<button class="icon-btn" data-act="compartir-informe" title="Compartir informe" aria-label="Compartir informe">${icon('share-2')}</button>` : ''}
-      <button class="icon-btn" data-act="open-config-primada" data-id="${p.id}" title="Configurar" aria-label="Configurar">${icon('settings-2')}</button>
     </div>`;
   }
 
@@ -195,27 +194,18 @@
     </button>`;
   }
 
-  // Overlay de CONFIGURACIÓN de la primada (escondido tras el engranaje de la cabecera).
-  // Edición de una sola vez + acciones destructivas (cerrar/reabrir, borrar) con confirmación.
-  // Overlay "Configurar primada" = DOS tabs operativos sobre el evento activo (seg-nav interno):
-  // Asistentes (participación, lista compacta) | Productos (precios). NADA MÁS. La identidad
-  // (nombre/fecha/mes) se fija al crear (wizard); el calendario y las acciones administrativas
-  // (crear, reabrir, eliminar) viven en el GEAR GLOBAL › tab Primadas. ui.configTab = pestaña activa.
-  function configPrimadaSheet(state, ui) {
-    const p = S().activePrimada();
-    if (!p) return `<div class="sheet full"><div class="sheet-head"><div class="sheet-title">Configurar</div>
-      <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button></div>
-      <div class="empty-soft">Sin primada</div></div>`;
+  // CONFIGURACIÓN del evento activo = DOS tabs operativos (seg-nav interno): Asistentes (participación,
+  // lista compacta) | Productos (precios). NADA MÁS. La identidad (nombre/fecha/mes) se fija al crear
+  // (wizard). UN SOLO punto de config: el gear global › Primadas EMBEBE este cuerpo arriba del calendario
+  // (se eliminó el segundo engranaje del selector). ui.configTab = pestaña activa (Asistentes/Productos).
+  // CUERPO de configuración del EVENTO ACTIVO (seg-nav Asistentes | Productos + cuerpo). Ya NO es un sheet
+  // propio: se EMBEBE en el gear global › Primadas (ÚNICO punto de configuración; el engranaje del selector
+  // se eliminó — un solo ícono de config en pantalla). p es la primada activa (el llamador garantiza ≠ null).
+  function configPrimadaBody(p, ui) {
     const tab = (ui && ui.configTab === 'productos') ? 'productos' : 'asistentes';
     const seg = (key, label, n) => `<button class="seg ${tab === key ? 'on' : ''}" data-act="config-tab" data-ctab="${key}">${label} <span class="muted">${n}</span></button>`;
     const body = tab === 'productos' ? productosConfig(p, ui) : asistentesListaCompacta(p, ui);
-    return `<div class="sheet full">
-      <div class="sheet-head">
-        <div class="seg-nav">${seg('asistentes', 'Asistentes', p.asistencias.length)}${seg('productos', 'Productos', p.productos.length)}</div>
-        <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button>
-      </div>
-      <div class="sheet-body">${body}</div>
-    </div>`;
+    return `<div class="seg-nav cfg-seg">${seg('asistentes', 'Asistentes', p.asistencias.length)}${seg('productos', 'Productos', p.productos.length)}</div>${body}`;
   }
 
   // Tab ASISTENTES: lista COMPACTA agrupada (Ahorradores / Invitados). PRINCIPIO "muestra la excepción,
@@ -828,10 +818,11 @@
     </div>`;
   }
 
-  // Tab PRIMADAS del gear global: "Nueva primada" (ÚNICO punto de creación → lanza el wizard) arriba +
-  // lista de TODAS las primadas (Activa teal/ámbar · Pasadas gris) con acciones administrativas por fila:
-  // Eliminar (destructiva) y Reabrir (cerradas). El dot deriva de actividad real (dotClase). Las filas NO
-  // navegan, EDITAN el calendario.
+  // Tab PRIMADAS del gear global = ÚNICA capa de configuración de primadas, en DOS zonas claras:
+  //  1) CONFIGURAR (si hay activa): el cuerpo Asistentes | Productos del evento activo (configPrimadaBody),
+  //     arriba — antes vivía tras un segundo engranaje en el selector, ahora unificado acá.
+  //  2) CALENDARIO: "Nueva primada" (ÚNICO punto de creación) + lista (Activa · Pasadas) con Eliminar/Reabrir.
+  // El dot deriva de actividad real (dotClase). Las filas de la lista NO navegan, EDITAN el calendario.
   function primadasAdminBody(state, ui) {
     const sel = S();
     const activeId = state.activePrimadaId;
@@ -839,13 +830,19 @@
     const activa = sel.activePrimada();
     const pasadas = grupos.map(g => ({ anio: g.anio, primadas: g.primadas.filter(p => p.id !== activeId) }))
       .filter(g => g.primadas.length);
+    // Zona 1 — Configurar el evento activo (Asistentes/Productos). Solo si hay una activa.
+    const zonaConfig = activa
+      ? `<div class="sub">Configurar · ${e(nombreCorto(activa.nombre))}</div>${configPrimadaBody(activa, ui)}` : '';
+    // Zona 2 — Calendario (crear + historial + acciones administrativas).
     const secActiva = activa
       ? `<div class="sub">Activa</div>${primadaAdminFila(activa, activeId)}` : '';
     const secPasadas = pasadas.length
       ? `<div class="sub">Pasadas</div>` + pasadas.map(g =>
           `<div class="sel-subanio">${e(g.anio)}</div>${g.primadas.map(p => primadaAdminFila(p, activeId)).join('')}`).join('') : '';
     const vacio = (!secActiva && !secPasadas) ? '<div class="empty-soft">Sin primadas</div>' : '';
-    return `<button class="add-link" data-act="new-primada">${icon('plus-circle')}Nueva primada</button>
+    return `${zonaConfig}
+      <div class="sub cfg-cal-head">Calendario</div>
+      <button class="add-link" data-act="new-primada">${icon('plus-circle')}Nueva primada</button>
       ${secActiva}${secPasadas}${vacio}`;
   }
   // Fila administrativa: nombre + mes · recaudo · acciones (Reabrir si cerrada, Eliminar siempre con
@@ -893,7 +890,6 @@
     else if (ui.overlay === 'login')                           els.overlay.innerHTML = loginSheet(state, ui);
     else if (ui.overlay === 'pagar')                           els.overlay.innerHTML = pagarSheet(state, ui);
     else if (ui.overlay === 'selector-primada')                els.overlay.innerHTML = selectorSheet(state, ui);
-    else if (ui.overlay === 'config-primada')                  els.overlay.innerHTML = configPrimadaSheet(state, ui);
     else if (ui.overlay === 'add-asis')                        els.overlay.innerHTML = addAsisSheet(state, ui);
     else if (ui.overlay === 'personas' || ui.overlay === 'primadas' || ui.overlay === 'ajustes') els.overlay.innerHTML = overlaySheet(ui.overlay, state, ui);
     else                                                        els.overlay.innerHTML = '';

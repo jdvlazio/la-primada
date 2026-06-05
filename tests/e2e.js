@@ -85,6 +85,13 @@ function activar(pid) {
   if (!fila) throw new Error('activar: no existe la fila de ' + pid);
   if (!fila.closest('.asis').querySelector('.asis-reveal')) click(fila);
 }
+// ÚNICA config: el gear global › Primadas EMBEBE la config del evento activo (Asistentes/Productos) arriba
+// del calendario. El gear abre context-aware en "Primadas" si hay activa. abrirConfig() deja esa vista lista.
+function abrirConfig() {
+  if (!q('#overlay') || q('#overlay').hidden) click('#gearBtn');            // abre el gear (→ Primadas si hay activa)
+  const ptab = q('[data-act="overlay-tab"][data-overlay="primadas"]');
+  if (ptab) click(ptab);                                                     // asegura el tab Primadas
+}
 
 /* ============================================================ */
 section('Arranque (bootstrap cableó la Vista sobre el modelo v4)');
@@ -144,10 +151,12 @@ check('Snapshot inmutable: Ana=ahorrador, Beto=invitado en la asistencia',
 /* ---------- 4. Asignar principal (INVARIANTE #2) ---------- */
 section('Asignar principal — fix mínimo en Configurar › Asistentes (primada incompleta)');
 // El ROL se fija al crear; el ÚNICO caso editable es asignar el principal de una primada INCOMPLETA
-// (lista compacta agrupada, sin acordeón). Configurar abre en el tab Asistentes.
-click(`[data-act="open-config-primada"][data-id="${prm().id}"]`);
-check('Configurar abre en tab Asistentes (lista agrupada)',
+// (lista compacta agrupada). La config vive en el gear › Primadas (tab Asistentes por defecto).
+abrirConfig();
+check('Gear › Primadas embebe la config (tab Asistentes, lista agrupada)',
   /data-act="config-tab" data-ctab="asistentes"/.test(q('#overlay').innerHTML) && /Ahorradores/.test(q('#overlay').innerHTML));
+check('La config y el Calendario conviven en el mismo tab (sin segundo engranaje)',
+  /Configurar ·/.test(q('#overlay').innerHTML) && /Calendario/.test(q('#overlay').innerHTML) && !q('[data-act="open-config-primada"]'));
 check('Aviso "falta principal" visible (incompleta)', /falta principal/.test(q('#overlay').innerHTML));
 // Beto es INVITADO → la UI NO le ofrece "Hacer principal" (INVARIANTE #2 por construcción).
 check('Beto (invitado) SIN botón "Hacer principal"', !q(`[data-act="hacer-principal"][data-pid="${beto.id}"]`));
@@ -220,9 +229,9 @@ Store.actions.toggleCoverExonerado(prm().id, beto.id);
 check('Beto exonerado', betoAsis().coverExonerado === true);
 eq('Cover de Beto ahora 0', Store.select.coverDe(prm(), betoAsis()), 0);
 eq('Ganancia baja al margen puro (2.000)', Store.select.ganancia(prm()), 2000);
-// La lista compacta de Configurar MUESTRA la excepción "Sin cover" (no la edita).
-click(`[data-act="open-config-primada"][data-id="${prm().id}"]`);
-check('Configurar › Asistentes marca "Sin cover" en el exonerado', /Sin cover/.test(q('#overlay').innerHTML));
+// La lista compacta de Configurar (gear › Primadas) MUESTRA la excepción "Sin cover" (no la edita).
+abrirConfig();
+check('Gear › Primadas › Asistentes marca "Sin cover" en el exonerado', /Sin cover/.test(q('#overlay').innerHTML));
 click('[data-act="close-overlay"]');
 
 /* ---------- 7. Balance: Ganancia y Recaudo ---------- */
@@ -323,12 +332,11 @@ section('Cerrar cuenta (INVARIANTE #4): "Cerrar" salió de Config; congela consu
 // P5 lote visual: "Cerrar" YA NO vive en Configuración. Es un CTA contextual que aparece arriba de la
 // operación SOLO cuando todos saldaron. Mientras Beto deba (7.000), el CTA NO está y Config no lo ofrece.
 check('CTA "Cerrar" ausente mientras Beto debe', !q('[data-act="cerrar-primada"]'));
-click(`[data-act="open-config-primada"][data-id="${prm().id}"]`);
-check('Overlay de config abierto (2 tabs: Asistentes | Productos)',
-  !q('#overlay').hidden && !!q('[data-act="config-tab"][data-ctab="asistentes"]') && !!q('[data-act="config-tab"][data-ctab="productos"]'));
-check('Config ya NO ofrece "Cerrar"', !/data-act="cerrar-primada"/.test(q('#overlay').innerHTML));
-check('Config ya NO ofrece "Borrar" (movido al gear global › Primadas)',
-  !/data-act="borrar-primada"/.test(q('#overlay').innerHTML));
+abrirConfig();
+check('Gear › Primadas: 2 sub-tabs de config (Asistentes | Productos) + zona Calendario',
+  !q('#overlay').hidden && !!q('[data-act="config-tab"][data-ctab="asistentes"]') && !!q('[data-act="config-tab"][data-ctab="productos"]') && /Calendario/.test(q('#overlay').innerHTML));
+check('La config NO ofrece "Cerrar" (eso es CTA contextual de la operación)', !/data-act="cerrar-primada"/.test(q('#overlay').innerHTML));
+check('Eliminar vive en la zona Calendario del MISMO tab (no en otro engranaje)', /data-act="borrar-primada"/.test(q('#overlay').innerHTML));
 click('[data-act="close-overlay"]');
 // El modelo permite cerrar con deuda (la UI lo gatea tras el CTA); aquí cerramos por acción para
 // probar el congelado con un deudor pendiente (escenario de pago-tras-cerrar en 8b).
@@ -419,7 +427,7 @@ check('Cerrada: el consumo se ve como chip de solo lectura (.chip.has.ro)', !!q(
 /* ---------- 8c. Directorio: cambiar estado NO reescribe snapshots (INVARIANTE #1) vía UI ---------- */
 section('Directorio: cambiar estado vigente conserva la historia (INV#1)');
 eq('Snapshot de Beto en la asistencia = invitado', betoAsis().estadoEnEseMomento, 'invitado');
-click('#gearBtn');                                   // abre la pantalla Personas
+click('#gearBtn'); click('[data-act="overlay-tab"][data-overlay="personas"]');   // gear → tab Personas
 check('Beto aparece en 1 primada (historia)', Store.select.aparicionesDe(beto.id) === 1);
 click(`[data-act="toggle-persona"][data-pid="${beto.id}"]`);   // expandir la fila para editar inline
 click(`[data-act="set-estado-persona"][data-pid="${beto.id}"][data-estado="ahorrador"]`);

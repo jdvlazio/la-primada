@@ -202,18 +202,18 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
     **cifra héroe siempre visible** + desglose en acorde: **Ganancia** (resultado del grupo, "Provisional" en abierta) y
     **Recaudo** (proceso de cobro; ABIERTA = "Por cobrar" en ámbar, CERRADA = "Entregado" en teal). State-aware por `p.estado`.
   - **Fondo** — tesorería futura, estado **"Próximamente"**.
-- **DOS capas de configuración, fronteras claras** (principio: *una sola intención por pantalla; muestra la
-  excepción, no la regla*). Ver `DESIGN.md` §2.8 / §2.8.1:
-  - **Gear de la PRIMADA** (ícono `settings-2` en el selector) → `configPrimadaSheet` = **DOS tabs operativos**
-    sobre el evento activo: **Asistentes** (participación: lista compacta agrupada por estado, cover en el
-    encabezado una vez, `Sin cover` solo en la excepción; alta/baja; **rol fijo al crear** salvo el fix
-    "Hacer principal" si está incompleta) y **Productos** (precios, clon de Personas). **Nada más** (sin
-    identidad, sin acciones administrativas). seg-nav con `data-ctab` (NO `data-tab`: colisiona con la tabbar).
-  - **Gear GLOBAL (⚙ en el encabezado) — TRES tabs (NO 2):**
+- **UN SOLO engranaje de configuración** (principio: *minimalismo — un solo ícono de config en pantalla; una
+  sola intención por pantalla; muestra la excepción, no la regla*). El segundo engranaje (`settings-2` del
+  selector) se **ELIMINÓ**. Ver `DESIGN.md` §2.8 / §2.8.1:
+  - **Gear GLOBAL (⚙ en el encabezado) — ÚNICA config, TRES tabs.** Abre **context-aware** (`#gearBtn`): con
+    primada activa → **Primadas**; sin activa → **Personas**.
     - **Personas** — directorio (alta, cambio de estado invitado↔ahorrador, `breB`). También al agregar un asistente.
-    - **Primadas** — capa administrativa del calendario/historial: **"Nueva primada"** (ÚNICO punto de creación →
-      lanza el wizard de 3 pasos) + lista de TODAS (Activa/Pasadas) con **Eliminar** y **Reabrir** (cerradas).
-      Aquí viven las acciones que salieron de Configurar. **El "+" de la cabecera del selector se ELIMINÓ.**
+    - **Primadas** — DOS zonas separadas por divisor: (1) **`Configurar · {nombre}`** = la config del evento
+      activo embebida (`configPrimadaBody`): **Asistentes** (lista compacta agrupada, cover en el encabezado una
+      vez, `Sin cover` en la excepción; alta/baja; **rol fijo al crear** salvo el fix "Hacer principal" si está
+      incompleta) y **Productos** (precios, clon de Personas; seg-nav con `data-ctab`, NO `data-tab`). (2)
+      **`Calendario`** = **"Nueva primada"** (ÚNICO punto de creación → wizard) + lista de TODAS (Activa/Pasadas)
+      con **Eliminar** y **Reabrir** (cerradas). **El "+" de la cabecera del selector se ELIMINÓ.**
     - **Ajustes** — cover vigente, versión, legal, cuenta.
   - **Identidad de la primada** (nombre/fecha/mes) se fija al **crear** (wizard). No hay edición posterior de
     mes/fecha (un error → borrar y recrear, caso rarísimo y aceptable).

@@ -143,7 +143,13 @@
     // Navegación: tabs y engranaje
     const tab = ev.target.closest('[data-tab]');
     if (tab) { ui.tab = tab.dataset.tab; ui.overlay = null; rerender(); return; }
-    if (ev.target.closest('#gearBtn')) { ui.overlay = ui.overlay ? null : 'personas'; rerender(); return; }
+    // Gear global = ÚNICA config. Abre CONTEXT-AWARE: con primada activa → tab "Primadas" (donde vive su
+    // config Asistentes/Productos + el calendario) → configurar la activa queda en ~1 tap; sin activa → Personas.
+    if (ev.target.closest('#gearBtn')) {
+      if (ui.overlay) { ui.overlay = null; }
+      else { ui.overlay = Store.select.activePrimada() ? 'primadas' : 'personas'; ui.configTab = 'asistentes'; }
+      rerender(); return;
+    }
     // Botón de cuenta (auth) = OPT-IN: el login NO bloquea al entrar; se abre desde acá.
     // Con sesión → cerrar sesión. Sin sesión → abrir la hoja de login (cerrable). Sin backend → aviso.
     if (ev.target.closest('#authBtn')) {
@@ -262,9 +268,7 @@
       }
       // Elegir una primada desde la hoja del selector: activa y cierra la hoja.
       case 'select-primada':   A.seleccionarPrimada(id); fijarCaraPorEstado(); ui.overlay = null; rerender(); return;
-      // Config de la primada (escondida tras el engranaje de la cabecera).
-      case 'open-config-primada': ui.overlay = 'config-primada'; ui.configTab = 'asistentes'; rerender(); return;
-      // Conmuta la pestaña interna de Configurar primada (Asistentes | Productos).
+      // Conmuta la pestaña interna de config del evento activo (Asistentes | Productos) en el gear › Primadas.
       case 'config-tab':       ui.configTab = (b.dataset.ctab === 'productos') ? 'productos' : 'asistentes'; rerender(); return;
       // Acciones destructivas: con confirmación (la cuenta cerrada congela consumos).
       // cerrar/reabrir cambian el ESTADO → la cara por defecto cambia. La acción commitea y dispara un

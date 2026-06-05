@@ -89,4 +89,11 @@ async function contarPrimadas(page) {
   });
 }
 
-module.exports = { SEL, abrirApp, sembrarPersonas, crearPrimada, contarPrimadas };
+// ÚNICA config: el gear global › Primadas embebe la config del evento activo (Asistentes/Productos) arriba
+// del calendario. Deja esa vista lista (el gear abre context-aware en Primadas si hay una activa).
+async function abrirConfig(page) {
+  await page.click('#gearBtn');
+  await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
+}
+
+module.exports = { SEL, abrirApp, sembrarPersonas, crearPrimada, contarPrimadas, abrirConfig };

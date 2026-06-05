@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260605-164438-be1e7b7">
+<meta name="build" content="20260605-174653-02ec715">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -461,6 +461,9 @@
 
   /* seg-nav (segmented control) — Personas|Ajustes y estado ahorrador|invitado */
   .seg-nav{display:inline-flex;gap:0;background:var(--paper-2);border:2px solid var(--line);border-radius:var(--radius-md);padding:var(--space-1)}
+  /* Gear › Primadas: seg-nav de config del evento (Asistentes|Productos) + divisor antes del Calendario. */
+  .cfg-seg{margin-bottom:var(--space-3)}
+  .cfg-cal-head{margin-top:var(--space-5);border-top:1px solid var(--line-soft);padding-top:var(--space-4)}
   .seg{min-height:var(--tap-sec);font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:none;background:transparent;color:var(--ink-soft);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm)}
   .seg.on{background:var(--paper-2);color:var(--ink)}
   .seg-nav.sm .seg{font-size:12px;padding:var(--space-2) var(--space-3)}
@@ -543,7 +546,7 @@
         <button class="gear" id="authBtn" title="Cuenta" aria-label="Cuenta">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </button>
-        <button class="gear" id="gearBtn" title="Personas y ajustes" aria-label="Personas y ajustes">
+        <button class="gear" id="gearBtn" title="Configuración" aria-label="Configuración">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
         </button>
       </div>
@@ -573,13 +576,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260605-164438-be1e7b7"></script>
-  <script src="js/util.js?v=20260605-164438-be1e7b7"></script>
-  <script src="js/api.js?v=20260605-164438-be1e7b7"></script>
-  <script src="js/auth.js?v=20260605-164438-be1e7b7"></script>
-  <script src="js/store.js?v=20260605-164438-be1e7b7"></script>
-  <script src="js/view.js?v=20260605-164438-be1e7b7"></script>
-  <script src="js/controller.js?v=20260605-164438-be1e7b7"></script>
+  <script src="js/config.js?v=20260605-174653-02ec715"></script>
+  <script src="js/util.js?v=20260605-174653-02ec715"></script>
+  <script src="js/api.js?v=20260605-174653-02ec715"></script>
+  <script src="js/auth.js?v=20260605-174653-02ec715"></script>
+  <script src="js/store.js?v=20260605-174653-02ec715"></script>
+  <script src="js/view.js?v=20260605-174653-02ec715"></script>
+  <script src="js/controller.js?v=20260605-174653-02ec715"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
