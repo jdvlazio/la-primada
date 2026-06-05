@@ -869,6 +869,7 @@
      edición ni se pelea con el foco. Los cambios estructurales
      (consumos, roles, abonos, navegación) sí re-renderizan.
      ============================================================ */
+  let lastOverlayKey = null;   // overlay del último render (para preservar el scroll del .sheet entre re-renders)
   function render(state, ui) {
     ui = ui || { tab: 'primadas', overlay: null, abiertos: new Set(), pickProd: null, personasAbiertas: new Set() };
 
@@ -885,7 +886,14 @@
     else                         html = tabPrimadas(state, ui);
     els.screen.innerHTML = html;
 
-    // 3) overlay: wizard (prioridad) · config de primada · pantalla del engranaje (Personas / Ajustes)
+    // 3) overlay: wizard (prioridad) · pantalla del engranaje (Personas / Primadas / Ajustes) · etc.
+    // El re-render reescribe els.overlay.innerHTML → recrea el .sheet (el scroll vive ahí, overflow:auto) y
+    // saltaría al TOPE en cada toggle interno (p.ej. desplegar una persona). PRESERVAMOS el scrollTop del
+    // .sheet cuando seguimos en el MISMO overlay (mismo overlayKey); al cambiar de overlay/tab, arranca arriba.
+    const overlayKey = ui.wizard ? 'wizard' : (ui.overlay || null);
+    const prevSheet = els.overlay.querySelector('.sheet');
+    const keepScroll = (prevSheet && overlayKey && overlayKey === lastOverlayKey) ? prevSheet.scrollTop : 0;
+
     if (ui.wizard)                                              els.overlay.innerHTML = wizardSheet(state, ui);
     else if (ui.overlay === 'login')                           els.overlay.innerHTML = loginSheet(state, ui);
     else if (ui.overlay === 'pagar')                           els.overlay.innerHTML = pagarSheet(state, ui);
@@ -893,6 +901,9 @@
     else if (ui.overlay === 'add-asis')                        els.overlay.innerHTML = addAsisSheet(state, ui);
     else if (ui.overlay === 'personas' || ui.overlay === 'primadas' || ui.overlay === 'ajustes') els.overlay.innerHTML = overlaySheet(ui.overlay, state, ui);
     else                                                        els.overlay.innerHTML = '';
+
+    if (keepScroll) { const ns = els.overlay.querySelector('.sheet'); if (ns) ns.scrollTop = keepScroll; }
+    lastOverlayKey = overlayKey;
     els.overlay.hidden = !(ui.wizard || ui.overlay);
   }
 

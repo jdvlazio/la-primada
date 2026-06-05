@@ -335,6 +335,24 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
     const nombre = await page.evaluate(() => window.Store.select.state().personas[0].nombre);
     expect(nombre).toBe('Anita');
   });
+
+  test('E8 — el scroll del sheet se preserva al desplegar una persona (no salta al tope)', async ({ page }) => {
+    await abrirApp(page);
+    // muchas personas → el .sheet del overlay scrollea
+    await page.evaluate(() => {
+      const A = window.Store.actions;
+      for (let i = 1; i <= 20; i++) A.addPersona({ nombre: 'Persona ' + i, estado: i % 2 ? 'ahorrador' : 'invitado' });
+    });
+    await page.click('#gearBtn');
+    await page.click('[data-act="overlay-tab"][data-overlay="personas"]');
+    await page.evaluate(() => { document.querySelector('#overlay .sheet').scrollTop = 300; });
+    const before = await page.evaluate(() => document.querySelector('#overlay .sheet').scrollTop);
+    expect(before).toBeGreaterThan(0);
+    // desplegar una persona del medio → re-render del overlay; el scroll NO debe saltar al tope
+    await page.locator('#overlay [data-act="toggle-persona"]').nth(10).click();
+    const after = await page.evaluate(() => document.querySelector('#overlay .sheet').scrollTop);
+    expect(Math.abs(after - before)).toBeLessThan(5);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
