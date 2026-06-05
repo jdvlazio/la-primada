@@ -364,9 +364,11 @@ Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
 - **`coverExonerado`** existe como override manual (cortesía/niños), además del cover-free por rol.
 - **`aportadoPor`** por producto (default = principal) permite que un co-organizador frontee productos.
 - **Cover "fijo" = un único valor vigente** (ahorrador/invitado), **editable hacia adelante**; sugerido inicial
-  **$15.000 / $10.000**. Al editarlo (`setCover`), se **RE-APLICA el snapshot a las primadas ABIERTAS** (sus totales
-  reflejan el cover vigente al instante); las **CERRADAS quedan CONGELADAS** (historia, INVARIANTE #4 — su snapshot
-  **no** se reescribe). Una primada nueva nace con el cover vigente snapshotteado.
+  **$15.000 / $10.000**. El cover de una asistencia (`coverDe`) se **DERIVA según el estado**: primada **ABIERTA →
+  usa el cover VIGENTE** (`settings.cover`, en vivo) → editar el cover en Ajustes refleja los totales de **todas las
+  abiertas al instante**, sin depender de re-sellar/persistir un snapshot por primada (robusto ante recargas);
+  primada **CERRADA → usa su snapshot CONGELADO** (`primada.cover`, historia, INVARIANTE #4). El **snapshot se sella
+  al CERRAR** (`cerrarPrimada` copia el cover vigente). `setCover` solo guarda `settings` + re-render (no toca primadas).
 - **"Cerrada"** congela la cuenta del evento pero **sigue aceptando abonos**.
 - **Tesorería** (ahorro, préstamos, actividades extra) es **módulo futuro**; va como tab **"Próximamente"**.
 - **Backend Supabase (CONFIRMADO, implementación en sesión dedicada):** datos en la nube para persistir entre dispositivos.

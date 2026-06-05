@@ -379,7 +379,15 @@
     margenProducto: (prod) => (Number(prod.precioVenta) || 0) - (Number(prod.costoNeto) || 0),
     esOrganizador: (a) => a.rol === 'principal' || a.rol === 'organizador',
     aplicaCover: (a) => a.rol === 'asistente' && !a.coverExonerado,
-    coverDe(primada, a) { return select.aplicaCover(a) ? (primada.cover[a.estadoEnEseMomento] || 0) : 0; },
+    // Cover de una asistencia. ABIERTA: deriva del cover VIGENTE (settings) → SIEMPRE refleja el valor
+    // actual, sin depender de re-sellar/persistir un snapshot por primada (robusto ante recargas). CERRADA:
+    // usa el snapshot CONGELADO de la primada (historia, INVARIANTE #4). El snapshot se sella al CERRAR.
+    coverDe(primada, a) {
+      if (!select.aplicaCover(a)) return 0;
+      const vigente = state && state.settings && state.settings.cover;
+      const c = (primada.estado === 'cerrada') ? primada.cover : (vigente || primada.cover);
+      return (c && c[a.estadoEnEseMomento]) || 0;
+    },
     // Cantidad de un producto para una asistencia (v6: Σ filas de consumo).
     cantidadDe(primada, a, prod) { return cantidadConsumo(primada, a.personaId, prod.id); },
     consumoDe(primada, a) {
@@ -505,17 +513,14 @@
     setBreBPersona(personaId, breB) { const per = select.persona(personaId); if (!per) return; per.breB = (breB != null && breB !== '') ? String(breB) : null; commitQuiet({ kind: 'persona', id: personaId }); },
 
     // ----- settings -----
-    // Cover VIGENTE: además de guardar el default global, RE-APLICA el cover a las primadas ABIERTAS
-    // (su snapshot se vuelve a sellar con el valor vigente) → sus totales se actualizan al instante. Las
-    // primadas CERRADAS quedan CONGELADAS (historia: INVARIANTE #4). commit (no commitQuiet) para que la
-    // Vista re-renderice; se persisten settings + cada primada abierta tocada.
+    // Cover VIGENTE: solo guarda el valor (settings) + re-render. NO toca primadas: las ABIERTAS derivan
+    // del cover vigente en vivo (ver coverDe) → sus totales se actualizan al instante y SIN depender de
+    // re-sellar/persistir cada primada. Las CERRADAS ya tienen su snapshot congelado. commit (no
+    // commitQuiet) para que la Vista re-renderice los totales.
     setCover({ ahorrador, invitado } = {}) {
       if (ahorrador != null) state.settings.cover.ahorrador = Number(ahorrador) || 0;
       if (invitado != null) state.settings.cover.invitado = Number(invitado) || 0;
-      const abiertas = (state.primadas || []).filter(p => p.estado !== 'cerrada');
-      abiertas.forEach(p => { p.cover = { ...state.settings.cover }; });
-      commit({ kind: 'settings' });                                   // notifica (re-render) + upsert settings
-      abiertas.forEach(p => pushUpsert({ kind: 'primada', id: p.id }));   // persiste cada primada abierta re-sellada
+      commit({ kind: 'settings' });
     },
     upsertDefaultProducto(prod) {
       const np = normProducts([prod])[0];
@@ -571,7 +576,9 @@
     renombrarPrimada(id, nombre) { const p = findPrimada(id); if (!p) return; p.nombre = String(nombre || p.nombre).slice(0, 40); commitQuiet({ kind: 'primada', id }); },
     setFecha(id, fecha) { const p = findPrimada(id); if (!p) return; p.fecha = normFecha(fecha); commitQuiet({ kind: 'primada', id }); },
     setMesContable(id, mes) { const p = findPrimada(id); if (!p) return; if (/^\d{4}-\d{2}$/.test(String(mes))) { p.mesContable = mes; commitQuiet({ kind: 'primada', id }); } },
-    cerrarPrimada(id) { const p = findPrimada(id); if (!p) return; p.estado = 'cerrada'; commit({ kind: 'primada', id }); },
+    // Al CERRAR se SELLA el cover vigente en el snapshot (historia congelada): de ahí en más coverDe usa
+    // primada.cover, ya no settings. Antes de cerrar, una abierta deriva del cover vigente (ver coverDe).
+    cerrarPrimada(id) { const p = findPrimada(id); if (!p) return; p.cover = { ...state.settings.cover }; p.estado = 'cerrada'; commit({ kind: 'primada', id }); },
     reabrirPrimada(id) { const p = findPrimada(id); if (!p) return; p.estado = 'abierta'; commit({ kind: 'primada', id }); },
     borrarPrimada(id) {
       state.primadas = state.primadas.filter(p => p.id !== id);

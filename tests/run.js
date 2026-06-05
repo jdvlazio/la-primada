@@ -329,17 +329,22 @@ section('Acciones e invariantes');
   // aportadoPor por defecto = principal al crear
   check('aportadoPor por defecto = principal', pr3().productos.every(pr => pr.aportadoPor === ahorrA));
 
-  // Cover VIGENTE: setCover RE-APLICA el cover a las primadas ABIERTAS (sus totales se actualizan); las
-  // CERRADAS quedan CONGELADAS (historia, INVARIANTE #4). pid3 está CERRADA con cover.invitado original.
+  // Cover VIGENTE: una primada ABIERTA DERIVA su cover del valor vigente (settings) → coverDe refleja el
+  // cambio AL INSTANTE, sin re-sellar ni persistir un snapshot por primada (robusto ante recargas). Las
+  // CERRADAS usan su snapshot CONGELADO (historia, INVARIANTE #4). pid3 está CERRADA.
   const coverCerradaAntes = pr3().cover.invitado;
   const pidAb = Store.actions.createPrimada({ principalId: ahorrA, organizadores: [ahorrA], fecha: '2026-07-01' });
   const invX = Store.actions.addPersona({ nombre: 'InvX', estado: 'invitado' });
   Store.actions.addAsistencia(pidAb, invX);
   const pAb = () => Store.select.state().primadas.find(p => p.id === pidAb);
   const invXAsis = () => pAb().asistencias.find(a => a.personaId === invX);
+  const snapAbAntes = JSON.stringify(pAb().cover);   // snapshot de la abierta ANTES del cambio
   Store.actions.setCover({ invitado: 77000 });
-  eq('Cover vigente: re-aplica a la primada ABIERTA (invitado 77000)', Store.select.coverDe(pAb(), invXAsis()), 77000);
+  eq('Cover vigente: la primada ABIERTA refleja el cover vigente (invitado 77000)', Store.select.coverDe(pAb(), invXAsis()), 77000);
+  check('Cover vigente: ROBUSTO — el total de la abierta deriva del vigente sin tocar su snapshot',
+    JSON.stringify(pAb().cover) === snapAbAntes && pAb().cover.invitado !== 77000);
   eq('Cover vigente: la primada CERRADA queda congelada (snapshot intacto)', pr3().cover.invitado, coverCerradaAntes);
+  eq('Cover vigente: coverDe de la CERRADA usa su snapshot, no el vigente', Store.select.coverDe(pr3(), pr3().asistencias.find(a => a.personaId === cliente)), coverCerradaAntes);
   check('Cover vigente: settings.cover.invitado se actualizó (default futuro)', Store.select.state().settings.cover.invitado === 77000);
 
   // createPrimada con productos PROPIOS (wizard paso 2): usa ese set, no el catálogo por defecto.
