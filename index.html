@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260605-160812-2e77494">
+<meta name="build" content="20260605-164438-be1e7b7">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -135,7 +135,7 @@
   .dot.closed{background:var(--ink-soft)}
   .dot.prin{background:var(--accent)}                 /* punto del principal (teal) */
   .dot.neutral{background:var(--ink-soft)}            /* bullet neutro (no-principal en la lista compacta) */
-  .dot.prog{background:var(--amber)}                  /* punto de PROGRAMADA (agendada, aún sin abrir) */
+  .dot.idle{background:var(--amber)}                  /* abierta SIN consumos (creada, sin actividad aún) — ámbar = pendiente (§1) */
   /* etiqueta de rol / estado en texto tenue (reemplaza los badges con borde en la identidad) */
   .rol-tag{color:var(--ink-soft);font-weight:400;font-size:12px}
   /* estado vacío SIN caja: solo texto centrado con aire */
@@ -417,9 +417,6 @@
   .sel-caret{flex:none;color:var(--ink-soft);display:inline-flex;align-items:center;transition:transform .18s ease}
   .sel-caret .icon{width:20px;height:20px}
   .sel-caret.open{transform:rotate(180deg)}
-  /* "+" pequeño (~32px) para Nueva primada: secundario, no compite con operar */
-  .icon-btn.nueva{width:32px;height:32px;color:var(--accent)}
-  .icon-btn.nueva .icon{width:24px;height:24px}
   /* Hoja del selector: agrupación por año → filas de mes·nombre + total + check en la activa */
   .sel-anio{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:13px;color:var(--ink-soft);letter-spacing:.06em;margin:var(--space-4) 0 var(--space-1)}
   .sel-anio:first-child{margin-top:0}
@@ -433,16 +430,8 @@
   .sel-fila-right{flex:none;display:flex;align-items:center;gap:var(--space-2)}
   .sel-fila-total{font-size:13px;font-weight:700;color:var(--ink)}
   .sel-check{color:var(--accent);display:inline-flex;align-items:center}
-  /* Selector con 3 secciones: encabezado de AÑO bajo "Pasadas" (más tenue que el título de sección) +
-     fecha de una PRÓXIMA (confirmada "Sáb 15" o "Fecha por definir" en cursiva). */
+  /* Selector: encabezado de AÑO bajo "Pasadas" (más tenue que el título de sección). */
   .sel-subanio{font-size:12px;font-weight:700;color:var(--ink-soft);opacity:.75;margin:var(--space-2) 0 0 var(--space-1)}
-  .sel-fila-fecha{font-size:13px;color:var(--ink-soft)}
-  .sel-fila-fecha i{font-style:italic}
-  /* Cara de una primada PROGRAMADA (aún sin abrir): tarjeta con datos mínimos + acciones. */
-  .prog-cara{display:flex;flex-direction:column;align-items:center}
-  .prog-cara .card{width:100%}
-  .prog-badge{display:flex;align-items:center;font-weight:700;font-size:14px;color:var(--ink);margin-bottom:var(--space-2)}
-  .prog-borrar{margin-top:var(--space-4)}
   /* "Zona peligrosa" en el sheet de config */
   .danger-sub{color:var(--alert)}
 
@@ -584,13 +573,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260605-160812-2e77494"></script>
-  <script src="js/util.js?v=20260605-160812-2e77494"></script>
-  <script src="js/api.js?v=20260605-160812-2e77494"></script>
-  <script src="js/auth.js?v=20260605-160812-2e77494"></script>
-  <script src="js/store.js?v=20260605-160812-2e77494"></script>
-  <script src="js/view.js?v=20260605-160812-2e77494"></script>
-  <script src="js/controller.js?v=20260605-160812-2e77494"></script>
+  <script src="js/config.js?v=20260605-164438-be1e7b7"></script>
+  <script src="js/util.js?v=20260605-164438-be1e7b7"></script>
+  <script src="js/api.js?v=20260605-164438-be1e7b7"></script>
+  <script src="js/auth.js?v=20260605-164438-be1e7b7"></script>
+  <script src="js/store.js?v=20260605-164438-be1e7b7"></script>
+  <script src="js/view.js?v=20260605-164438-be1e7b7"></script>
+  <script src="js/controller.js?v=20260605-164438-be1e7b7"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).

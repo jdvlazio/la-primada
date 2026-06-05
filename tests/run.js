@@ -449,57 +449,43 @@ section('Nombre automático de la primada + agrupación del selector');
   eq('2025 tiene la de diciembre', grupos[1].primadas[0].mesContable, '2025-12');
 }
 
-/* ============================================================ 7b. Primadas PROGRAMADAS */
-section('Primadas programadas (estado programada · crear · abrir · selector)');
+/* ============================================================ 7b. MIGRACIÓN: 'programada' → 'abierta'
+   El estado 'programada' se ELIMINÓ. Tolerancia hacia atrás: cualquier fila histórica con estado
+   'programada' se normaliza a 'abierta' y AUTOSANA (productos por defecto + fecha de hoy si estaba ''),
+   igual que hacía el viejo abrirPrimada. Como load() aplica migrate() también a los datos de Supabase,
+   esto convierte las filas viejas en cada lectura sin tocar la base. */
+section("Migración: 'programada' (histórica) → 'abierta' con autosana");
 {
   Store.actions.replaceState(null);
   const ana = Store.actions.addPersona({ nombre: 'Ana', estado: 'ahorrador' });
-  const beto = Store.actions.addPersona({ nombre: 'Beto', estado: 'invitado' });
-  // crear PROGRAMADA: mes obligatorio, fecha OPCIONAL (sin fecha → '' = por definir), sin productos/consumos.
-  const progId = Store.actions.createProgramada({ organizadores: [ana, beto], principalId: ana, mesContable: '2026-08' });
-  const prog = () => Store.select.state().primadas.find(p => p.id === progId);
-  eq('createProgramada: estado = programada', prog().estado, 'programada');
-  eq('programada: mes contable = 2026-08', prog().mesContable, '2026-08');
-  eq('programada: fecha por definir ("")', prog().fecha, '');
-  check('programada: SIN productos ni consumos', prog().productos.length === 0 && prog().consumos.length === 0);
-  check('programada: organizadores como asistencias (Ana principal + Beto organizador)',
-    prog().asistencias.length === 2 && prog().asistencias.find(a => a.personaId === ana).rol === 'principal');
-  check('programada: nombre autogenerado de organizadores', /Ana/.test(prog().nombre) && /Beto/.test(prog().nombre));
-  eq('programada: NO entra en ninguna fórmula (recaudado 0)', Store.select.recaudado(prog()), 0);
-  // INVARIANTE #2: principal debe ser ahorrador
-  let threwProg = false;
-  try { Store.actions.createProgramada({ organizadores: [beto], principalId: beto, mesContable: '2026-08' }); } catch (e) { threwProg = true; }
-  check('INV#2: createProgramada con principal invitado lanza', threwProg);
-  // mes obligatorio
-  let threwMes = false;
-  try { Store.actions.createProgramada({ organizadores: [ana], principalId: ana }); } catch (e) { threwMes = true; }
-  check('createProgramada sin mes lanza', threwMes);
-  // confirmar fecha (reusa setFecha) — sin flujo extra
-  Store.actions.setFecha(progId, '2026-08-15');
-  eq('confirmar fecha vía setFecha', prog().fecha, '2026-08-15');
-  // selector: programadas NO aparecen en primadasPorAnio (van en Próximas); SÍ en primadasProgramadas
-  check('primadasPorAnio EXCLUYE las programadas', Store.select.primadasPorAnio().every(g => g.primadas.every(p => p.estado !== 'programada')));
-  check('primadasProgramadas incluye la programada', Store.select.primadasProgramadas().some(p => p.id === progId));
-  // orden ascendente: otra programada en mes anterior va primero
-  const progId2 = Store.actions.createProgramada({ organizadores: [ana], principalId: ana, mesContable: '2026-07' });
-  eq('primadasProgramadas ASC por mes (2026-07 antes que 2026-08)', Store.select.primadasProgramadas()[0].id, progId2);
-  // ABRIR la programada → abierta, con productos snapshotteados, fecha fijada
-  Store.actions.abrirPrimada(progId);
-  eq('abrirPrimada: estado → abierta', prog().estado, 'abierta');
-  check('abrirPrimada: snapshotea los productos por defecto', prog().productos.length > 0);
-  eq('abrirPrimada: conserva la fecha confirmada', prog().fecha, '2026-08-15');
-  check('abrirPrimada: ya NO está en primadasProgramadas', !Store.select.primadasProgramadas().some(p => p.id === progId));
-  check('abrirPrimada: ahora SÍ aparece en primadasPorAnio', Store.select.primadasPorAnio().some(g => g.primadas.some(p => p.id === progId)));
-  // abrir sin fecha → toma hoy
-  Store.actions.abrirPrimada(progId2);
-  const p2 = Store.select.state().primadas.find(x => x.id === progId2);
-  check('abrirPrimada sin fecha confirmada → abierta con fecha = hoy', p2.estado === 'abierta' && /^\d{4}-\d{2}-\d{2}$/.test(p2.fecha));
-  // round-trip por el normalizador: una programada SIN fecha conserva estado/'' y no inventa productos
-  const prog3 = Store.actions.createProgramada({ organizadores: [ana], principalId: ana, mesContable: '2026-09' });
-  const norm = migrate(JSON.parse(JSON.stringify(Store.select.state())));
-  const p3 = norm.primadas.find(p => p.id === prog3);
-  check('normalizador: programada round-trip conserva estado/""/sin-productos',
-    p3 && p3.estado === 'programada' && p3.fecha === '' && p3.productos.length === 0);
+  // Simulamos una fila VIEJA con estado 'programada' (sin productos, fecha '' = por definir) y la pasamos
+  // por el normalizador (como haría load() al traerla de Supabase o localStorage).
+  const raw = {
+    schemaVersion: 6,
+    settings: Store.select.state().settings,
+    personas: Store.select.state().personas,
+    primadas: [{
+      id: 'prm_vieja_prog', nombre: 'Primada Ana', fecha: '', mesContable: '2026-08',
+      organizadorPrincipalId: ana, pago: { breB: null }, cover: { ahorrador: 15000, invitado: 10000 },
+      productos: [], asistencias: [{ personaId: ana, estadoEnEseMomento: 'ahorrador', rol: 'principal', coverExonerado: false, pagado: false }],
+      consumos: [], estado: 'programada',
+    }],
+    activePrimadaId: 'prm_vieja_prog',
+  };
+  const norm = migrate(raw);
+  const p = norm.primadas.find(x => x.id === 'prm_vieja_prog');
+  eq("'programada' histórica → estado 'abierta'", p.estado, 'abierta');
+  check('autosana: rellena los productos por defecto (no queda vacía)', p.productos.length > 0);
+  check("autosana: fecha '' → hoy (YYYY-MM-DD), como hacía abrirPrimada", /^\d{4}-\d{2}-\d{2}$/.test(p.fecha));
+  eq('conserva el mes contable', p.mesContable, '2026-08');
+  check('conserva organizadores/principal (Ana principal)', p.asistencias.find(a => a.personaId === ana).rol === 'principal');
+  // ya es una abierta normal: aparece en el historial por año, entra a las fórmulas (recaudado computable)
+  check('aparece en primadasPorAnio (historial)', norm.primadas.some(x => x.id === 'prm_vieja_prog'));
+  // normEstadoPrimada ya no produce 'programada'
+  check('NINGUNA primada normalizada queda en estado programada', norm.primadas.every(x => x.estado !== 'programada'));
+  // idempotente: re-migrar no la vuelve a tocar
+  const norm2 = migrate(JSON.parse(JSON.stringify(norm)));
+  eq('idempotente: sigue abierta tras re-migrar', norm2.primadas.find(x => x.id === 'prm_vieja_prog').estado, 'abierta');
 }
 
 /* ============================================================ 8. Robustez */

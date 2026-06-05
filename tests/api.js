@@ -149,14 +149,16 @@ section('Serialización modelo v4 <-> filas Supabase');
   eq('primada→fila: fecha como columna', prr.fecha, '2026-05-31');
   check('primada→fila: snapshots dentro de data jsonb', !!prr.data && Array.isArray(prr.data.asistencias) && Array.isArray(prr.data.productos) && !!prr.data.cover && !!prr.data.pago);
   check('primada→fila: NO duplica snapshots fuera de data', !('asistencias' in prr) && !('productos' in prr) && !('cover' in prr));
-  // PROGRAMADA sin fecha: '' en memoria. La columna DATE es NOT NULL (no acepta NULL ni ''), así que la
-  // COLUMNA recibe un PLACEHOLDER = 1° del mes contable, y la fecha REAL ('') vive en data.fecha (verdad).
-  const progRow = Api._ser.primadaToRow({ id: 'prm_x', nombre: 'Primada Ana', fecha: '', mesContable: '2026-09', organizadorPrincipalId: 'per_a', estado: 'programada', pago: { breB: null }, cover: { ahorrador: 0, invitado: 0 }, productos: [], asistencias: [] });
-  eq('programada sin fecha → columna = placeholder mes-01 (NO null, NO "")', progRow.fecha, '2026-09-01');
-  eq('programada sin fecha → data.fecha = "" (verdad, por definir)', progRow.data.fecha, '');
-  eq('programada: estado se preserva en la fila', progRow.estado, 'programada');
-  // Y al leer de vuelta, la fecha vuelve a ser '' (la UI muestra "por definir"), NO el placeholder.
-  eq('programada round-trip → fecha vuelve a "" (no el placeholder de la columna)', Api._ser.rowToPrimada(progRow).fecha, '');
+  // FECHA VACÍA (defensivo): la columna DATE es NOT NULL (no acepta NULL ni ''), así que la COLUMNA recibe
+  // un PLACEHOLDER = 1° del mes contable, y la fecha REAL ('') vive en data.fecha (verdad). (Antes esto lo
+  // disparaban las 'programada'; ese estado se eliminó, pero la lógica del placeholder sigue siendo válida
+  // y defensiva para cualquier fila con fecha vacía.)
+  const sinFechaRow = Api._ser.primadaToRow({ id: 'prm_x', nombre: 'Primada Ana', fecha: '', mesContable: '2026-09', organizadorPrincipalId: 'per_a', estado: 'abierta', pago: { breB: null }, cover: { ahorrador: 0, invitado: 0 }, productos: [], asistencias: [] });
+  eq('fecha vacía → columna = placeholder mes-01 (NO null, NO "")', sinFechaRow.fecha, '2026-09-01');
+  eq('fecha vacía → data.fecha = "" (verdad)', sinFechaRow.data.fecha, '');
+  eq('estado se preserva en la fila', sinFechaRow.estado, 'abierta');
+  // Y al leer de vuelta, la fecha vuelve a ser '' (NO el placeholder de la columna).
+  eq('round-trip → fecha vuelve a "" (no el placeholder de la columna)', Api._ser.rowToPrimada(sinFechaRow).fecha, '');
   // Fila VIEJA (anterior a data.fecha): rowToPrimada usa la columna como fallback.
   eq('fila vieja sin data.fecha → fecha = columna (fallback)', Api._ser.rowToPrimada({ id: 'p', nombre: 'X', fecha: '2026-05-31', mes_contable: '2026-05', estado: 'cerrada', data: { pago: {}, cover: {}, productos: [], asistencias: [] } }).fecha, '2026-05-31');
 }

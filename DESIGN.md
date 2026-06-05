@@ -67,7 +67,7 @@ Valores resueltos, extraídos de `:root` en `index.html`. **Son la única fuente
 | `--red-deep` | `#14b8a6` | Teal de énfasis (hover, monto de ganancia) |
 | `--pos` (alias `--green`) | `#4DD9A0` | **Pagó / éxito puntual** — texto (check de pago, toast saldado) |
 | `--pos-bg` | `#103028` | Pagó / positivo — fondo |
-| `--amber` | `#e0b341` | **Pendiente / en proceso** — por cobrar, los que deben, programada, incompleta, "Próximamente" |
+| `--amber` | `#e0b341` | **Pendiente / en proceso** — por cobrar, los que deben, abierta sin actividad (`.dot.idle`), incompleta, "Próximamente" |
 | `--alert` | `#F08C8C` | **Destructivo / error** — botón borrar, error de sync. **NO** para deuda (eso es ámbar) |
 | `--alert-bg` | `#3a1818` | Destructivo / error — fondo |
 
@@ -81,7 +81,7 @@ salmón). El **copy** debe coincidir con el registro del color (ver "Voz y tono"
 |---|---|---|---|---|
 | **Resuelto / definitivo** | `--accent` (teal) | cerrado, primario, valor logrado | Ganancia, "Entregado", activo, principal, acción primaria, **monto ya pagado** (`.pagado`) | afirmativo, en pasado/presente |
 | **Éxito puntual** | `--pos` (verde) | confirmación de una acción que acaba de salir bien | check de pago, toast "✓ saldado" | celebratorio, breve |
-| **Pendiente / en proceso** | `--amber` (ámbar) | algo abierto que **falta resolver** — **normal y esperado**, NI error NI urgencia | **Por cobrar** (héroe), **los que deben** (`.pend`), **programada** (`.dot.prog`), **incompleta / "Próximamente"** (`.badge.warn`) | **neutral y prospectivo** ("Por cobrar", "Programada", "Falta principal") — **nunca** alarmista |
+| **Pendiente / en proceso** | `--amber` (ámbar) | algo abierto que **falta resolver** — **normal y esperado**, NI error NI urgencia | **Por cobrar** (héroe), **los que deben** (`.pend`), **abierta sin actividad** (`.dot.idle`), **incompleta / "Próximamente"** (`.badge.warn`) | **neutral y prospectivo** ("Por cobrar", "Falta principal") — **nunca** alarmista |
 | **Destructivo / error** | `--alert` (salmón) | acción irreversible o fallo real — **STOP** | Borrar (`.mini.danger`, `.danger-sub`), error de sync (`.sync-indicator.err`) | de advertencia, confirmación explícita |
 
 **Por qué la deuda es ÁMBAR y no salmón** (decisión ratificada): cobrar es un **proceso normal en curso**, no un
@@ -344,8 +344,9 @@ solo **dónde** se editan (rol → creación; exoneración → Agregar; identida
 `overlaySheet` con seg-nav **Personas | Primadas | Ajustes** (`data-act="overlay-tab"` + `data-overlay`).
 - **Personas** (§2.9) — directorio. **Ajustes** — cover vigente, versión, legal, cuenta.
 - **Primadas** (`primadasAdminBody`) — el **calendario + historial + acciones** sobre las primadas (lo que salió
-  de Configurar): **"Programar próxima"** arriba (`.add-link`, `open-programar` → hoja ligera `programarSheet`) +
-  lista de TODAS agrupada (**Próximas** ámbar · **Activa** teal · **Pasadas** gris). Cada fila `.padm-fila` (NO
+  de Configurar). **ÚNICO punto de creación:** **"Nueva primada"** arriba (`.add-link`, `new-primada` → lanza el
+  wizard de 3 pasos SOBRE el gear; al crear/cancelar, el wizard y el gear se cierran). Debajo, lista de TODAS
+  agrupada (**Activa** · **Pasadas** gris; el dot deriva de actividad, `dotClase`). Cada fila `.padm-fila` (NO
   navega, EDITA): nombre + meta + acciones **Reabrir** (cerradas) y **Eliminar** (`borrar-primada`, confirmación;
   `data-activa` en la activa para advertencia más fuerte). El **selector** (§2.11) sigue siendo navegación pura.
 
@@ -390,33 +391,30 @@ mostrara "Junio", dos primadas de junio serían idénticas). Helper de Vista: `n
   de estado + `"Mes Año"` (`Util.monthYear`, `--ink-soft`, **GUÍA secundaria**). La primada no se llama
   como el mes: el nombre manda, el mes orienta. `.sel-caret` (chevron-down) rota 180° abierto.
 - **`⚙`** (`.icon-btn`, `open-config-primada`): configuración (escondida, §2.8).
-- **`+`** (`.icon-btn.nueva`, ~32px, `new-primada`): abre el wizard de 3 pasos. **Secundario** — ícono
-  pequeño, NO un `.btn` grande (crear no compite con operar). **Prohibido** el botón grande "Nueva primada".
+- **(SIN `+` de crear.)** El "+" de la cabecera se **ELIMINÓ**: crear es una decisión administrativa y vive en el
+  **ÚNICO punto** = gear global › Primadas › **"Nueva primada"** (§2.8.1). La cabecera del selector es solo navegación.
 
-**Abierto (overlay `selector-primada`, `selectorSheet`):** sheet con **TRES secciones en orden** (cada una con
-encabezado `.sel-anio`): **Próximas** · **Activa** · **Pasadas**. El **historial vive aquí**, no como lista aparte.
-**El selector es NAVEGACIÓN PURA** — elegir con cuál primada trabajar. **NO crea nada:** "+ Nueva" (abierta ya)
-vive en la cabecera (wizard de 3 pasos); **"Programar próxima"** (agendar sin abrir) vive en **Configuración** (§2.8) —
-crear/programar es una decisión administrativa, del mismo nivel que personas/productos/cover, no un gesto de navegación.
+**Abierto (overlay `selector-primada`, `selectorSheet`):** sheet con **DOS secciones en orden** (cada una con
+encabezado `.sel-anio`): **Activa** · **Pasadas**. El **historial vive aquí**, no como lista aparte. **El selector es
+NAVEGACIÓN PURA** — elegir con cuál primada trabajar. **NO crea nada** (crear vive en el gear, §2.8.1).
 
 | Sección | Contenido |
 |---|---|
-| **Próximas** (si hay) | primadas `estado:'programada'` (`primadasProgramadas()`, **asc** por mes·fecha). Fila `filaPrograma`: `.dot.prog` (ámbar) + `<b>Mes</b> · {nombre corto}`; a la derecha la **fecha confirmada** (`Util.fechaDia` → "Sáb 15") o **"Fecha por definir"** (cursiva). Sin recaudo (evento futuro) |
-| **Activa** (si abierta/cerrada) | la primada seleccionada (`activePrimada`), una fila `.sel-fila` con su `.sel-check` |
-| **Pasadas** | `primadasPorAnio()` (EXCLUYE programadas **y** la activa), agrupado por año (`.sel-subanio` = sub-encabezado tenue) |
+| **Activa** | la primada seleccionada (`activePrimada`), una fila `.sel-fila` con su `.sel-check`. El dot deriva de actividad (`dotClase`: ámbar sin consumos, verde con consumos, gris cerrada) |
+| **Pasadas** | `primadasPorAnio()` (todo el historial salvo la activa), agrupado por año (`.sel-subanio` = sub-encabezado tenue) |
 
 | Clase | Propiedades canónicas |
 |---|---|
-| `.sel-anio` | encabezado de SECCIÓN (Próximas/Activa/Pasadas): `font-weight:800; font-size:13px; color:var(--ink-soft); letter-spacing:.06em` |
+| `.sel-anio` | encabezado de SECCIÓN (Activa/Pasadas): `font-weight:800; font-size:13px; color:var(--ink-soft); letter-spacing:.06em` |
 | `.sel-subanio` | sub-encabezado de AÑO bajo Pasadas: `font-size:12px; font-weight:700; color:var(--ink-soft); opacity:.75` |
-| `.sel-fila` | fila tappable (`select-primada`): `min-height:var(--tap-row)`; sin caja; separación por línea tenue. Identidad `.sel-fila-main` = punto de estado + **`<b>Mes</b> · {nombre corto}`** (mes guía + identidad, sin "Primada"); a la derecha `.sel-fila-right` = total (recaudo) o fecha + `.sel-check` (check teal) si es la activa |
+| `.sel-fila` | fila tappable (`select-primada`): `min-height:var(--tap-row)`; sin caja; separación por línea tenue. Identidad `.sel-fila-main` = punto de estado (`dotClase`) + **`<b>Mes</b> · {nombre corto}`** (mes guía + identidad, sin "Primada"); a la derecha `.sel-fila-right` = total (recaudo) + `.sel-check` (check teal) si es la activa |
 | activa | `.sel-fila.on` → el mes en acento. Tocar una la activa (`seleccionarPrimada`) y **cierra** la hoja |
 
-> **Primada PROGRAMADA — cara mínima.** Una primada `estado:'programada'` (agendada, aún sin abrir) NO tiene
-> Consumos/Balance. Al volverse la activa, el tab Primadas muestra `programadaCara`: tarjeta con `.prog-badge`
-> (`.dot.prog` ámbar + "Programada · {Mes Año}"), nº de organizadores, **input de fecha** (`confirmar-fecha`,
-> opcional), y dos acciones — **"Abrir primada"** (`.btn`, `abrir-primada` → entra al flujo normal) y **"Borrar"**
-> (`.mini.danger`). El selector de arriba para una programada **oculta** el engranaje de Config y el botón Compartir.
+> **Ciclo de vida (`abierta → cerrada`, sin `programada`):** una primada se crea **abierta**. Su `dot` deriva de
+> **actividad real** (`dotClase`): **ámbar `.dot.idle`** sin consumos (creada, sin actividad), **verde `.dot.open`**
+> con consumos, **gris `.dot.closed`** cerrada. No hay "cara programada" ni estado intermedio: el tab Primadas siempre
+> muestra Consumos/Balance. **Estado vacío** (0 primadas) = "Tu primera primada" + texto que orienta al gear (sin botón
+> inline; el único punto de creación es el gear, §2.8.1).
 
 > **Nombre automático (decisión de producto):** al crear, `Store.select.nombreSugerido` arma
 > **"Primada {N1} + {N2}"** con el **primer token** del nombre de cada organizador — N1 = principal,
@@ -694,7 +692,7 @@ sistema, **bórralo**).
 - **Toasts:** confirmación corta en pasado/sustantivo (`Primada creada`, `Abono registrado`).
 - **Confirmaciones:** pregunta de una idea (`¿Borrar la primada?`), sin explicar consecuencias.
 - **El copy coincide con el REGISTRO del color** (escalera de estado, §1). Lo **ámbar** (pendiente / en
-  proceso) se nombra **neutral y prospectivo** — `Por cobrar`, `Programada`, `Falta principal`,
+  proceso) se nombra **neutral y prospectivo** — `Por cobrar`, `Falta principal`,
   `Próximamente` — **nunca** alarmista (`¡Deuda!`, `¡Atrasado!`). El lenguaje de **alarma/stop** se reserva
   para lo **salmón** (destructivo/error: `¿Borrar la primada?`). Un dato pendiente no se dramatiza: se etiqueta.
 - **Una idea por texto.** Sin emoji decorativo en estado.

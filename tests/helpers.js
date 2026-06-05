@@ -14,7 +14,7 @@ const SEL = {
   tabbar: '#tabbar',
   tab: (id) => `.tab[data-tab="${id}"]`,
   tabActive: '.tab.active',
-  nuevaPrimada: '[data-act="new-primada"]',   // "+" chico del selector (abre el wizard)
+  nuevaPrimada: '[data-act="new-primada"]',   // "Nueva primada" en el gear › Primadas (abre el wizard)
   selector: '[data-act="open-selector"]',     // botón selector (abre la hoja agrupada)
   selMain: '.sel-main',                        // línea-guía del selector: "Mes Año" (+ punto estado)
   selSub: '.sel-sub',                          // identidad tenue: nombre corto (sin "Primada")
@@ -58,6 +58,9 @@ async function sembrarPersonas(page, personas) {
 // Flujo completo del wizard: crea una primada con `principalNombre` como principal.
 // Asume que ya hay al menos un ahorrador con ese nombre sembrado.
 async function crearPrimada(page, principalNombre = 'Ana') {
+  // ÚNICO punto de creación: gear global › Primadas › "Nueva primada" (abre el wizard de 3 pasos).
+  await page.click('#gearBtn');
+  await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
   await page.click(SEL.nuevaPrimada);
   await page.waitForSelector(SEL.wizard, { timeout: 5000 });
   // Paso 1: elegir principal (select de ahorradores).

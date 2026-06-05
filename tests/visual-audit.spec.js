@@ -36,10 +36,11 @@ async function appConPrimadaAbierta(page) {
 // 1 · EVIDENCIA VISUAL — screenshots de los estados principales
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('Evidencia visual', () => {
-  test('V1 — tab Primadas (vacío)', async ({ page }) => {
+  test('V1 — tab Primadas (vacío): orienta al gear, SIN botón inline', async ({ page }) => {
     await abrirApp(page);
     await page.screenshot({ path: `${VISUAL}/primadas-vacio.png`, fullPage: false });
-    await expect(page.locator(SEL.nuevaPrimada)).toBeVisible();
+    await expect(page.locator('#screen').getByText('Tu primera primada')).toBeVisible();
+    expect(await page.locator('#screen [data-act="new-primada"]').count()).toBe(0);  // único punto = gear
   });
 
   test('V2 — cara Balance (ya no es tab: se conmuta dentro de Primadas)', async ({ page }) => {
@@ -57,8 +58,10 @@ test.describe('Evidencia visual', () => {
     await expect(page.locator(`${SEL.tab('fondo')}.active`)).toBeVisible();
   });
 
-  test('V4 — wizard Nueva primada', async ({ page }) => {
+  test('V4 — wizard Nueva primada (desde el gear › Primadas)', async ({ page }) => {
     await abrirApp(page);
+    await page.click('#gearBtn');
+    await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
     await page.click(SEL.nuevaPrimada);
     await expect(page.locator(SEL.wizard)).toBeVisible();
     await page.screenshot({ path: `${VISUAL}/wizard.png`, fullPage: false });
@@ -338,24 +341,24 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
 // 5 · SELECTOR de primada (año→mes) + "+" chico + nombre automático
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('Selector de primada + nombre automático', () => {
-  test('F1 — estado vacío = UNA invitación con botón; con ≥1 primada = "+" chico (sin redundancia)', async ({ page }) => {
+  test('F1 — estado vacío = orienta al gear (sin botón inline, sin "+"); con ≥1 primada = selector (sin "+")', async ({ page }) => {
     await abrirApp(page);
-    // VACÍO (primer uso): una sola invitación centrada con el .btn primario; SIN selector ni "+" chico.
+    // VACÍO (primer uso): invitación centrada que orienta al gear; SIN selector, SIN botón de crear inline.
     await expect(page.locator('#screen .primada-vacia')).toBeVisible();
     await expect(page.locator('#screen').getByText('Tu primera primada')).toBeVisible();
-    expect(await page.locator('#screen .btn[data-act="new-primada"]').count()).toBe(1);
+    expect(await page.locator('#screen [data-act="new-primada"]').count()).toBe(0);   // único punto = gear
     expect(await page.locator('#screen .selrow').count()).toBe(0);
     expect(await page.locator('#screen .icon-btn.nueva').count()).toBe(0);
-    // Tras crear la primera, REAPARECE el selector + "+" chico, y se va el botón grande.
+    // Tras crear la primera, aparece el selector — pero NUNCA el "+" en la cabecera (creación vive en el gear).
     await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
     await crearPrimada(page, 'Ana');
     expect(await page.locator('#screen .selrow').count()).toBe(1);
-    expect(await page.locator('#screen .icon-btn.nueva[data-act="new-primada"]').count()).toBe(1);
-    expect(await page.locator('#screen .btn[data-act="new-primada"]').count()).toBe(0);
+    expect(await page.locator('#screen .icon-btn.nueva').count()).toBe(0);
+    expect(await page.locator('#screen [data-act="new-primada"]').count()).toBe(0);
     await expect(page.locator('#screen .primada-vacia')).toHaveCount(0);
   });
 
-  test('F2 — selector cerrado: NOMBRE corto primario (sin "Primada") + mes guía; el "+" abre el wizard', async ({ page }) => {
+  test('F2 — selector cerrado: NOMBRE corto primario (sin "Primada") + mes guía; crear vive en el gear', async ({ page }) => {
     await abrirApp(page);
     await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
     await crearPrimada(page, 'Ana');
@@ -366,7 +369,10 @@ test.describe('Selector de primada + nombre automático', () => {
     await expect(main).not.toContainText('Primada');      // SIN la palabra "Primada" (reducido)
     await expect(sub).toBeVisible();                       // guía (secundaria) = el mes/año
     await expect(sub).not.toContainText('Ana');           // el mes NO lleva el nombre
-    // el "+" abre el wizard (no crea directo)
+    // crear NO vive en la cabecera; el único punto es el gear › Primadas › "Nueva primada" → wizard.
+    expect(await page.locator('#screen [data-act="new-primada"]').count()).toBe(0);
+    await page.click('#gearBtn');
+    await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
     await page.click('[data-act="new-primada"]');
     await expect(page.locator('.wz')).toBeVisible();
   });
@@ -401,6 +407,8 @@ test.describe('Selector de primada + nombre automático', () => {
   test('F4 — nombre automático "Primada N1 + N2" con dos organizadores (vía wizard)', async ({ page }) => {
     await abrirApp(page);
     await sembrarPersonas(page, [{ nombre: 'Ana López', estado: 'ahorrador' }, { nombre: 'Beto', estado: 'invitado' }]);
+    await page.click('#gearBtn');
+    await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
     await page.click('[data-act="new-primada"]');
     await page.waitForSelector('.wz');
     await page.evaluate((n) => {

@@ -41,8 +41,10 @@ test('S3 — navegar entre los 2 tabs no lanza errores', async ({ page }) => {
   expect(erroresReales(errors)).toHaveLength(0);
 });
 
-test('S4 — el wizard "Nueva primada" abre y se puede cancelar', async ({ page }) => {
+test('S4 — el wizard "Nueva primada" abre (desde el gear › Primadas) y se puede cancelar', async ({ page }) => {
   await abrirApp(page);
+  await page.click('#gearBtn');
+  await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
   await page.click(SEL.nuevaPrimada);
   await expect(page.locator(SEL.wizard)).toBeVisible();
   await page.click(SEL.wzCancelar);

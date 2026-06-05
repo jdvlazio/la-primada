@@ -42,20 +42,6 @@
     if (w.paso === 3) { const f = val('wz-fecha'), m = val('wz-mes'); if (f !== undefined) w.fecha = f; if (m !== undefined) w.mesContable = m; }
   }
 
-  // Flujo LIGERO "Programar primada": estado efímero (no Store hasta crear). Mes obligatorio, fecha opcional.
-  function nuevoProgramar() {
-    const hoy = Util.currentDate ? Util.currentDate() : '';
-    return { principalId: '', coorg: [], mesContable: Util.mesDeFecha ? Util.mesDeFecha(hoy) : '', fecha: '' };
-  }
-  function progSync() {
-    const pr = ui.programar; if (!pr) return;
-    const val = id => { const el = document.getElementById(id); return el ? el.value : undefined; };
-    const p = val('prog-principal'), m = val('prog-mes'), f = val('prog-fecha');
-    if (p !== undefined) pr.principalId = p;
-    if (m !== undefined) pr.mesContable = m;
-    if (f !== undefined) pr.fecha = f;
-  }
-
   // ui = estado EFÍMERO (no dominio, no se persiste):
   // - activaPid: personaId de la fila ACTIVA en el tab Consumos (Modelo 3, lista viva; UNA a la vez).
   //   Al activarse, sus productos salen inline como chips (apuntar en 1 tap) + el bloque de pago. null = ninguna.
@@ -69,9 +55,7 @@
   //   'operacion'), fijada al seleccionar/crear/cargar/cerrar/reabrir vía fijarCaraPorEstado().
   // - balance: Set de cards-acordeón del Balance abiertas ('reparto'|'informe'); el héroe (cifra grande) va
   //   SIEMPRE visible fuera del acorde, el desglose (derivación) dentro.
-  // - programar: estado del flujo LIGERO "Programar primada" (overlay 'programar'): { principalId, coorg[],
-  //   mesContable, fecha }. Null cuando está cerrado. No pasa por el Store (UI pura) hasta crear.
-  const ui = { tab: 'primadas', cara: 'operacion', overlay: null, activaPid: null, wizard: null, programar: null,
+  const ui = { tab: 'primadas', cara: 'operacion', overlay: null, activaPid: null, wizard: null,
                personasAbiertas: new Set(), nuevaPersona: false,
                configTab: 'asistentes', configProd: new Set(), pagarPid: null,
                balance: new Set(), auditPid: null, apuntadores: {}, presentes: [],
@@ -86,7 +70,7 @@
     'new-primada', 'wz-crear', 'cerrar-primada', 'reabrir-primada', 'borrar-primada',
     'add-asistencia', 'add-asistencia-cortesia', 'hacer-principal', 'remove-asistencia', 'toggle-exonerado', 'item-plus', 'item-minus',
     'remove-producto', 'add-producto', 'marcar-pagado', 'set-no-pagado', 'add-persona', 'set-estado-persona',
-    'borrar-mi-cuenta', 'prog-crear', 'abrir-primada',
+    'borrar-mi-cuenta',
   ]);
   function backendOn() { return !!(Auth && Auth.enabled()); }     // hay backend Supabase (RLS es la frontera real)
   function pedirLogin() { ui.overlay = 'login'; ui.loginEstado = 'form'; rerender(); }
@@ -228,34 +212,11 @@
       // ----- compartir informe como imagen (PNG → share sheet / descarga): I/O de vista, NO escritura -----
       case 'compartir-informe': { const p = Store.select.activePrimada(); if (p && View.shareInforme) View.shareInforme(p); return; }
 
-      // ----- Programar primada (flujo ligero): abrir/cerrar/toggle = navegación; crear = escritura (gate) -----
-      case 'open-programar':    ui.programar = nuevoProgramar(); ui.overlay = 'programar'; rerender(); return;
-      case 'prog-cancelar':     ui.programar = null; ui.overlay = null; rerender(); return;
-      case 'prog-toggle-coorg': {
-        progSync(); const pr = ui.programar; if (!pr) return;
-        const i = pr.coorg.indexOf(pid); if (i >= 0) pr.coorg.splice(i, 1); else pr.coorg.push(pid);
-        rerender(); return;
-      }
-      case 'prog-crear': {
-        progSync(); const pr = ui.programar; if (!pr) return;
-        if (!pr.principalId) { View.toast('Falta el principal'); return; }
-        const per = Store.select.persona(pr.principalId);
-        if (!per || per.estado !== 'ahorrador') { View.toast('El principal debe ser ahorrador'); return; }
-        if (!/^\d{4}-\d{2}$/.test(String(pr.mesContable))) { View.toast('Falta el mes'); return; }
-        try {
-          const idP = A.createProgramada({ principalId: pr.principalId, organizadores: [pr.principalId].concat(pr.coorg), mesContable: pr.mesContable, fecha: pr.fecha });
-          ui.programar = null; ui.overlay = null;
-          A.seleccionarPrimada(idP); fijarCaraPorEstado(); View.toast('Primada programada'); rerender();
-        } catch (err) { View.toast(err && err.message ? err.message : 'No se pudo programar'); }
-        return;
-      }
-      // Abrir una programada → flujo normal. La acción commitea (rerender por subscribe con cara vieja);
-      // fijamos la cara y re-renderizamos explícito (igual que cerrar/reabrir).
-      case 'abrir-primada':     A.abrirPrimada(id); fijarCaraPorEstado(); View.toast('Primada abierta'); rerender(); return;
-
-      // ----- wizard "Nueva primada" (3 pasos, estado efímero en ui.wizard) -----
+      // ----- wizard "Nueva primada" (3 pasos, estado efímero en ui.wizard) — ÚNICO punto de creación -----
+      // "Nueva primada" (ÚNICO punto de creación, vive en el gear › Primadas) abre el wizard SOBRE el gear.
       case 'new-primada':   ui.wizard = nuevoWizard(); rerender(); return;
-      case 'wz-cancelar':   ui.wizard = null; rerender(); return;
+      // Cancelar/crear cierran el wizard Y el gear que lo lanzó → vuelven a la app (no quedan en el gear).
+      case 'wz-cancelar':   ui.wizard = null; ui.overlay = null; rerender(); return;
       case 'wz-atras':      if (ui.wizard && ui.wizard.paso > 1) ui.wizard.paso--; rerender(); return;
       case 'wz-toggle-coorg': {
         const w = ui.wizard; if (!w) return;
@@ -292,7 +253,7 @@
             productos: w.productos.filter(p => (p.nombre || '').trim()),
             fecha: w.fecha, mesContable: w.mesContable,
           });
-          ui.wizard = null;
+          ui.wizard = null; ui.overlay = null;   // cierra wizard + gear → aterriza en la primada nueva
           A.seleccionarPrimada(id);
           fijarCaraPorEstado();            // recién creada → abierta → cara 'operacion'
           View.toast('Primada creada'); rerender();   // pintar con la cara ya fijada (el commit rindió con la vieja)
@@ -434,13 +395,6 @@
       ui.wizard.coorg = ui.wizard.coorg.filter(id => id !== ev.target.value);
       rerender(); return;
     }
-    // Programar: cambiar el principal refresca la lista de co-organizadores (mismo patrón que el wizard).
-    if (ui.programar && ev.target && ev.target.id === 'prog-principal') {
-      progSync();
-      ui.programar.principalId = ev.target.value;
-      ui.programar.coorg = ui.programar.coorg.filter(id => id !== ev.target.value);
-      rerender(); return;
-    }
     const t = ev.target.closest('[data-ch]'); if (!t) return;
     // Todo data-ch es EDICIÓN (escritura): sin sesión, abre el login en vez de aplicar (gate invertido).
     if (backendOn() && !sesionActiva) { pedirLogin(); return; }
@@ -452,13 +406,6 @@
     const A = Store.actions;
 
     switch (ch) {
-      case 'rename-primada': A.renombrarPrimada(id, v); break;
-      case 'fecha-primada':  A.setFecha(id, v); break;
-      // Confirmar/cambiar la fecha de una PROGRAMADA → setFecha + RE-RENDER (para reflejar "por definir"→fecha).
-      case 'confirmar-fecha': A.setFecha(id, v); rerender(); break;
-      // Mes contable de una PROGRAMADA (editable hasta abrir; junto a la fecha en su cara). Re-render para
-      // refrescar el badge "Programada · MesAño". Post-apertura ya no hay UI de mes (se fija al abrir).
-      case 'confirmar-mes':  A.setMesContable(id, v); rerender(); break;
       // INVARIANTE #2: setRol('principal') lanza si el snapshot no es ahorrador → atrapamos y avisamos.
       case 'rol':            tryAction(() => A.setRol(prm, pid, v)); break;
       case 'rename-persona': A.renombrarPersona(pid, v); break;

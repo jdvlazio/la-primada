@@ -211,12 +211,12 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
     identidad, sin acciones administrativas). seg-nav con `data-ctab` (NO `data-tab`: colisiona con la tabbar).
   - **Gear GLOBAL (⚙ en el encabezado) — TRES tabs (NO 2):**
     - **Personas** — directorio (alta, cambio de estado invitado↔ahorrador, `breB`). También al agregar un asistente.
-    - **Primadas** — capa administrativa del calendario/historial: **"Programar próxima"** + lista de TODAS
-      (Próximas/Activa/Pasadas) con **Eliminar** y **Reabrir** (cerradas). Aquí viven las acciones que salieron de Configurar.
+    - **Primadas** — capa administrativa del calendario/historial: **"Nueva primada"** (ÚNICO punto de creación →
+      lanza el wizard de 3 pasos) + lista de TODAS (Activa/Pasadas) con **Eliminar** y **Reabrir** (cerradas).
+      Aquí viven las acciones que salieron de Configurar. **El "+" de la cabecera del selector se ELIMINÓ.**
     - **Ajustes** — cover vigente, versión, legal, cuenta.
-  - **Identidad de la primada** (nombre/fecha/mes) se fija al **crear/programar**. El **mes contable** sigue
-    editable desde la **cara de la programada** (junto a la fecha) hasta abrirla; **post-apertura se fija** (un
-    error de mes en una abierta = borrar y recrear, caso rarísimo y aceptable).
+  - **Identidad de la primada** (nombre/fecha/mes) se fija al **crear** (wizard). No hay edición posterior de
+    mes/fecha (un error → borrar y recrear, caso rarísimo y aceptable).
 - Toda feature nueva debe caber en esta navegación. Si no cabe → **pausar y consultar** (no inventar un tercer tab).
 
 ## Modelo de datos (esquema v6 — DEFINITIVO)
@@ -224,9 +224,9 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
 AppState  { schemaVersion:6, settings{cover{ahorrador,invitado}, defaultProducts[]},
             personas[], primadas[], activePrimadaId }
 Persona   { id, nombre, estado:'ahorrador'|'invitado', breB:string|null }
-Primada   { id, nombre, fecha:'YYYY-MM-DD'|''(programada sin fecha), mesContable:'YYYY-MM',
+Primada   { id, nombre, fecha:'YYYY-MM-DD', mesContable:'YYYY-MM',
             organizadorPrincipalId:personaId|null, pago{ breB:string|null },
-            cover{ahorrador,invitado}, productos[], asistencias[], consumos[], estado:'programada'|'abierta'|'cerrada' }
+            cover{ahorrador,invitado}, productos[], asistencias[], consumos[], estado:'abierta'|'cerrada' }
 Producto  { id, nombre, emoji, costoNeto, precioVenta, aportadoPor:personaId|null }   // default aportadoPor = principal
 Asistencia{ personaId, estadoEnEseMomento:'ahorrador'|'invitado', rol:'principal'|'organizador'|'asistente',
             coverExonerado:bool, pagado:bool }   // pagado = saldó su total (binario). SIN items (v6).
@@ -386,26 +386,24 @@ Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
   primada **CERRADA → usa su snapshot CONGELADO** (`primada.cover`, historia, INVARIANTE #4). El **snapshot se sella
   al CERRAR** (`cerrarPrimada` copia el cover vigente). `setCover` solo guarda `settings` + re-render (no toca primadas).
 - **"Cerrada"** congela la cuenta del evento pero **sigue aceptando abonos**.
-- **Primadas PROGRAMADAS (agendadas antes de abrir):** nuevo `estado:'programada'`. Es una **extensión del dominio
-  de valores** de `estado` (no cambio de forma → `schemaVersion` sigue 6; el normalizador tolerante preserva
-  `'programada'`, sin productos/consumos y con `fecha:''` = por definir). Tiene **nombre** (auto de organizadores),
-  **mes OBLIGATORIO**, **fecha OPCIONAL** (`''`; se confirma después con `setFecha`), y los **organizadores como
-  asistencias** (rol principal/organizador). **No entra a ninguna fórmula** (`recaudado`=0). Acciones: `createProgramada`
-  (flujo ligero, INVARIANTE #2: principal ahorrador), `abrirPrimada` (programada→abierta: snapshotea los `defaultProducts`
-  vigentes + fecha a hoy si seguía vacía → flujo normal). **Persistencia (CORREGIDO):** la columna DATE `fecha` es
-  **`NOT NULL`** en el backend real → **rechaza tanto `''` (sintaxis DATE inválida) como `NULL`** (la suposición previa de
-  "NULL sí se acepta" era **falsa** y rompía al programar: *null value in column "fecha" violates not-null constraint*).
-  **Fix code-only, sin tocar el esquema:** `primadaToRow` manda a la **columna** un **placeholder = `mesContable + '-01'`**
-  (solo para indexar/ordenar) y guarda la **fecha REAL (`''` incluida) en el jsonb `data.fecha`** (fuente de verdad);
-  `rowToPrimada` lee `data.fecha` (fallback a la columna para filas viejas sin ese campo) → la UI vuelve a ver `''` =
-  "por definir". RLS sin cambios. El **cálculo y el modelo de abiertas/cerradas NO cambian.**
-  - **Selector = NAVEGACIÓN PURA, 3 secciones** (ver `DESIGN.md` §2.11): **Próximas** (`primadasProgramadas()`, asc por
-    mes·fecha) · **Activa** (la seleccionada abierta/cerrada) · **Pasadas** (`primadasPorAnio()`, EXCLUYE programadas y la
-    activa). El selector **no crea nada**. **Crear programada vive en CONFIGURACIÓN** (engranaje › sección "Próxima primada"
-    › "Programar próxima" → hoja ligera `programarSheet`, no el wizard de 3 pasos) — es decisión administrativa, no
-    navegación. El "+" de la cabecera = "Nueva (abierta ya)" (wizard). Tocar una programada la vuelve la **activa** → el tab
-    Primadas muestra su **cara mínima** (`programadaCara`: confirmar fecha · Abrir · Borrar; sin seg-nav, sin engranaje de
-    Config). Punto del selector: `.dot.prog` (ámbar).
+- **CICLO DE VIDA SIMPLIFICADO — `estado:'abierta' | 'cerrada'` (el `'programada'` se ELIMINÓ):** una primada
+  siempre se crea **abierta**. No hay un estado separado "agendada": una primada recién creada sin consumos y una
+  "programada" son lo mismo funcionalmente. **La distinción que importa al usuario (¿ya tiene actividad?) se MUESTRA
+  visualmente, no se modela** — el **dot del estado se DERIVA de actividad real** (`view.js dotClase(p)`):
+  - **sin consumos** → `.dot.idle` **ámbar** (creada/organizada, sin actividad aún = "pendiente", escalera de color §1).
+  - **con consumos** → `.dot.open` **verde** (en operación). **cerrada** → `.dot.closed` **gris**.
+  - **PUNTO ÚNICO DE CREACIÓN:** el wizard de 3 pasos, lanzado SOLO desde **gear global › Primadas › "Nueva primada"**.
+    Se eliminaron: el "+" de la cabecera del selector, "Programar próxima", la hoja `programarSheet`, `createProgramada`,
+    `abrirPrimada`, `primadasProgramadas`, `programadaCara` y todo el flujo `prog-*`/`open-programar`. El **selector**
+    queda con 2 secciones: **Activa** · **Pasadas** (ya no hay "Próximas"). Estado vacío (0 primadas) orienta al gear.
+  - **MIGRACIÓN (tolerancia hacia atrás):** `normEstadoPrimada` mapea cualquier `'programada'` histórica → `'abierta'`.
+    Como `Store.load()` aplica `migrate()` también a los datos de Supabase, esto **auto-convierte** las filas viejas en
+    **cada lectura**, y el normalizador **AUTOSANA** (rellena `productos` por defecto + `fecha` de hoy si estaba `''`),
+    igual que hacía `abrirPrimada`. La app no depende del SQL para funcionar. **SQL de limpieza (corrido aparte):**
+    `UPDATE primadas SET estado='abierta' WHERE estado='programada'` (solo la columna; el jsonb se autosana al leer/escribir).
+  - **Persistencia de `fecha` (sigue vigente):** la columna DATE `fecha` es `NOT NULL`; una fila con `fecha:''` recibe un
+    **placeholder = `mesContable + '-01'`** en la columna y la fecha real en `data.fecha` (defensivo; ya casi no aplica
+    porque el normalizador da `fecha` de hoy a las que no tienen).
 - **Tesorería** (ahorro, préstamos, actividades extra) es **módulo futuro**; va como tab **"Próximamente"**.
 - **Backend Supabase (CONFIRMADO, implementación en sesión dedicada):** datos en la nube para persistir entre dispositivos.
   **Auth magic link sin registro** (el admin siembra los emails). **Transparencia total — todos ven todo y todos editan**
