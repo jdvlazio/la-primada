@@ -166,7 +166,10 @@ check('Lista viva: al activar aparece el reveal con chips', !!q(`.asis-fila[data
 click(`[data-act="item-plus"][data-pid="${beto.id}"][data-prod="cerveza"]`);   // 0→1
 eq('Beto lleva 1 cerveza (chip disponible → +1)', cervezas(), 1);
 check('El chip pasó a CONSUMIDO (.chip.has con ×N)', !!q(`.chip.has [data-act="item-plus"][data-pid="${beto.id}"][data-prod="cerveza"]`));
-// El chip consumido: cuerpo = +1, − chico = −1 (mismo data-act item-plus/item-minus).
+// Stepper [− 🍺×N +]: − a la izquierda, + EXPLÍCITO a la derecha (gesto universal), + cuerpo tappable.
+check('Chip consumido: + explícito a la derecha (.chip-add) y − a la izquierda (.chip-minus)',
+  !!q('.chip.has .chip-add') && !!q('.chip.has .chip-minus'));
+// El chip consumido: + explícito y cuerpo = +1, − = −1 (mismo data-act item-plus/item-minus).
 click(`[data-act="item-plus"][data-pid="${beto.id}"][data-prod="cerveza"]`);
 eq('Beto lleva 2 cervezas (tap chip = +1)', cervezas(), 2);
 click(`[data-act="item-minus"][data-pid="${beto.id}"][data-prod="cerveza"]`);

@@ -297,9 +297,12 @@
     const chipsCons = consumidos.map(prod => {
       const q = S().cantidadDe(p, a, prod);   // v6: cantidad = Σ filas de consumo
       if (cerrada) return `<span class="chip has ro">${e(prod.emoji)} <b class="chip-q">×${q}</b></span>`;
+      // Stepper compacto [− 🍺×9 +]: el + explícito a la DERECHA es el gesto universal de "agregar"
+      // (en teal, resalta); el cuerpo (emoji ×N) TAMBIÉN suma (target grande, menos fricción); − corrige.
       return `<span class="chip has">
           <button class="chip-minus" data-act="item-minus" data-pid="${a.personaId}" data-prod="${prod.id}" aria-label="${e(prod.nombre)}: menos">−</button>
           <button class="chip-plus" data-act="item-plus" data-pid="${a.personaId}" data-prod="${prod.id}" aria-label="${e(prod.nombre)}: más">${e(prod.emoji)} <b class="chip-q">×${q}</b></button>
+          <button class="chip-add" data-act="item-plus" data-pid="${a.personaId}" data-prod="${prod.id}" aria-label="${e(prod.nombre)}: más">+</button>
         </span>`;
     }).join('');
     const chipsDisp = cerrada ? '' : disponibles.map(prod =>

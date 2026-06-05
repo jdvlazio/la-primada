@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260605-155620-5349149">
+<meta name="build" content="20260605-160812-2e77494">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -335,7 +335,9 @@
   .chip.has{padding:0;overflow:hidden;border-color:var(--accent)}
   .chip.has .chip-plus{display:inline-flex;align-items:center;gap:var(--space-1);min-height:var(--tap-sec);background:transparent;border:none;cursor:pointer;color:var(--ink);font-family:inherit;font-size:13px;font-weight:700;padding:var(--space-2) var(--space-3)}
   .chip.has .chip-minus{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap-sec);width:var(--tap-sec);background:transparent;border:none;border-right:1px solid var(--line);cursor:pointer;color:var(--ink-soft);font-size:17px;line-height:1}
-  .chip.has .chip-minus:active,.chip.has .chip-plus:active{transform:scale(.9)}
+  /* + EXPLÍCITO a la derecha (gesto universal de agregar): en teal para que resalte sobre el − tenue. */
+  .chip.has .chip-add{display:inline-flex;align-items:center;justify-content:center;min-height:var(--tap-sec);width:var(--tap-sec);background:transparent;border:none;border-left:1px solid var(--line);cursor:pointer;color:var(--accent);font-size:18px;font-weight:700;line-height:1}
+  .chip.has .chip-minus:active,.chip.has .chip-plus:active,.chip.has .chip-add:active{transform:scale(.9)}
   .chip-q{font-variant-numeric:tabular-nums}
   .chip.has.ro{padding:var(--space-2) var(--space-3);border-color:var(--line)}   /* cerrada: solo lectura */
   .consumo-vacio{padding:var(--space-1) 0}
@@ -582,13 +584,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260605-155620-5349149"></script>
-  <script src="js/util.js?v=20260605-155620-5349149"></script>
-  <script src="js/api.js?v=20260605-155620-5349149"></script>
-  <script src="js/auth.js?v=20260605-155620-5349149"></script>
-  <script src="js/store.js?v=20260605-155620-5349149"></script>
-  <script src="js/view.js?v=20260605-155620-5349149"></script>
-  <script src="js/controller.js?v=20260605-155620-5349149"></script>
+  <script src="js/config.js?v=20260605-160812-2e77494"></script>
+  <script src="js/util.js?v=20260605-160812-2e77494"></script>
+  <script src="js/api.js?v=20260605-160812-2e77494"></script>
+  <script src="js/auth.js?v=20260605-160812-2e77494"></script>
+  <script src="js/store.js?v=20260605-160812-2e77494"></script>
+  <script src="js/view.js?v=20260605-160812-2e77494"></script>
+  <script src="js/controller.js?v=20260605-160812-2e77494"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).

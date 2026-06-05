@@ -207,7 +207,7 @@ productos aparecen **inline** como chips + el bloque de **pago** debajo.
 | **Identidad** (`.asis-fila-id`) | igual que §2.1 (nombre primario, rol tenue, dot+palabra del principal). **SALDADA**: `.saldado` → **nombre en teal** (`--accent`) + check (`.asis-check`) — refuerzo del registro "resuelto" (§1) |
 | **Total** (`.acc-amt`) | a la derecha, siempre visible; se actualiza EN VIVO al apuntar |
 | **Reveal** (`.asis-reveal`) | solo en la activa: chips (arriba, apuntar = frecuente) + pago (footer, saldar = menos frecuente). Entra con `accIn` |
-| **Chip CONSUMIDO** (`.chip.has`) | stepper compacto, borde **teal**: cuerpo `emoji ×N` (`.chip-plus`) = **+1** (gesto dominante); `−` chico subordinado (`.chip-minus`, divisor a la derecha) = **−1** (corrección). Mismo `item-plus`/`item-minus` |
+| **Chip CONSUMIDO** (`.chip.has`) | stepper compacto `[− 🍺×N +]`, borde **teal**: **`+` explícito a la derecha** (`.chip-add`, en **teal** = gesto universal de agregar, resalta) = **+1**; cuerpo `emoji ×N` (`.chip-plus`) TAMBIÉN suma (target grande, menos fricción); `−` chico subordinado a la izquierda (`.chip-minus`, gris) = **−1**. Todos `item-plus`/`item-minus` |
 | **Chip DISPONIBLE** (`.chip`) | emoji + nombre + precio; tap = **+1** (0→1, pasa a consumido). Mismo `item-plus` (ya no hay "add-item" ni picker aparte) |
 | **Cerrada** | chips de **solo lectura** (`.chip.has.ro`, sin +/−); pago SIGUE activo (INVARIANTE #4) |
 | **Auditoría** (ⓘ) | `toggle-auditoria` dentro del reveal (igual que antes) |
