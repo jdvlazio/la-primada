@@ -380,9 +380,13 @@ Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
   **mes OBLIGATORIO**, **fecha OPCIONAL** (`''`; se confirma después con `setFecha`), y los **organizadores como
   asistencias** (rol principal/organizador). **No entra a ninguna fórmula** (`recaudado`=0). Acciones: `createProgramada`
   (flujo ligero, INVARIANTE #2: principal ahorrador), `abrirPrimada` (programada→abierta: snapshotea los `defaultProducts`
-  vigentes + fecha a hoy si seguía vacía → flujo normal). **Persistencia:** `primadaToRow` manda `fecha:null` para `''`
-  (la columna DATE rechaza `''`; **NULL sí se acepta** → sin cambio de esquema). RLS sin cambios. El **cálculo y el modelo
-  de abiertas/cerradas NO cambian.**
+  vigentes + fecha a hoy si seguía vacía → flujo normal). **Persistencia (CORREGIDO):** la columna DATE `fecha` es
+  **`NOT NULL`** en el backend real → **rechaza tanto `''` (sintaxis DATE inválida) como `NULL`** (la suposición previa de
+  "NULL sí se acepta" era **falsa** y rompía al programar: *null value in column "fecha" violates not-null constraint*).
+  **Fix code-only, sin tocar el esquema:** `primadaToRow` manda a la **columna** un **placeholder = `mesContable + '-01'`**
+  (solo para indexar/ordenar) y guarda la **fecha REAL (`''` incluida) en el jsonb `data.fecha`** (fuente de verdad);
+  `rowToPrimada` lee `data.fecha` (fallback a la columna para filas viejas sin ese campo) → la UI vuelve a ver `''` =
+  "por definir". RLS sin cambios. El **cálculo y el modelo de abiertas/cerradas NO cambian.**
   - **Selector = NAVEGACIÓN PURA, 3 secciones** (ver `DESIGN.md` §2.11): **Próximas** (`primadasProgramadas()`, asc por
     mes·fecha) · **Activa** (la seleccionada abierta/cerrada) · **Pasadas** (`primadasPorAnio()`, EXCLUYE programadas y la
     activa). El selector **no crea nada**. **Crear programada vive en CONFIGURACIÓN** (engranaje › sección "Próxima primada"

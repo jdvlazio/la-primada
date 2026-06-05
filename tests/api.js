@@ -149,10 +149,16 @@ section('Serialización modelo v4 <-> filas Supabase');
   eq('primada→fila: fecha como columna', prr.fecha, '2026-05-31');
   check('primada→fila: snapshots dentro de data jsonb', !!prr.data && Array.isArray(prr.data.asistencias) && Array.isArray(prr.data.productos) && !!prr.data.cover && !!prr.data.pago);
   check('primada→fila: NO duplica snapshots fuera de data', !('asistencias' in prr) && !('productos' in prr) && !('cover' in prr));
-  // PROGRAMADA sin fecha: '' en memoria → NULL en la columna DATE (Supabase rechaza '' para type date).
+  // PROGRAMADA sin fecha: '' en memoria. La columna DATE es NOT NULL (no acepta NULL ni ''), así que la
+  // COLUMNA recibe un PLACEHOLDER = 1° del mes contable, y la fecha REAL ('') vive en data.fecha (verdad).
   const progRow = Api._ser.primadaToRow({ id: 'prm_x', nombre: 'Primada Ana', fecha: '', mesContable: '2026-09', organizadorPrincipalId: 'per_a', estado: 'programada', pago: { breB: null }, cover: { ahorrador: 0, invitado: 0 }, productos: [], asistencias: [] });
-  eq('programada sin fecha → fila.fecha = null (no "")', progRow.fecha, null);
+  eq('programada sin fecha → columna = placeholder mes-01 (NO null, NO "")', progRow.fecha, '2026-09-01');
+  eq('programada sin fecha → data.fecha = "" (verdad, por definir)', progRow.data.fecha, '');
   eq('programada: estado se preserva en la fila', progRow.estado, 'programada');
+  // Y al leer de vuelta, la fecha vuelve a ser '' (la UI muestra "por definir"), NO el placeholder.
+  eq('programada round-trip → fecha vuelve a "" (no el placeholder de la columna)', Api._ser.rowToPrimada(progRow).fecha, '');
+  // Fila VIEJA (anterior a data.fecha): rowToPrimada usa la columna como fallback.
+  eq('fila vieja sin data.fecha → fecha = columna (fallback)', Api._ser.rowToPrimada({ id: 'p', nombre: 'X', fecha: '2026-05-31', mes_contable: '2026-05', estado: 'cerrada', data: { pago: {}, cover: {}, productos: [], asistencias: [] } }).fecha, '2026-05-31');
 }
 
 /* ============================================================ 2. Round-trip jsonb completo (lo crítico) */

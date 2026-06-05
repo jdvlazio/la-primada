@@ -30,15 +30,21 @@
     return { id: r.id, nombre: r.nombre, estado: r.estado, breB: (r.breb != null ? r.breb : null) };
   }
   function primadaToRow(p) {
+    // La columna DATE `fecha` es NOT NULL en el backend. Una PROGRAMADA sin fecha tiene `fecha:''` en
+    // memoria ('' = por definir). NO podemos mandar NULL (viola not-null) ni '' (sintaxis DATE inválida),
+    // así que la COLUMNA recibe un PLACEHOLDER = 1° del mes contable (solo para indexar/ordenar), mientras
+    // la fecha REAL ('' incluida) se guarda en el jsonb `data.fecha` (fuente de verdad que lee rowToPrimada).
+    const fechaCol = p.fecha || (p.mesContable ? p.mesContable + '-01' : null);
     return {
       id: p.id,
       nombre: p.nombre,
-      fecha: p.fecha || null,           // PROGRAMADA sin fecha → '' en memoria → NULL en la columna DATE
+      fecha: fechaCol,
       mes_contable: p.mesContable,
       organizador_principal_id: (p.organizadorPrincipalId != null ? p.organizadorPrincipalId : null),
       estado: p.estado,
-      // snapshots congelados van al jsonb tal cual (forma del modelo, sin tocar):
-      data: { pago: p.pago, cover: p.cover, productos: p.productos, asistencias: p.asistencias },
+      // snapshots congelados van al jsonb tal cual (forma del modelo, sin tocar). `fecha` va aquí también
+      // como FUENTE DE VERDAD (preserva '' de las programadas; la columna lleva el placeholder):
+      data: { pago: p.pago, cover: p.cover, productos: p.productos, asistencias: p.asistencias, fecha: p.fecha },
     };
   }
   function rowToPrimada(r) {
@@ -46,7 +52,9 @@
     return {
       id: r.id,
       nombre: r.nombre,
-      fecha: r.fecha,
+      // Prefiere la fecha del jsonb (verdad, incluye '' = por definir); fallback a la columna para filas
+      // viejas anteriores a este campo (no traen data.fecha → usan la columna, que ahí sí es la real).
+      fecha: (d.fecha !== undefined ? d.fecha : r.fecha),
       mesContable: r.mes_contable,
       organizadorPrincipalId: (r.organizador_principal_id != null ? r.organizador_principal_id : null),
       estado: r.estado,
