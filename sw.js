@@ -10,7 +10,7 @@
    ============================================================ */
 'use strict';
 
-const CACHE_VERSION = '20260604-201530-50179a6';
+const CACHE_VERSION = '20260605-070742-b3d323c';
 const CACHE_NAME = 'primadapp-' + CACHE_VERSION;
 
 // Núcleo a precachear (todo servido por GitHub Pages, rutas relativas al scope).
@@ -37,11 +37,14 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: borrar TODOS los cachés viejos, reclamar, y NAVEGAR los clientes EN CADA activate.
-// Un activate solo ocurre cuando un SW NUEVO toma control (un deploy real), no en cada apertura
-// → navegar aquí refresca las ventanas abiertas al HTML fresco SIN que el usuario haga nada, y
-// DESATASCA devices pegados a un SW viejo (apenas el SW nuevo entra, los reposiciona en la versión
-// nueva). Es la garantía dura que faltaba; no hay loop porque activate no se repite sin deploy.
+// Activate: borrar TODOS los cachés viejos y reclamar. NO navega/recarga los clientes.
+// ⚠️ ANTES hacía clients.navigate(c.url) en cada activate para "desatascar" devices, pero eso RECARGABA
+// la página EN PLENO ARRANQUE (evidencia: trazado de red con `GET / net::ERR_ABORTED` + un segundo boot) →
+// DOBLE BOOTEO → botones muertos al primer ingreso tras un deploy (en iOS peor: a veces no completa la
+// auto-recarga y hay que reabrir). Se quitó: la actualización ya está garantizada SIN recargar de más por
+// (1) fetch network-first con no-store → SIEMPRE baja código fresco; (2) el chequeo de version.json
+// (index.html) → recarga si el build corriendo es viejo; (3) controllerchange (no-iOS). El navigate era
+// redundante con eso y el causante del doble boot.
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
@@ -49,8 +52,6 @@ self.addEventListener('activate', (event) => {
       keys.filter((k) => k.startsWith('primadapp-') && k !== CACHE_NAME).map((k) => caches.delete(k))
     );
     await self.clients.claim();
-    const wins = await self.clients.matchAll({ type: 'window' });
-    await Promise.all(wins.map((c) => { try { return c.navigate(c.url); } catch (e) { return null; } }));
   })());
 });
 

@@ -310,6 +310,10 @@ Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
 ### PWA (instalable, mobile)
 - `manifest.json` (Primadapp, standalone, portrait, theme `#0d1716`, acento `#2DD4BF`) + íconos `icons/` (192, 512, maskable).
 - **Service Worker `sw.js` — network-first** (red primero; caché de respaldo offline). No intercepta CDN/Supabase (van directo a la red).
+  - ⚠️ **El `activate` NO hace `clients.navigate()`** (lo hacía: recargaba la página en pleno arranque → `GET / net::ERR_ABORTED`
+    + doble booteo → **botones muertos al primer ingreso tras un deploy**, peor en iOS; evidencia en el trazado de red).
+    La actualización ya está garantizada sin esa recarga por: network-first no-store (código fresco siempre) + chequeo de
+    `version.json` (recarga si el build corriendo es viejo) + `controllerchange` (no-iOS). `activate` solo limpia cachés + `claim`.
 - **`CACHE_VERSION` auto-versionado:** el hook git `pre-commit` corre `node scripts/stamp-sw.js`, que sella `CACHE_VERSION`
   con `fecha-hash` y re-stagea `sw.js`. Así **cada commit invalida el caché viejo** y el celular ve la versión nueva sin borrar caché.
   ⚠️ El hook vive en `.git/hooks/` (no se versiona): tras un clon nuevo, recrearlo o correr `node scripts/stamp-sw.js` antes de commitear.
