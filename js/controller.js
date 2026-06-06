@@ -151,11 +151,13 @@
       rerender(); return;
     }
     // Botón de cuenta (auth) = OPT-IN: el login NO bloquea al entrar; se abre desde acá.
-    // Con sesión → cerrar sesión. Sin sesión → abrir la hoja de login (cerrable). Sin backend → aviso.
+    // Con sesión → cerrar sesión CON CONFIRMACIÓN (está pegado al engranaje → fácil de tocar por error).
+    // Sin sesión → abrir la hoja de login (cerrable). Sin backend → aviso.
     if (ev.target.closest('#authBtn')) {
       if (Auth && Auth.enabled()) {
-        if (sesionActiva) { Auth.signOut(); View.toast('Sesión cerrada'); }
-        else { ui.overlay = 'login'; ui.loginEstado = 'form'; rerender(); }
+        if (sesionActiva) {
+          if (!root.confirm || root.confirm('¿Cerrar sesión?')) { Auth.signOut(); View.toast('Sesión cerrada'); }
+        } else { ui.overlay = 'login'; ui.loginEstado = 'form'; rerender(); }
       } else { View.toast('Sesión no disponible'); }
       return;
     }
