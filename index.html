@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260605-225046-37e428e">
+<meta name="build" content="20260605-230257-b1234bd">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -522,7 +522,16 @@
   .prow{border-bottom:1px solid var(--line-soft)}
   .prow:last-child{border-bottom:none}
   .prow .acc-body{display:flex;flex-direction:column;gap:var(--space-3);padding:0 var(--space-3) var(--space-3)}
-  .prow-foot{margin-top:var(--space-4)}
+  .prow-foot{margin-top:var(--space-4);display:flex;flex-wrap:wrap;gap:var(--space-3)}
+  /* Hoja "Exonerar cover": filas tappables (toggle). ON = exonerado (acento + check). */
+  .exon-list{display:flex;flex-direction:column;margin-top:var(--space-3)}
+  .exon-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);width:100%;min-height:var(--tap-row);background:transparent;border:none;border-bottom:1px solid var(--line-soft);cursor:pointer;color:var(--ink);font-family:inherit;text-align:left;padding:var(--space-2) var(--space-1)}
+  .exon-row:last-child{border-bottom:none}
+  .exon-row:active{background:var(--paper-2)}
+  .exon-id{min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .exon-id b{font-weight:700}
+  .exon-row.on .exon-id b{color:var(--accent)}
+  .exon-check{flex:none;display:flex;align-items:center;color:var(--accent)}
   .prow-new{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}
   .prow-new .ti{flex:1;min-width:120px}
 
@@ -623,13 +632,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260605-225046-37e428e"></script>
-  <script src="js/util.js?v=20260605-225046-37e428e"></script>
-  <script src="js/api.js?v=20260605-225046-37e428e"></script>
-  <script src="js/auth.js?v=20260605-225046-37e428e"></script>
-  <script src="js/store.js?v=20260605-225046-37e428e"></script>
-  <script src="js/view.js?v=20260605-225046-37e428e"></script>
-  <script src="js/controller.js?v=20260605-225046-37e428e"></script>
+  <script src="js/config.js?v=20260605-230257-b1234bd"></script>
+  <script src="js/util.js?v=20260605-230257-b1234bd"></script>
+  <script src="js/api.js?v=20260605-230257-b1234bd"></script>
+  <script src="js/auth.js?v=20260605-230257-b1234bd"></script>
+  <script src="js/store.js?v=20260605-230257-b1234bd"></script>
+  <script src="js/view.js?v=20260605-230257-b1234bd"></script>
+  <script src="js/controller.js?v=20260605-230257-b1234bd"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).

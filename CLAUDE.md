@@ -388,9 +388,11 @@ Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
 - **Organizadores y principal:** sin cover, consumen normal, su margen va al fondo. El **principal siempre es ahorrador**,
   recibe los pagos (llave `breB`), **recupera su costo neto** y **entrega solo la ganancia al Tesorero** (saldo del principal = 0).
 - **`coverExonerado`** existe como override manual (cortesía/niños), además del cover-free por rol. **La cortesía se
-  edita con un toggle "Sin cover" por asistente en Configurar › Asistentes** (acción `toggle-exonerado`), solo en
-  asistentes que pagarían cover (rol `asistente` y cover del grupo > 0). **Ya NO se decide al agregar** (el doble botón
-  "Agregar / Sin cover" en la hoja de Agregar era confuso y se eliminó; agregar es un solo gesto).
+  edita desde "+ Exonerar cover"** al pie de Configurar › Asistentes (junto a "+ Agregar asistente"): abre una hoja
+  (`exonerarSheet`) con los asistentes que PAGAN cover; tap = exonerar/cobrar (toggle, `toggle-exonerado`, check teal).
+  **Ya NO se decide al agregar** (el doble botón "Agregar / Sin cover" era confuso) **ni hay toggle por fila** (metía
+  "Sin cover" en cada asistente). En la lista de Configurar, **solo el exonerado** lleva un tag tenue `sin cover`
+  ("muestra la excepción, no la regla").
 - **`aportadoPor`** por producto (default = principal) permite que un co-organizador frontee productos.
 - **Cover "fijo" = un único valor vigente** (ahorrador/invitado), **editable hacia adelante**; sugerido inicial
   **$15.000 / $10.000**. El cover de una asistencia (`coverDe`) se **DERIVA según el estado**: primada **ABIERTA →

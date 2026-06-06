@@ -241,17 +241,24 @@ click('[data-act="toggle-balance"][data-sec="reparto"]');   // colapsar de nuevo
 check('Toggle reparto: el desglose se oculta otra vez', !/Sobrante/.test(q('#screen').innerHTML));
 cerrarBalance();   // volver a operar
 
-// CORTESÍA: el toggle "Sin cover" por asistente vive en Configurar › Asistentes (salió del Agregar; era confuso).
+// CORTESÍA: NO hay toggle por fila (eso metía "Sin cover" en todas). Se exonera desde "+ Exonerar cover" al
+// pie de Configurar › Asistentes → hoja con los que PAGAN cover; tap = exonerar/cobrar (toggle, check teal).
 abrirConfig();
-check('Configurar: Beto (asistente, cover>0) tiene toggle "Sin cover"', !!q(`[data-act="toggle-exonerado"][data-pid="${beto.id}"]`));
-check('Toggle OFF antes de exonerar (Beto paga cover)', !q(`[data-act="toggle-exonerado"][data-pid="${beto.id}"].on`));
-click(`[data-act="toggle-exonerado"][data-pid="${beto.id}"]`);   // exonerar por la UI (no por acción directa)
-check('Beto exonerado vía el toggle de Configurar', betoAsis().coverExonerado === true);
-check('Toggle ON (.on) tras exonerar', !!q(`[data-act="toggle-exonerado"][data-pid="${beto.id}"].on`));
+check('Configurar › Asistentes: filas SIN toggle "Sin cover" por persona', !q('[data-act="toggle-exonerado"]'));
+check('Pie ofrece "+ Exonerar cover" (hay quien paga cover)', !!q('[data-act="open-exonerar"]'));
+click('[data-act="open-exonerar"]');   // abre la hoja de cortesía
+check('Hoja Exonerar: Beto (paga cover) aparece', !!q(`[data-act="toggle-exonerado"][data-pid="${beto.id}"]`));
+check('Anfitrión (Ana) NO aparece en Exonerar (cover-free por rol)', !q(`[data-act="toggle-exonerado"][data-pid="${ana.id}"]`));
+check('Beto aún sin exonerar (.on ausente)', !q(`[data-act="toggle-exonerado"][data-pid="${beto.id}"].on`));
+click(`[data-act="toggle-exonerado"][data-pid="${beto.id}"]`);   // exonerar por la UI
+check('Beto exonerado vía la hoja Exonerar cover', betoAsis().coverExonerado === true);
+check('Fila marcada ON (.on) tras exonerar', !!q(`[data-act="toggle-exonerado"][data-pid="${beto.id}"].on`));
 eq('Cover de Beto ahora 0', Store.select.coverDe(prm(), betoAsis()), 0);
 eq('Ganancia baja al margen puro (2.000)', Store.select.ganancia(prm()), 2000);
-// El anfitrión (Ana) es cover-free por ROL, no por cortesía → NO tiene toggle.
-check('Anfitrión (Ana) sin toggle de cortesía', !q(`[data-act="toggle-exonerado"][data-pid="${ana.id}"]`));
+click('[data-act="close-overlay"]');   // cierra la hoja → vuelve al detalle
+// "Muestra la excepción": en Configurar SOLO el exonerado lleva un tag tenue "sin cover".
+abrirConfig();
+check('Configurar: solo el exonerado muestra "sin cover" (tag tenue)', /class="sin-cover"/.test(q('#overlay').innerHTML));
 click('[data-act="close-overlay"]');
 
 /* ---------- 7. Balance: Ganancia y Recaudo ---------- */

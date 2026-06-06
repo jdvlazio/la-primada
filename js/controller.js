@@ -329,6 +329,8 @@
       // ----- asistencias -----
       // "+ Agregar" abre la hoja simple del directorio (overlay 'add-asis').
       case 'open-add-asis': ui.overlay = 'add-asis'; rerender(); return;
+      // "+ Exonerar cover" (cortesía): hoja para elegir a quién no cobrarle cover (toggle por asistente).
+      case 'open-exonerar': ui.overlay = 'exonerar'; rerender(); return;
       // En la hoja: cada fila lleva data-pid → agregar y quedarse en la hoja para sumar varios.
       case 'add-asistencia': { if (pid) A.addAsistencia(prm, pid); break; }
       // CORTESÍA (exonerar el cover): toggle "Sin cover" por asistente en Configurar (ya no se decide al agregar).

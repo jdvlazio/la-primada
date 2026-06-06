@@ -251,25 +251,50 @@
     const esPrin = S().esPrincipal(p, a);
     // Fix mínimo: solo mientras la primada esté incompleta y la persona sea ahorrador (INVARIANTE #2).
     const puedePrincipal = incompleta && !cerrada && a.estadoEnEseMomento === 'ahorrador' && !esPrin;
-    // CORTESÍA: toggle "Sin cover" por asistente (exonera el cover a niños/invitados gratis). Solo tiene
-    // sentido en un asistente que SÍ pagaría cover (rol 'asistente' y cover del grupo > 0); los organizadores
-    // ya son cover-free por rol. Estado activo (.on) = exonerado. No editable con la cuenta cerrada.
-    const puedeExonerar = !cerrada && a.rol === 'asistente' && coverGrupo > 0;
-    const toggleCover = puedeExonerar
-      ? `<button class="xmini cover-toggle ${a.coverExonerado ? 'on' : ''}" data-act="toggle-exonerado" data-pid="${a.personaId}" aria-pressed="${a.coverExonerado ? 'true' : 'false'}" title="Cortesía: sin cover">Sin cover</button>`
-      : '';
+    // "MUESTRA LA EXCEPCIÓN, NO LA REGLA": solo los EXONERADOS llevan un tag tenue "sin cover" (la cortesía
+    // se EDITA aparte, con "+ Exonerar cover" al pie → no se mete un toggle en cada fila). Pocos, no ruido.
+    const exonerado = a.coverExonerado && a.rol === 'asistente' && coverGrupo > 0;
     return `<div class="asis-compact">
-      <span class="asis-compact-id">${esPrin ? '<span class="dot prin" title="Anfitrión"></span>' : '<span class="dot neutral"></span>'}<b>${e(nombrePersona(a.personaId))}</b></span>
+      <span class="asis-compact-id">${esPrin ? '<span class="dot prin" title="Anfitrión"></span>' : '<span class="dot neutral"></span>'}<b>${e(nombrePersona(a.personaId))}</b>${exonerado ? '<span class="sin-cover">sin cover</span>' : ''}</span>
       <span class="asis-compact-acc">
         ${puedePrincipal ? `<button class="xmini hacer-prin" data-act="hacer-principal" data-pid="${a.personaId}">Hacer anfitrión</button>` : ''}
-        ${toggleCover}
         <button class="xmini" data-act="remove-asistencia" data-pid="${a.personaId}" ${cerrada ? 'disabled' : ''} aria-label="Quitar de la primada">${icon('x')}</button>
       </span>
     </div>`;
   }
+  // ¿Hay algún asistente que PAGA cover (rol 'asistente' + cover del grupo > 0)? → tiene sentido ofrecer exonerar.
+  function hayCoverParaExonerar(p) {
+    return (p.asistencias || []).some(a => a.rol === 'asistente'
+      && S().coverDe(p, { estadoEnEseMomento: a.estadoEnEseMomento, rol: 'asistente', coverExonerado: false }) > 0);
+  }
   function addAsisFoot(p) {
     if (p.estado === 'cerrada') return '';
-    return `<div class="prow-foot"><button class="add-link" data-act="open-add-asis">${icon('plus-circle')}Agregar asistente</button></div>`;
+    // "+ Agregar asistente" (alta) y, si alguien paga cover, "+ Exonerar cover" (cortesía: elegir a quién no cobrar).
+    const exonerar = hayCoverParaExonerar(p)
+      ? `<button class="add-link" data-act="open-exonerar">${icon('plus-circle')}Exonerar cover</button>` : '';
+    return `<div class="prow-foot"><button class="add-link" data-act="open-add-asis">${icon('plus-circle')}Agregar asistente</button>${exonerar}</div>`;
+  }
+
+  // Hoja "Exonerar cover" (cortesía): lista de asistentes que PAGAN cover; tap = exonerar/cobrar (toggle).
+  // Reemplaza al toggle por-fila (que metía "Sin cover" en cada asistente). El exonerado lleva check teal.
+  function exonerarSheet(state, ui) {
+    const p = S().activePrimada();
+    const head = `<div class="sheet-head"><div class="sheet-title">Exonerar cover</div>
+      <button class="gear" data-act="close-overlay" aria-label="Cerrar">${icon('x')}</button></div>`;
+    if (!p) return `<div class="sheet full">${head}<div class="empty-soft">Sin primada</div></div>`;
+    const cands = (p.asistencias || []).filter(a => a.rol === 'asistente'
+      && S().coverDe(p, { estadoEnEseMomento: a.estadoEnEseMomento, rol: 'asistente', coverExonerado: false }) > 0);
+    const filas = cands.length
+      ? cands.map(a => `<button class="exon-row ${a.coverExonerado ? 'on' : ''}" data-act="toggle-exonerado" data-pid="${a.personaId}" aria-pressed="${a.coverExonerado ? 'true' : 'false'}">
+          <span class="exon-id"><b>${e(nombrePersona(a.personaId))}</b> ${rolTag(a.estadoEnEseMomento)}</span>
+          <span class="exon-check">${a.coverExonerado ? icon('check') : ''}</span>
+        </button>`).join('')
+      : '<div class="empty-soft">Nadie paga cover en esta primada.</div>';
+    return `<div class="sheet full">${head}
+      <div class="sheet-body">
+        <div class="muted small">Tocá a quién NO le cobrás cover (cortesía: niños, invitados gratis). Tocá de nuevo para volver a cobrarle.</div>
+        <div class="exon-list">${filas}</div>
+      </div></div>`;
   }
 
   // Progressive disclosure: SOLO lo consumido (cantidad>0) con stepper. Bajar a 0 lo quita
@@ -1029,6 +1054,7 @@
     else if (ui.overlay === 'config-primada')                  els.overlay.innerHTML = configPrimadaSheet(state, ui);
     else if (ui.overlay === 'primada-menu')                    els.overlay.innerHTML = primadaMenuSheet(state, ui);
     else if (ui.overlay === 'add-asis')                        els.overlay.innerHTML = addAsisSheet(state, ui);
+    else if (ui.overlay === 'exonerar')                        els.overlay.innerHTML = exonerarSheet(state, ui);
     else if (ui.overlay === 'ajustes' || ui.overlay === 'personas') els.overlay.innerHTML = ajustesSheet(state, ui);
     else                                                        els.overlay.innerHTML = '';
 
