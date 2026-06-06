@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260606-142200-e8fc8f2">
+<meta name="build" content="20260606-143201-aea496b">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -326,35 +326,38 @@
   .card.dark .bal-toggle{border-top-color:rgba(255,255,255,.12)}
 
   /* ---------- INFORME COMPARTIBLE (PNG vía html2canvas) ----------
-     Superficie CLARA, CAPTURA-ONLY: vive fuera de la pantalla (.informe-host) solo para rasterizarse a
-     imagen; NO es UI de la app. Excepción al tema oscuro → usa literales claros (no hay token de superficie
-     clara); el acento/ámbar sí salen de tokens. La cola de emoji asegura color en el canvas. */
+     Superficie OSCURA fiel al sistema (paper/ink/accent/amber), CAPTURA-ONLY: vive fuera de pantalla
+     (.informe-host) solo para rasterizarse. Fondo en gradiente oscuro; UNA sola marca (wordmark
+     Primad+app); HÉROE grande en banda destacada; detalle por persona. La cola de emoji da color en canvas. */
   .informe-host{position:absolute;left:-99999px;top:0;pointer-events:none}
-  .informe-card{width:380px;background:#fff;color:#0d1716;box-sizing:border-box;padding:var(--space-3) var(--space-4);
+  .informe-card{width:380px;box-sizing:border-box;padding:var(--space-5) var(--space-4) var(--space-4);
+    background:linear-gradient(165deg,#173a31 0%,#102019 52%,#0b1412 100%);color:var(--ink);
     font-family:"Instrument Sans",system-ui,-apple-system,"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
-  .informe-head{display:flex;align-items:center;justify-content:space-between;background:var(--accent);color:#fff;
-    margin:calc(var(--space-3) * -1) calc(var(--space-4) * -1) var(--space-3);padding:var(--space-2) var(--space-4)}
-  .informe-brand{font-weight:800;font-size:17px;letter-spacing:-.01em}
-  .informe-period{font-size:12px;font-weight:700}
-  .informe-title{font-weight:800;font-size:20px;line-height:1.1;color:#0d1716}
-  .informe-llave{margin-top:2px;font-weight:500;font-size:12.5px;color:#42514f;word-break:break-all}
-  .informe-sep{border:none;border-top:1px solid #e3e8e7;margin:var(--space-2) 0}
-  /* Compacto: dos columnas por persona — izquierda (nombre + productos) y el TOTAL a la derecha,
-     CENTRADO verticalmente entre ambos (align-items:center). Personas separadas por una línea fina. */
-  .informe-asis{padding:5px 0}
-  .informe-asis:first-of-type{padding-top:0}
-  .informe-asis + .informe-asis{border-top:1px solid #eef2f1}
-  .informe-persona{display:flex;align-items:center;gap:var(--space-2)}
+  .informe-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3)}
+  .informe-brand{font-weight:800;font-size:16px;letter-spacing:-.01em;color:var(--ink)}
+  .informe-brand-ac{color:var(--accent)}
+  .informe-period{font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:capitalize}
+  .informe-title{font-weight:800;font-size:24px;line-height:1.06;letter-spacing:-.02em;color:var(--ink)}
+  .informe-llave{margin-top:5px;font-weight:600;font-size:12.5px;color:var(--accent);word-break:break-all}
+  /* HÉROE: banda destacada con la cifra grande (Ganancia teal / Por cobrar ámbar) — el peso visual del informe. */
+  .informe-hero{margin:var(--space-4) 0;padding:var(--space-3) var(--space-4);border-radius:14px;
+    display:flex;flex-direction:column;gap:3px;background:rgba(45,212,191,.10);border:1px solid rgba(45,212,191,.22)}
+  .informe-hero.cobrar{background:rgba(224,179,65,.10);border-color:rgba(224,179,65,.24)}
+  .informe-hero-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-soft)}
+  .informe-hero-val{font-size:36px;font-weight:800;line-height:1;letter-spacing:-.02em;color:var(--accent)}
+  .informe-hero.cobrar .informe-hero-val{color:var(--amber)}
+  /* Detalle por persona (lo que paga): dos columnas — izquierda (nombre + productos), TOTAL a la derecha. */
+  .informe-list{margin-top:var(--space-1)}
+  .informe-asis{display:flex;align-items:center;gap:var(--space-2);padding:7px 0}
+  .informe-asis + .informe-asis{border-top:1px solid var(--line-soft)}
   .informe-left{flex:1;min-width:0}            /* min-width:0 → el texto largo no empuja el total fuera */
-  .informe-nombre{font-weight:700;font-size:14px;color:#0d1716}
-  .informe-check{color:var(--accent);font-weight:800}        /* ✓ delante de quien ya saldó (PNG) */
-  .informe-total{font-weight:700;font-size:14px;color:var(--accent);white-space:nowrap;flex:none}
-  /* productos INLINE: emoji+nombre+×N separados por ·, gris suave, un paso más pequeños; sin subtotales. */
-  .informe-prods{margin-top:1px;font-size:11px;line-height:1.3;color:#6b7977}
-  .informe-resumen{text-align:right;font-weight:800;font-size:19px}
-  .informe-resumen.gan{color:var(--accent)}
-  .informe-resumen.cobrar{color:var(--amber)}
-  .informe-foot{margin-top:var(--space-3);text-align:center;font-size:11px;color:#9aa8a6}
+  .informe-nombre{font-weight:700;font-size:14px;color:var(--ink)}
+  .informe-check{color:var(--accent);font-weight:800}        /* ✓ delante de quien ya saldó */
+  .informe-prods{margin-top:1px;font-size:11px;line-height:1.3;color:var(--ink-soft)}
+  /* total por persona: pendiente ámbar (lo que debe) · saldado teal (ya pagó), igual que el Balance. */
+  .informe-total{font-weight:800;font-size:14px;white-space:nowrap;flex:none}
+  .informe-total.pend{color:var(--amber)}
+  .informe-total.ok{color:var(--accent)}
   /* Balance consolidado: divisor entre lo ACCIONABLE (Cobro) y las CUENTAS de referencia; y fila "dim"
      (atenuada) para el Reembolso = costo, NO ingreso (puede ser > ganancia y confundir si va a peso full). */
   .bal-sep{height:1px;background:var(--line-soft);margin:var(--space-3) 0}
@@ -676,13 +679,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260606-142200-e8fc8f2"></script>
-  <script src="js/util.js?v=20260606-142200-e8fc8f2"></script>
-  <script src="js/api.js?v=20260606-142200-e8fc8f2"></script>
-  <script src="js/auth.js?v=20260606-142200-e8fc8f2"></script>
-  <script src="js/store.js?v=20260606-142200-e8fc8f2"></script>
-  <script src="js/view.js?v=20260606-142200-e8fc8f2"></script>
-  <script src="js/controller.js?v=20260606-142200-e8fc8f2"></script>
+  <script src="js/config.js?v=20260606-143201-aea496b"></script>
+  <script src="js/util.js?v=20260606-143201-aea496b"></script>
+  <script src="js/api.js?v=20260606-143201-aea496b"></script>
+  <script src="js/auth.js?v=20260606-143201-aea496b"></script>
+  <script src="js/store.js?v=20260606-143201-aea496b"></script>
+  <script src="js/view.js?v=20260606-143201-aea496b"></script>
+  <script src="js/controller.js?v=20260606-143201-aea496b"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).

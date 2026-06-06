@@ -45,15 +45,15 @@
 
   /* ============================================================
      INFORME COMPARTIBLE — template HTML (PURO) para capturar como PNG (html2canvas).
-     Superficie CLARA (fuera del tema oscuro). Reusa selectores de Consumos (mismo orden y agregación
-     v6): por persona, productos consumidos (emoji+nombre+×cant+subtotal) + "Entrada" (cover) + Total.
-     Resumen final state-aware: cerrada "Ganancia"; abierta "Por cobrar". Sin roles ni jerga.
+     Superficie OSCURA fiel al sistema de diseño (paper/ink/accent/amber), NO una tarjeta blanca.
+     Jerarquía: wordmark (UNA sola marca) + período → título de la primada → 🔑 Bre-B → HÉROE grande
+     (Ganancia teal / Por cobrar ámbar, en una banda destacada) → detalle por persona (lo que paga
+     cada quien: productos + total; pendiente ámbar, saldado ✓ teal). SIN footer "Generado con…".
      ============================================================ */
   function informeTemplateHTML(p) {
     const sel = S();
-    // Una persona por fila. COMPACTO (2 líneas): nombre (izq) + TOTAL teal (der); productos inline debajo.
-    // SALDADAS (saldo 0, ya saldaron) → check "✓" delante del nombre. El PNG refleja el estado COMPLETO:
-    // quién debe (arriba) y quién ya saldó (abajo) → el lector entiende por qué bajó el total.
+    // Una persona por fila (lo que ESTÁ pagando): nombre + total; productos inline debajo. SALDADAS (saldo 0)
+    // → check ✓ + total teal; PENDIENTES → total ámbar. El PNG refleja el estado completo del cobro.
     const filaInforme = (a) => {
       const consumos = sel.resumenConsumoDe(p, a);                 // [{prod, cantidad}]
       const cover = sel.coverDe(p, a);
@@ -62,12 +62,12 @@
       if (cover > 0) chips.push('Cover');
       const detalle = chips.length ? `<div class="informe-prods">${chips.join(' · ')}</div>` : '';
       const saldada = sel.saldoDe(p, a) === 0 && sel.totalAsistencia(p, a) > 0;
-      return `<div class="informe-asis informe-persona">
+      return `<div class="informe-asis">
           <div class="informe-left">
             <div class="informe-nombre">${saldada ? '<span class="informe-check">✓</span> ' : ''}${e(nombrePersona(a.personaId))}</div>
             ${detalle}
           </div>
-          <div class="informe-total">${$peso(sel.totalAsistencia(p, a))}</div>
+          <div class="informe-total ${saldada ? 'ok' : 'pend'}">${$peso(sel.totalAsistencia(p, a))}</div>
         </div>`;
     };
     // Pendientes (saldo>0) PRIMERO, saldadas (saldo 0) al FINAL; dentro de cada grupo, orden por consumo.
@@ -75,25 +75,28 @@
     const lineas = ordenadas.filter(a => sel.saldoDe(p, a) > 0).map(filaInforme)
       .concat(ordenadas.filter(a => sel.saldoDe(p, a) === 0).map(filaInforme)).join('');
     const cerrada = p.estado === 'cerrada';
-    const resumen = cerrada
-      ? `<div class="informe-resumen gan">Ganancia ${$peso(sel.ganancia(p))}</div>`
-      : `<div class="informe-resumen cobrar">Por cobrar ${$peso(sel.informePrincipal(p).saldoPendiente)}</div>`;
+    const heroLbl = cerrada ? 'Ganancia' : 'Por cobrar';
+    const heroVal = cerrada ? sel.ganancia(p) : sel.informePrincipal(p).saldoPendiente;
+    const heroCls = cerrada ? 'gan' : 'cobrar';
     // Llave Bre-B del principal: snapshot p.pago.breB con FALLBACK a la llave VIGENTE de la persona
-    // principal (mismo patrón que pagoBlock) — si la Bre-B se agregó DESPUÉS de crear la primada, el
-    // snapshot es null pero la persona ya la tiene. Línea destacada 🔑 bajo el título; si no hay, se omite.
+    // principal — si la Bre-B se agregó DESPUÉS de crear la primada, el snapshot es null pero la persona
+    // ya la tiene. Línea 🔑 bajo el título; si no hay, se omite.
     const principalId = p.organizadorPrincipalId;
     const breBRaw = (p.pago && p.pago.breB) || (principalId ? (sel.persona(principalId) || {}).breB : null) || '';
     const breB = breBRaw ? String(breBRaw).trim() : '';
     const llave = breB ? `<div class="informe-llave">🔑 Bre-B ${e(breB)}</div>` : '';
     return `<div class="informe-card">
-        <div class="informe-head"><span class="informe-brand">Primadapp</span><span class="informe-period">${e(Util.monthYear(p.mesContable))}</span></div>
+        <div class="informe-head">
+          <span class="informe-brand">Primad<span class="informe-brand-ac">app</span></span>
+          <span class="informe-period">${e(Util.monthYear(p.mesContable))}</span>
+        </div>
         <div class="informe-title">${e(p.nombre)}</div>
         ${llave}
-        <hr class="informe-sep">
-        ${lineas}
-        <hr class="informe-sep">
-        ${resumen}
-        <div class="informe-foot">Generado con Primadapp</div>
+        <div class="informe-hero ${heroCls}">
+          <span class="informe-hero-lbl">${heroLbl}</span>
+          <span class="informe-hero-val">${$peso(heroVal)}</span>
+        </div>
+        <div class="informe-list">${lineas}</div>
       </div>`;
   }
 
@@ -1013,7 +1016,7 @@
       document.body.appendChild(host);
       await esperarFuentes();
       const node = host.firstElementChild;
-      const canvas = await h2c(node, { scale: Math.max(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1), backgroundColor: '#ffffff', useCORS: true, logging: false });
+      const canvas = await h2c(node, { scale: Math.max(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1), backgroundColor: '#0b1412', useCORS: true, logging: false });
       const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
       if (!blob) throw new Error('No se pudo generar la imagen');
       const slug = (p.nombre || 'primada').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'primada';

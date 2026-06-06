@@ -313,24 +313,26 @@ abrirBalance();
 check('Trigger "Compartir informe" al pie del panel de Balance', !!q('.balance-panel [data-act="compartir-informe"].compartir-link'));
 check('Trigger ya NO está en la topbar', !q('#topbar [data-act="compartir-informe"]'));
 const informe = window.View.informeTemplateHTML(prm());
-check('Informe: marca "Primadapp" + período', /informe-brand">Primadapp/.test(informe) && /Junio 2026/.test(informe));
+check('Informe: UNA marca wordmark "Primad"+"app" (acento) + período', /informe-brand">Primad<span class="informe-brand-ac">app/.test(informe) && /Junio 2026/.test(informe));
 check('Informe: título = nombre de la primada', new RegExp('informe-title">' + prm().nombre).test(informe));
 // COMPACTO: productos inline (emoji+nombre+×N) en .informe-prods, SIN subtotal por ítem.
 check('Informe: Beto con su producto inline (emoji + nombre + ×cantidad)', /informe-prods">🍺 Costeñita ×2/.test(informe));
 check('Informe: SIN subtotal por producto (no hay "×2…$7.000" en la fila)', !/×2<\/span><span>\$7\.000/.test(informe));
-// Dos columnas: izquierda (nombre+productos) + TOTAL a la derecha (.informe-total), centrado, SIN label "Total".
-check('Informe: total de la persona = .informe-total $7.000 (sin label "Total")',
-  /informe-total">\$7\.000<\/div>/.test(informe) && !/>Total</.test(informe));
+// Dos columnas: izquierda (nombre+productos) + TOTAL a la derecha; pendiente ámbar (.pend), SIN label "Total".
+check('Informe: total de la persona = .informe-total.pend $7.000 (Beto debe; sin label "Total")',
+  /informe-total pend">\$7\.000<\/div>/.test(informe) && !/>Total</.test(informe));
 check('Informe: Ana (principal, sin consumo ni cover) OMITIDA', !new RegExp('informe-nombre">' + ana.nombre).test(informe));
-check('Informe ABIERTA: resumen "Por cobrar" en ámbar (.cobrar), no "Ganancia"',
-  /informe-resumen cobrar">Por cobrar \$7\.000/.test(informe) && !/informe-resumen gan/.test(informe));
+// HÉROE state-aware en banda destacada: ABIERTA "Por cobrar" ámbar (.cobrar), no "Ganancia".
+check('Informe ABIERTA: héroe "Por cobrar" $7.000 en banda ámbar (.informe-hero.cobrar), no "gan"',
+  /informe-hero cobrar"[^]*informe-hero-lbl">Por cobrar[^]*informe-hero-val">\$7\.000/.test(informe) && !/informe-hero gan/.test(informe));
 // El cover se rotula "Cover" (no "Entrada") como chip SIN precio (el precio ya está en el Total). Quito la exoneración → cover 10.000.
 Store.actions.toggleCoverExonerado(prm().id, beto.id);
 const conCover = window.View.informeTemplateHTML(prm());
 check('Informe: cover como chip "Cover" SIN precio (no "Cover $X", no "Entrada")',
   /· Cover<\/div>/.test(conCover) && !/Cover \$/.test(conCover) && !/Entrada/.test(conCover));
 Store.actions.toggleCoverExonerado(prm().id, beto.id);   // restaurar exoneración (cover 0) para el resto del flujo
-check('Informe: footer "Generado con Primadapp"', /informe-foot">Generado con Primadapp/.test(informe));
+// SIN footer "Generado con Primadapp" (se quitó: la marca aparecía de más). El wordmark de arriba basta.
+check('Informe: SIN footer "Generado con Primadapp"', !/Generado con Primadapp/.test(informe) && !/informe-foot/.test(informe));
 // Bre-B del principal (snapshot p.pago.breB): línea destacada 🔑 tras el título. Sin breB → omitida.
 check('Informe: sin Bre-B → la línea 🔑 se omite', !/informe-llave/.test(informe));
 const prevBreB = prm().pago.breB;
