@@ -1,5 +1,5 @@
 /* ============================================================
-   CONFIG — constantes y valores por defecto (esquema v4)
+   CONFIG — constantes y valores por defecto (esquema v6)
    Se carga PRIMERO. Expone window.CONFIG (browser) y module.exports (Node/tests).
    ============================================================ */
 (function (root) {

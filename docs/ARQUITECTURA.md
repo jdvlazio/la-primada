@@ -28,7 +28,7 @@ index.html         ← shell HTML + CSS embebido + <script src> de cada módulo 
 js/config.js       ← CONFIG: constantes y valores por defecto (esquema v6)
 js/util.js         ← Util: utilidades puras sin estado (uid, esc, peso, fechas)
 js/api.js          ← Api: adaptador de persistencia (aísla Supabase / localStorage)
-js/auth.js         ← Auth: magic link (solo activo con backendEnabled=true)
+js/auth.js         ← Auth: login por código OTP (Supabase Auth; activo con backendEnabled=true)
 js/store.js        ← Store (MODELO): estado, migraciones, selectores, acciones, invariantes
 js/view.js         ← View (VISTA): render puro estado→DOM
 js/controller.js   ← Controller: eventos por delegación → Store.actions + bootstrap
@@ -61,7 +61,7 @@ El JS vive en módulos separados; **respetar la separación es la regla central*
 | **View (VISTA)** | `view.js` | Funciones puras estado→DOM. **No** muta estado ni persiste. Re-renderiza la sección completa en cada cambio. |
 | **Controller** | `controller.js` | Escucha eventos (delegación en document; topbar dinámica + overlay) y llama `Store.actions`. **No** dibuja ni persiste. Hace el **bootstrap**. |
 | **Api** | `api.js` | Adaptador de persistencia: aísla Supabase y el espejo localStorage del Store. |
-| **Auth** | `auth.js` | Magic link (passwordless). Inerte mientras `CONFIG.backendEnabled=false`. |
+| **Auth** | `auth.js` | Login por código OTP (passwordless). Activo con `CONFIG.backendEnabled=true`. |
 
 **Flujo único e inviolable:**
 ```
@@ -118,10 +118,10 @@ elegidos en `Api.init()`:
 - Granularidad **por fila**: editar la primada A no pisa la B ni el directorio.
 
 ### Interruptor de backend
-`CONFIG.backendEnabled` (hoy **`false`**): con `false`, la app corre 100% sobre localStorage,
-**sin auth gate**, totalmente usable. Poner en `true` (sesión dedicada) enciende Supabase + magic
-link sin borrar nada. `url` y `anonKey` son **públicas por diseño** (van en el bundle, como las
-fuentes); RLS es la frontera real. **NUNCA** la `service_role key`.
+`CONFIG.backendEnabled` (hoy **`true`**): Supabase ON + login por **código OTP** (gate INVERTIDO: la app carga en
+LECTURA con solo el link/anon; el login salta al ESCRIBIR). En `false`, la app cae a 100% localStorage sin auth gate
+(modo del Node/jsdom de los tests). Flag REVERSIBLE, no borra nada. `url` y `anonKey` son **públicas por diseño**
+(van en el bundle, como las fuentes); RLS es la frontera real. **NUNCA** la `service_role key`.
 
 ---
 
@@ -211,7 +211,7 @@ Esquema **Opción C (híbrido relacional + JSONB)** — detalle en `docs/SCHEMA.
 - `settings` singleton (`jsonb`); `profiles` (`user_id → role`).
 - **IDs de texto** actuales (`'per…'`, `'prm…'`) se conservan como PK `text` (sin migrar a uuid).
 
-**Auth:** magic link por email (passwordless), **sin registro** — el admin **siembra** los emails.
+**Auth:** código OTP por email (passwordless), **sin registro** — el admin **siembra** los emails.
 **Roles/RLS:** `SELECT` para todos los autenticados; escritura de **datos de primadas** para todos;
 **settings y `personas`** con control **adicional del admin** (`is_admin()`). **Transparencia total**
 (todos ven todo). `breB` es público (llave para **recibir** pagos, no es dato sensible).

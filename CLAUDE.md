@@ -92,14 +92,13 @@ en Supabase — NO se migra localStorage** (los datos de prueba no tienen valor 
 **GitHub Pages sigue sirviendo el frontend sin cambios.** Free tier durmiente es **aceptable**: La Primada se usa intensamente
 alrededor de cada primada mensual, no a diario.
 
-**Autenticación — magic link, sin registro.**
-- Supabase Auth con **magic link por email (passwordless)**. **Nadie se registra:** el **admin siembra los emails** de los
-  ahorradores. Al entrar, Supabase manda un link al correo → clic → adentro. **No hay formulario de registro.**
-- **Login OPT-IN (no gate):** la app **entra directo y es usable**; el login se abre **desde el ícono de perfil**
-  (hoja cerrable, con X), no bloquea al arrancar. **Datos LOCALES hasta que haya sesión** (el client Supabase se crea
-  igual, para el magic link); al iniciar sesión, `Api.setMode('supabase')` y se recargan los datos. Al volver del link
-  (`onChange`) se cierra la hoja y se recarga. *(Fase de prueba; el endurecimiento — admin sembrado, cierre de signups,
-  y/o gate obligatorio — se decide después.)*
+**Autenticación — código OTP, sin registro.** *(IMPLEMENTADO. El plan original era magic link; al construir se usó
+**código OTP** por ser más robusto en PWA/móvil. Ver roadmap "Backend Supabase".)*
+- Supabase Auth con **código OTP por email (passwordless)**: plantilla con `{{ .Token }}` + `signInWithOtp` SIN
+  `emailRedirectTo`. **Nadie se registra:** el **admin siembra los emails**. **No hay formulario de registro.**
+- **Login OPT-IN, gate INVERTIDO:** la app **carga en LECTURA con solo el link** (RLS abre `SELECT` a `anon`) y es
+  usable; el login (hoja cerrable con X) **salta al intentar ESCRIBIR** (o desde el ícono de Cuenta). Al iniciar sesión
+  se recargan los datos en modo autenticado; al volver (`onChange`) se cierra la hoja y se recarga.
 
 **Roles y permisos.**
 - **admin** = email designado, **sembrado a mano** en Supabase. **Todos los demás** = acceso **completo de lectura y escritura**
@@ -434,10 +433,10 @@ Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
     porque el normalizador da `fecha` de hoy a las que no tienen).
 - **Tesorería** (ahorro, préstamos, actividades extra) es **módulo futuro**; va como tab **"Próximamente"**.
 - **Backend Supabase (CONFIRMADO, implementación en sesión dedicada):** datos en la nube para persistir entre dispositivos.
-  **Auth magic link sin registro** (el admin siembra los emails). **Transparencia total — todos ven todo y todos editan**
+  **Auth por código OTP sin registro** (el admin siembra los emails). **Transparencia total — todos ven todo y todos editan**
   los datos de primadas; el **admin** controla además **settings globales y `personas`** (vía **RLS**). **`breB` no es sensible**
   (llave para recibir pagos). **Arranque limpio** (no se migra localStorage). **Caché offline solo lectura** (verdad = Supabase).
-  **Render optimista** con error visible si el upsert falla. GitHub Pages sigue; **modelo v4 y MVC intactos** — solo cambia la
+  **Render optimista** con error visible si el upsert falla. GitHub Pages sigue; **MVC intacto** (modelo v6) — solo cambia la
   capa de persistencia del Store (`load`/`persist` → adaptador `js/api.js`; `commit(target)` para upserts granulares).
 
 ## Cómo trabajamos
