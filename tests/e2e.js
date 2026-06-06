@@ -150,8 +150,8 @@ Store.actions.createPrimada({});
 eq('1 primada creada', st().primadas.length, 1);
 const prm = () => st().primadas[0];
 check('Primada activa = la nueva', st().activePrimadaId === prm().id);
-entrarDetalle();   // IA list→detalle: entrar al detalle para operar (la topbar muestra "sin principal")
-check('Incompleta: sin principal en la topbar del detalle', /sin principal/.test(q('#topbar').innerHTML));
+entrarDetalle();   // IA list→detalle: entrar al detalle para operar (la topbar muestra "sin anfitrión")
+check('Incompleta: sin anfitrión en la topbar del detalle', /sin anfitrión/.test(q('#topbar').innerHTML));
 
 /* ---------- 3. Agregar asistencias desde el directorio ---------- */
 section('Asistencias desde el directorio');
@@ -180,7 +180,7 @@ check('··· del detalle: hoja config-primada (Asistentes, lista agrupada)',
   /data-act="config-tab" data-ctab="asistentes"/.test(q('#overlay').innerHTML) && /Ahorradores/.test(q('#overlay').innerHTML));
 check('Config-primada = SOLO config del evento (sin Calendario ni "Nueva primada")',
   !/data-act="new-primada"/.test(q('#overlay').innerHTML) && !/data-act="overlay-tab"/.test(q('#overlay').innerHTML));
-check('Aviso "falta principal" visible (incompleta)', /falta principal/.test(q('#overlay').innerHTML));
+check('Aviso "falta anfitrión" visible (incompleta)', /falta anfitrión/.test(q('#overlay').innerHTML));
 // Beto es INVITADO → la UI NO le ofrece "Hacer principal" (INVARIANTE #2 por construcción).
 check('Beto (invitado) SIN botón "Hacer principal"', !q(`[data-act="hacer-principal"][data-pid="${beto.id}"]`));
 // Ana es ahorrador → sí se le ofrece. Click la hace principal.

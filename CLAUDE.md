@@ -297,6 +297,9 @@ Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
 - IDs vía `Util.uid(prefix)`. Escapar texto de usuario con `Util.esc()` antes de inyectar HTML.
 - Acciones nuevas van en `Store.actions`; selectores/derivados en `Store.select`. Nada de lógica en la Vista.
 - **Un solo término en toda la app para quien recibe la ganancia: "Tesorero".**
+- **El organizador principal se LLAMA "Anfitrión" en la UI** (etiquetas, badges, tooltips, wizard, toasts). El término
+  de DOMINIO/código sigue siendo `principal` (`rol:'principal'`, `organizadorPrincipalId`, `principalId`, `esPrincipal`,
+  `informePrincipal`, `data-act="hacer-principal"`, etc.) — **solo cambió el texto mostrado**, no el modelo ni los ids.
 
 ## Protocolo de cambio (cumplirlo SIEMPRE antes de cada commit)
 1. Si el cambio afecta el **esquema de datos** → subir `schemaVersion` + escribir migración + **tests primero**.

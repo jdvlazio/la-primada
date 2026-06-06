@@ -145,7 +145,7 @@
     const p = S().activePrimada();
     if (!p) return '';
     const abierto = ui && ui.overlay === 'selector-primada';
-    const inc = S().primadaIncompleta(p) ? ' ' + badge('sin principal', 'warn') : '';
+    const inc = S().primadaIncompleta(p) ? ' ' + badge('sin anfitrión', 'warn') : '';
     return `<div class="selrow">
       <button class="prm-selector" data-act="open-selector" aria-haspopup="listbox" aria-expanded="${abierto ? 'true' : 'false'}">
         <span class="sel-text">
@@ -239,7 +239,7 @@
       return `${head}<div class="asis-compact-list">${items}</div>`;
     };
     const aviso = incompleta
-      ? `<div class="cfg-aviso">${badge('falta principal', 'warn')} Asigná quién organiza para completar la primada.</div>`
+      ? `<div class="cfg-aviso">${badge('falta anfitrión', 'warn')} Asigná quién organiza para completar la primada.</div>`
       : '';
     return `${aviso}${grupo('ahorrador', 'Ahorradores')}${grupo('invitado', 'Invitados')}${addAsisFoot(p)}`;
   }
@@ -250,9 +250,9 @@
     // Fix mínimo: solo mientras la primada esté incompleta y la persona sea ahorrador (INVARIANTE #2).
     const puedePrincipal = incompleta && !cerrada && a.estadoEnEseMomento === 'ahorrador' && !esPrin;
     return `<div class="asis-compact">
-      <span class="asis-compact-id">${esPrin ? '<span class="dot prin" title="Principal"></span>' : '<span class="dot neutral"></span>'}<b>${e(nombrePersona(a.personaId))}</b>${sinCover ? '<span class="sin-cover">Sin cover</span>' : ''}</span>
+      <span class="asis-compact-id">${esPrin ? '<span class="dot prin" title="Anfitrión"></span>' : '<span class="dot neutral"></span>'}<b>${e(nombrePersona(a.personaId))}</b>${sinCover ? '<span class="sin-cover">Sin cover</span>' : ''}</span>
       <span class="asis-compact-acc">
-        ${puedePrincipal ? `<button class="xmini hacer-prin" data-act="hacer-principal" data-pid="${a.personaId}">Hacer principal</button>` : ''}
+        ${puedePrincipal ? `<button class="xmini hacer-prin" data-act="hacer-principal" data-pid="${a.personaId}">Hacer anfitrión</button>` : ''}
         <button class="xmini" data-act="remove-asistencia" data-pid="${a.personaId}" ${cerrada ? 'disabled' : ''} aria-label="Quitar de la primada">${icon('x')}</button>
       </span>
     </div>`;
@@ -321,7 +321,7 @@
     const activa = ui && ui.activaPid === a.personaId;
     const saldado = S().saldoDe(p, a) === 0 && total > 0;
     const fila = `<button class="asis-fila ${activa ? 'on' : ''}" data-act="activar-asis" data-pid="${a.personaId}" aria-expanded="${activa ? 'true' : 'false'}">
-        <span class="asis-fila-id ${saldado ? 'saldado' : ''}"><b>${e(nombrePersona(a.personaId))}</b>${saldado ? ` <span class="asis-check" title="Saldado">${icon('check', 'sm')}</span>` : ''} ${rolTag(a.estadoEnEseMomento)}${esPrin ? ' <span class="dot prin"></span><span class="rol-tag">Principal</span>' : ''}</span>
+        <span class="asis-fila-id ${saldado ? 'saldado' : ''}"><b>${e(nombrePersona(a.personaId))}</b>${saldado ? ` <span class="asis-check" title="Saldado">${icon('check', 'sm')}</span>` : ''} ${rolTag(a.estadoEnEseMomento)}${esPrin ? ' <span class="dot prin"></span><span class="rol-tag">Anfitrión</span>' : ''}</span>
         <span class="acc-amt">${$peso(total)}</span>
       </button>`;
     if (!activa) return `<div class="asis">${fila}</div>`;
@@ -372,7 +372,7 @@
            <span class="pagar-llave-val">${e(llave)}</span>
            <button class="mini ghost" data-act="copiar-llave" data-llave="${e(llave)}">${icon('copy')}Copiar</button>
          </div>`
-      : `<div class="muted small">El principal aún no tiene una llave Bre-B.
+      : `<div class="muted small">El anfitrión aún no tiene una llave Bre-B.
            <button class="link-inline" data-act="open-personas">Agregar en Personas</button></div>`;
     const cuerpo = `
       <div class="pagar-amount">${$peso(total)}</div>
@@ -480,7 +480,7 @@
     if (inf.incompleta) {
       return `<div class="card">
         <div class="card-title">Recaudo</div>
-        <div class="muted small">Sin principal</div>
+        <div class="muted small">Sin anfitrión</div>
       </div>`;
     }
     const prinId = p.organizadorPrincipalId;
@@ -646,7 +646,7 @@
   function topbarDetalle(state, ui) {
     const p = S().activePrimada();
     if (!p) return topbarHome(state, ui);
-    const inc = S().primadaIncompleta(p) ? ' ' + badge('sin principal', 'warn') : '';
+    const inc = S().primadaIncompleta(p) ? ' ' + badge('sin anfitrión', 'warn') : '';
     return `<button class="topbar-back" data-act="volver-home" aria-label="Volver a inicio">${icon('chevron-left')}<span>Inicio</span></button>
       <span class="topbar-name">${e(nombreCorto(p.nombre))}${inc}</span>
       <div class="header-actions">
@@ -888,7 +888,7 @@
       return `<button class="chip ${on ? 'on' : ''}" data-act="wz-toggle-coorg" data-pid="${p.id}">${e(p.nombre)} <i>${cap(p.estado)}</i></button>`;
     }).join('');
     return `<div class="wz-step">
-      <label class="fld"><span>Principal</span>${opcionPrincipal}</label>
+      <label class="fld"><span>Anfitrión</span>${opcionPrincipal}</label>
       <div class="sub">Co-organizadores</div>
       <div class="chips wz-chips">${chips || '<span class="muted small">Sin personas</span>'}</div>
     </div>`;
@@ -920,7 +920,7 @@
           <input class="ti" type="month" id="wz-mes" value="${e(w.mesContable)}"></label>
       </div>
       <div class="sub">Resumen</div>
-      <div class="kv"><span>Principal</span><b>${w.principalId ? e(nombrePersona(w.principalId)) : '—'}</b></div>
+      <div class="kv"><span>Anfitrión</span><b>${w.principalId ? e(nombrePersona(w.principalId)) : '—'}</b></div>
       <div class="kv"><span>Organizadores</span><b>${1 + w.coorg.length}</b></div>
       <div class="kv"><span>Productos</span><b>${w.productos.length}</b></div>
     </div>`;

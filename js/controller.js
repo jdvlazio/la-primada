@@ -278,9 +278,9 @@
         // sincronizar inputs del paso actual antes de avanzar (los selects/date no disparan change si no se tocaron)
         wzSync();
         if (w.paso === 1) {
-          if (!w.principalId) { View.toast('Falta el principal'); return; }
+          if (!w.principalId) { View.toast('Falta el anfitrión'); return; }
           const per = Store.select.persona(w.principalId);
-          if (!per || per.estado !== 'ahorrador') { View.toast('El principal debe ser ahorrador'); return; }
+          if (!per || per.estado !== 'ahorrador') { View.toast('El anfitrión debe ser ahorrador'); return; }
         }
         if (w.paso === 2) {
           w.productos = w.productos.filter(p => (p.nombre || '').trim());   // descarta filas vacías
