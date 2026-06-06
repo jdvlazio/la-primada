@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260606-113125-7be3494">
+<meta name="build" content="20260606-113553-678fc9f">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -268,8 +268,11 @@
   .link-inline{background:none;border:none;padding:0;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline}
 
   /* inputs base */
-  /* Inputs SUTILES (como en Personas): borde tenue en reposo, acento al enfocar. Sin caja marcada. */
-  .ti{font-family:inherit;font-size:14px;min-height:var(--tap-input);padding:var(--space-2) var(--space-3);border:1px solid var(--line-soft);border-radius:var(--radius-md);background:var(--paper);color:var(--ink);width:100%}
+  /* Inputs SUTILES (como en Personas): borde tenue en reposo, acento al enfocar. Sin caja marcada.
+     font-size 16px a propósito: iOS hace AUTO-ZOOM al enfocar un input con font-size < 16px (y al terminar deja
+     la página descuadrada, hay que gesticular para volver). Con 16px NO zoomea. (No se toca el viewport → el
+     pinch-zoom del usuario sigue disponible.) Aplica a todos los .ti, incluidos number/month/date. */
+  .ti{font-family:inherit;font-size:16px;min-height:var(--tap-input);padding:var(--space-2) var(--space-3);border:1px solid var(--line-soft);border-radius:var(--radius-md);background:var(--paper);color:var(--ink);width:100%}
   /* Inputs nativos de fecha/mes: en iOS el control nativo rendea MÁS ALTO que el min-height y con el
      texto centrado → parecen botones grandes. appearance:none los ciñe al alto real del .ti (el picker
      sigue abriéndose al tocar) y text-align:left los vuelve campo, no botón. */
@@ -279,7 +282,7 @@
   .ti:disabled{opacity:.6}
   /* Select con chevron-down de Lucide (appearance:none): una sola flecha, no las dobles nativas.
      Igual que el caret de fila (.acc-caret, --ink-soft). El <select> nativo sigue funcional. */
-  .sel{font-family:inherit;font-size:13px;min-height:var(--tap-input);padding:var(--space-2) calc(var(--space-3) + 22px) var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);color:var(--ink);appearance:none;-webkit-appearance:none;background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238aa3a0' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right var(--space-3) center;background-size:16px;border:1px solid var(--line-soft)}
+  .sel{font-family:inherit;font-size:16px;min-height:var(--tap-input);padding:var(--space-2) calc(var(--space-3) + 22px) var(--space-2) var(--space-3);border:1px solid var(--line);border-radius:var(--radius-md);color:var(--ink);appearance:none;-webkit-appearance:none;background:var(--paper) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238aa3a0' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right var(--space-3) center;background-size:16px;border:1px solid var(--line-soft)}
   .sel:focus{outline:none;border-color:var(--accent)}
   .sel:disabled{opacity:.6}
   .fld{display:flex;flex-direction:column;gap:var(--space-1);font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
@@ -424,7 +427,7 @@
   .chip i{color:var(--ink-soft);font-style:normal;font-weight:400;font-size:11px}
   /* Campo costo/venta (etiqueta apilada) — usado por el wizard (.wz-prodrow) y el alta de producto. */
   .prodrow-f{display:flex;flex-direction:column;gap:var(--space-1);font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft)}
-  .ti.num{width:74px;min-height:var(--tap-sec);padding:var(--space-2);font-size:13px}
+  .ti.num{width:84px;min-height:var(--tap-sec);padding:var(--space-2);font-size:16px}   /* 16px: sin auto-zoom iOS (ancho +10 para que entren los dígitos) */
   .ti.emoji{width:var(--tap-input);text-align:center;padding:var(--space-2)}
   /* (Eliminadas .prodmgmt/.prodrow/.prodrow-name/.prodnew: los productos de Configurar ahora son
      filas-acordeón .prow + .acc-* — clon del componente de Personas, mismas clases.) */
@@ -668,13 +671,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260606-113125-7be3494"></script>
-  <script src="js/util.js?v=20260606-113125-7be3494"></script>
-  <script src="js/api.js?v=20260606-113125-7be3494"></script>
-  <script src="js/auth.js?v=20260606-113125-7be3494"></script>
-  <script src="js/store.js?v=20260606-113125-7be3494"></script>
-  <script src="js/view.js?v=20260606-113125-7be3494"></script>
-  <script src="js/controller.js?v=20260606-113125-7be3494"></script>
+  <script src="js/config.js?v=20260606-113553-678fc9f"></script>
+  <script src="js/util.js?v=20260606-113553-678fc9f"></script>
+  <script src="js/api.js?v=20260606-113553-678fc9f"></script>
+  <script src="js/auth.js?v=20260606-113553-678fc9f"></script>
+  <script src="js/store.js?v=20260606-113553-678fc9f"></script>
+  <script src="js/view.js?v=20260606-113553-678fc9f"></script>
+  <script src="js/controller.js?v=20260606-113553-678fc9f"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
