@@ -44,11 +44,12 @@ test.describe('Evidencia visual', () => {
     expect(await page.locator('#topbar [data-act="new-primada"]').count()).toBe(1);  // sí en la topbar
   });
 
-  test('V2 — cara Balance (ya no es tab: se conmuta dentro de Primadas)', async ({ page }) => {
+  test('V2 — panel de Balance (chip lo despliega bajo la Lista viva)', async ({ page }) => {
     await appConPrimadaAbierta(page);
-    await page.click(SEL.cara('balance'));
+    await page.click(SEL.balanceToggle);
     await page.screenshot({ path: `${VISUAL}/balance.png`, fullPage: false });
-    await expect(page.locator(`${SEL.cara('balance')}.on`)).toBeVisible();
+    await expect(page.locator(`${SEL.balanceToggle}.on`)).toBeVisible();
+    await expect(page.locator(SEL.balancePanel)).toBeVisible();
     await expect(page.locator(SEL.screen)).toContainText('Ganancia');
   });
 

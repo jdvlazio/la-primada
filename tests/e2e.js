@@ -102,6 +102,11 @@ function abrirConfig() {
   if (!q('#overlay') || q('#overlay').hidden) click('[data-act="open-config-primada"]');
   const at = q('[data-act="config-tab"][data-ctab="asistentes"]'); if (at) click(at);   // asegura Asistentes
 }
+// Panel de Balance del detalle (IA list→detalle): debajo de la Lista viva, mismo scroll. Un chip lo
+// despliega/colapsa. balanceVisible() = el panel (con Ganancia/Recaudo) está renderizado.
+function balanceVisible() { return /class="balance-panel"/.test(q('#screen').innerHTML); }
+function abrirBalance() { if (!balanceVisible()) click('[data-act="toggle-balance-panel"]'); }
+function cerrarBalance() { if (balanceVisible()) click('[data-act="toggle-balance-panel"]'); }
 // Gear GLOBAL (interim Fase 1: sigue siendo el overlay de 4 tabs). Vive en el home (⚙ open-ajustes).
 // `tab` ∈ 'primada'|'calendario'|'personas'|'ajustes'. Abre desde el home (los botones viven ahí).
 function abrirGear(tab) {
@@ -220,10 +225,10 @@ eq('Ana (principal) sin cover', Store.select.coverDe(prm(), anaAsis()), 0);
 
 // Ganancia ANTES de exonerar: cover 10000 + margen 2*(3500-2500)=2000 → 12000
 eq('Ganancia = cover + margen (12.000)', Store.select.ganancia(prm()), 12000);
-// El reparto YA NO vive en la cara Consumos (operar) → ahora en la CARA Balance (ver la plata).
-check('Reparto NO está en la cara Consumos', !/Ganancia/.test(q('#screen').innerHTML));
-click('[data-act="set-cara"][data-cara="balance"]');
-check('Reparto visible en la cara Balance', /Ganancia/.test(q('#screen').innerHTML));
+// El reparto vive en el PANEL de Balance (colapsado por defecto en una abierta) → no aparece hasta desplegarlo.
+check('Reparto NO está con el panel colapsado', !/Ganancia/.test(q('#screen').innerHTML));
+abrirBalance();
+check('Reparto visible al desplegar el panel de Balance', /Ganancia/.test(q('#screen').innerHTML));
 // HERO NUMBER: la cifra protagonista (.bal-amount) está SIEMPRE visible, sin abrir el acorde.
 check('Balance: cifra héroe (.bal-amount) visible sin tocar el acorde', !!q('.bal-amount'));
 check('Balance: el desglose (acc-body) está OCULTO por defecto', !q('.bal-card .acc-body') && !q('.acc-body'));
@@ -234,7 +239,7 @@ click('[data-act="toggle-balance"][data-sec="reparto"]');
 check('Toggle reparto: el desglose se muestra (Sobrante en el acc-body)', /Sobrante/.test(q('#screen').innerHTML));
 click('[data-act="toggle-balance"][data-sec="reparto"]');   // colapsar de nuevo
 check('Toggle reparto: el desglose se oculta otra vez', !/Sobrante/.test(q('#screen').innerHTML));
-click('[data-act="set-cara"][data-cara="operacion"]');   // volver a operar
+cerrarBalance();   // volver a operar
 
 // Exoneración: la decisión vive al AGREGAR (acción add-asistencia-cortesia). Beto ya está agregado y
 // CON consumos, así que aquí aplicamos la exoneración por la MISMA acción de modelo que usa la cortesía
@@ -256,7 +261,7 @@ eq('Entrega al Tesorero = ganancia', inf.entregaTesorero, Store.select.ganancia(
 eq('Parte igual a la única ahorradora (Ana) = ganancia', Store.select.parteIgual(prm()), 2000);
 eq('Sobrante indivisible = 0', Store.select.sobranteFondo(prm()), 0);
 // La 2ª tarjeta se llama RECAUDO (proceso de cobro), sin nombre ni rol.
-click('[data-act="set-cara"][data-cara="balance"]');
+abrirBalance();
 check('2ª tarjeta titulada "Recaudo" (sin nombre/rol)', /Recaudo/.test(q('#screen').innerHTML) && !/Principal — Ana/.test(q('#screen').innerHTML));
 // Beto debe (cover 0, pero 2 cervezas = 7.000 sin pagar) → ABIERTA: héroe en registro PENDIENTE ámbar
 // (.por-cobrar). NO destructivo (salmón) ni "entregado" (teal): la deuda es proceso, no alarma (DESIGN.md §1).
@@ -278,7 +283,7 @@ check('Recaudo: la lista de deudores vive DENTRO del acorde ("Debe" + el deudor)
 click('[data-act="toggle-balance"][data-sec="informe"]');   // colapsar de nuevo
 check('Recaudo: "provisional" NO aparece en esta tarjeta (sí queda en Ganancia)',
   (q('#screen').innerHTML.match(/provisional/gi) || []).length === 1);   // solo la nota de Ganancia
-click('[data-act="set-cara"][data-cara="operacion"]');
+cerrarBalance();
 
 /* ---------- 7b. Informe compartible (template PNG) ---------- */
 section('Compartir informe: trigger en la cabecera + template HTML (puro)');
@@ -320,19 +325,19 @@ Store.actions.setBreBPersona(ana.id, 'ana-nueva@bre-b'); // llave agregada a la 
 check('Informe (PNG): Bre-B por FALLBACK a la persona principal cuando el snapshot es null',
   /informe-llave">🔑 Bre-B ana-nueva@bre-b/.test(window.View.informeTemplateHTML(prm())));
 // Y EN LA APP (Recaudo, acordeón "informe"): la línea "Bre-B" usa el MISMO fallback (antes mostraba "—").
-click('[data-act="set-cara"][data-cara="balance"]');
+abrirBalance();
 click('[data-act="toggle-balance"][data-sec="informe"]');     // abrir el acordeón del Recaudo
 check('Recaudo (app): Bre-B por FALLBACK al principal, no "—"',
   /<span>Bre-B<\/span><b>ana-nueva@bre-b<\/b>/.test(q('#screen').innerHTML));
 click('[data-act="toggle-balance"][data-sec="informe"]');     // colapsar
-click('[data-act="set-cara"][data-cara="operacion"]');        // volver a operar
+cerrarBalance();        // volver a operar
 Store.actions.setBreBPersona(ana.id, '');                // restaurar (persona sin llave)
 // View.shareInforme existe y es invocable (la captura/share real se prueba en navegador, no en jsdom).
 check('View.shareInforme expuesta', typeof window.View.shareInforme === 'function');
 
 /* ---------- 7c. Orden por consumo (mayor total arriba) en app e informe ---------- */
 section('Orden por consumo: el que más debe, primero (cara Consumos + informe)');
-click('[data-act="set-cara"][data-cara="operacion"]');   // volver a la cara Consumos
+cerrarBalance();   // volver a la cara Consumos
 // Beto (2 cervezas = 7.000, exonerado) vs Ana (principal, 0) → Beto arriba en la lista.
 const ordenDom = qa('[data-act="activar-asis"]').map(el => el.dataset.pid);
 check('Consumos: mayor total primero (Beto $7.000 antes que Ana $0)',
@@ -362,7 +367,7 @@ click('[data-act="close-overlay"]');
 // El modelo permite cerrar con deuda (la UI lo gatea tras el CTA); aquí cerramos por acción para
 // probar el congelado con un deudor pendiente (escenario de pago-tras-cerrar en 8b).
 Store.actions.cerrarPrimada(prm().id);
-click('[data-act="set-cara"][data-cara="balance"]'); click('[data-act="set-cara"][data-cara="operacion"]');   // forzar re-render de la operación
+cerrarBalance();   // forzar re-render de la operación
 eq('Primada cerrada', prm().estado, 'cerrada');
 const before = cervezas();
 activar(beto.id);                                                // ver sus chips (solo lectura en cerrada)
@@ -394,13 +399,13 @@ eq('Re-marcado pagado (persistencia)', betoAsis().pagado, true);
 /* ---------- 8b·3. Feedback visual del pago: check en Consumos + Recaudo no oculta saldados ---------- */
 section('Pago saldado: check en la tarjeta Consumos + Recaudo lista al saldado (nadie desaparece)');
 // Beto saldado (saldo 0, total 7.000>0). En la cara Consumos su fila debe llevar check + nombre teal.
-click('[data-act="set-cara"][data-cara="operacion"]'); activar(beto.id);
+cerrarBalance(); activar(beto.id);
 check('Consumos: Beto saldado muestra .asis-check junto al nombre',
   /asis-check/.test(q('#screen').querySelector(`[data-act="activar-asis"][data-pid="${beto.id}"]`).innerHTML));
 check('Consumos: la fila saldada lleva el nombre en teal (.asis-fila-id.saldado)',
   !!q('#screen').querySelector(`.asis-fila[data-pid="${beto.id}"] .asis-fila-id.saldado`));
 // Recaudo: Beto NO desaparece — aparece al final como saldado (.kv.saldada con check), no como deudor ámbar.
-click('[data-act="set-cara"][data-cara="balance"]');
+abrirBalance();
 click('[data-act="toggle-balance"][data-sec="informe"]');   // expandir el acorde del Recaudo (la lista vive dentro)
 const recaudo = q('#screen').innerHTML;
 check('Recaudo: bloque saldadas presente (.kv.saldada) con Beto y un check',
@@ -418,27 +423,27 @@ click('[data-act="toggle-balance"][data-sec="informe"]');   // colapsar de nuevo
 section('CTA "Todos pagaron · Cerrar primada" aparece y cierra (P5)');
 // Beto ya pagó → nadie debe (saldoPendiente 0) y hubo plata → el CTA debe ofrecerse en la operación.
 Store.actions.reabrirPrimada(prm().id);
-click('[data-act="set-cara"][data-cara="balance"]'); click('[data-act="set-cara"][data-cara="operacion"]');   // re-render de la operación
+cerrarBalance();   // re-render de la operación
 eq('Reabierta para probar el CTA', prm().estado, 'abierta');
 check('Todos saldados (saldo pendiente 0)', Store.select.informePrincipal(prm()).saldoPendiente === 0);
 const cta = q('[data-act="cerrar-primada"]');
 check('CTA "Cerrar" presente cuando todos pagaron', !!cta && /Todos pagaron/.test(cta.textContent));
 click(cta);                                                      // cerrar por el CTA real
 eq('Primada cerrada vía CTA', prm().estado, 'cerrada');
-// CARA por estado (refactor Resumen→Balance): al cerrar, la primada ABRE en su Balance (documento final),
-// con el switch presente y la cara Consumos accesible (congelada). El cálculo no cambia.
-check('Cerrada → cara Balance visible (reparto)', /Ganancia/.test(q('#screen').innerHTML));
-check('Switch de cara presente (Consumos | Balance)',
-  !!q('[data-act="set-cara"][data-cara="operacion"]') && !!q('[data-act="set-cara"][data-cara="balance"]'));
-check('Seg Balance marcado activo (on) al abrir cerrada',
-  /class="seg on"[^>]*data-cara="balance"/.test(q('#screen').innerHTML));
+// PANEL por estado (IA list→detalle): al cerrar, el panel de Balance se DESPLIEGA solo (documento final);
+// la Lista viva (Consumos) sigue presente arriba (congelada). El cálculo no cambia.
+check('Cerrada → panel de Balance desplegado (reparto)', balanceVisible() && /Ganancia/.test(q('#screen').innerHTML));
+check('Lista viva + chip de Balance coexisten (mismo scroll)',
+  !!q('[data-act="toggle-balance-panel"]') && /Asistentes/.test(q('#screen').innerHTML));
+check('Chip de Balance marcado activo (on) al abrir cerrada',
+  /class="balance-toggle on"/.test(q('#screen').innerHTML));
 // STATE-AWARE en CERRADA: documento final → SIN nota provisional (Ganancia); Recaudo = lo ENTREGADO.
 check('Cerrada: SIN nota "Provisional" (ni en Ganancia ni en Recaudo)', !/[Pp]rovisional/.test(q('#screen').innerHTML));
 check('Cerrada Recaudo: héroe tono "entregado" (teal/--accent)', /class="bal-amount entregado"/.test(q('#screen').innerHTML));
 check('Cerrada Recaudo: teaser en pasado "Entregó … al Tesorero"', /Entregó .*al Tesorero/.test(q('#screen').innerHTML));
 // CERRADA: sin "Por cobrar"; y el microcopy se OMITE (el teaser ya lo dice todo) → no hay .bal-note en Recaudo.
 check('Cerrada Recaudo: sin "Por cobrar"', !/Por cobrar/.test(q('#screen').innerHTML));
-click('[data-act="set-cara"][data-cara="operacion"]');           // la cara Consumos sigue accesible…
+cerrarBalance();           // la cara Consumos sigue accesible…
 check('Cara Consumos accesible con la cuenta cerrada', /Asistentes/.test(q('#screen').innerHTML));
 activar(beto.id);                                                // activar para ver sus chips (solo lectura)
 check('…pero congelada: sin chips +/− (consumo solo-lectura)',
@@ -477,7 +482,7 @@ irHome();
 check('Home: hero de la activa + sin tab bar (#tabbar eliminado)', !!q('.hero-card') && !q('#tabbar'));
 check('Home: la topbar ofrece "+" y ⚙ (Ajustes)', !!q('#topbar [data-act="new-primada"]') && !!q('#topbar [data-act="open-ajustes"]'));
 entrarDetalle();
-check('Entrar: vista detalle (← Inicio + seg-nav Consumos|Balance)', enDetalle() && !!q('[data-act="set-cara"]'));
+check('Entrar: vista detalle (← Inicio + Lista viva + chip de Balance)', enDetalle() && !!q('[data-act="toggle-balance-panel"]'));
 check('Back stack: pushState dejó una entrada de detalle (history.state.lp)', !!(window.history.state && window.history.state.lp === 'detalle'));
 // popstate (back del sistema): vuelve al home, NO sale de la PWA.
 window.dispatchEvent(new window.PopStateEvent('popstate', { state: null }));

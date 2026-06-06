@@ -28,7 +28,8 @@ const SEL = {
   wzCancelar: '[data-act="wz-cancelar"]',
   accHead: '.acc-head',     // cabecera de fila-acordeón (Configurar Productos / Personas)
   asisFila: '.asis-fila',   // fila de asistente en la cara Consumos (Modelo 3, lista viva; tap = activar)
-  cara: (key) => `[data-act="set-cara"][data-cara="${key}"]`,   // switch de cara (Consumos | Balance)
+  balanceToggle: '[data-act="toggle-balance-panel"]',   // chip que despliega/colapsa el panel de Balance
+  balancePanel: '.balance-panel',                       // panel de Balance (debajo de la Lista viva)
 };
 
 // Arranca la app desde cero: limpia localStorage para un estado determinista.

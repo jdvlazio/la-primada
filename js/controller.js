@@ -50,15 +50,15 @@
   // - overlay 'add-asis': hoja simple para agregar asistentes del directorio
   // - configTab: pestaña activa del overlay Configurar primada ('asistentes' | 'productos')
   // - configProd: Set de filas-acordeón de PRODUCTO expandidas en Configurar (clon de Personas)
-  // - cara: CARA visible del tab Primadas — 'operacion' (Consumos) | 'balance' (Balance). El Balance dejó
-  //   de ser un tab: es una cara de la primada activa. Default por ESTADO (cerrada → 'balance', abierta →
-  //   'operacion'), fijada al seleccionar/crear/cargar/cerrar/reabrir vía fijarCaraPorEstado().
+  // - balanceOpen: panel de Balance del detalle DESPLEGADO (null = default por estado: cerrada→abierto,
+  //   abierta→colapsado; bool = el usuario lo fijó a mano con el chip "Balance ▲/▼"). Se resetea a null
+  //   al entrar a una primada y al cerrar/reabrir (re-deriva del nuevo estado). Reemplaza al viejo ui.cara.
   // - balance: Set de cards-acordeón del Balance abiertas ('reparto'|'informe'); el héroe (cifra grande) va
   //   SIEMPRE visible fuera del acorde, el desglose (derivación) dentro.
   // - view: VISTA actual (IA list→detalle) — 'home' (lista de primadas) | 'detalle' (operación de la activa).
   //   Reemplaza al viejo ui.tab. Cold-start y "volver" → 'home'; entrar a una primada → 'detalle' (+ pushState).
   // - authEstado: estado de la cuenta para el ícono de la topbar del home ('in'|'out'|'placeholder').
-  const ui = { view: 'home', cara: 'operacion', overlay: null, activaPid: null, wizard: null,
+  const ui = { view: 'home', balanceOpen: null, overlay: null, activaPid: null, wizard: null,
                authEstado: 'placeholder', editPersonaId: null, nuevaPersona: false,
                configTab: 'asistentes', configProd: new Set(), pagarPid: null,
                balance: new Set(), auditPid: null, apuntadores: {}, presentes: [],
@@ -78,11 +78,16 @@
   function backendOn() { return !!(Auth && Auth.enabled()); }     // hay backend Supabase (RLS es la frontera real)
   function pedirLogin() { ui.overlay = 'login'; ui.loginEstado = 'form'; rerender(); }
 
+  // Indicador offline/sync: solo visible mientras se OPERA (detalle). Guardamos el último estado de sync
+  // y lo re-pintamos en cada render para que el cambio de vista (home↔detalle) lo oculte/muestre.
+  let ultimoSync = null;
+  function refrescarSync() { if (View.renderSync) View.renderSync(ultimoSync, ui.view === 'detalle'); }
+
   function rerender() {
     ui.sesion = sesionActiva;
     ui.authEstado = backendOn() ? (sesionActiva ? 'in' : 'out') : 'placeholder';
     View.render(Store.select.state(), ui);
-    sincronizarVivo(); sincronizarPresencia();
+    sincronizarVivo(); sincronizarPresencia(); refrescarSync();
   }
 
   /* ---------- Navegación list→detalle + back stack (history.pushState/popstate) ----------
@@ -92,7 +97,7 @@
   function entrarDetalle(id) {
     if (id) Store.actions.seleccionarPrimada(id);
     if (!Store.select.activePrimada()) return;   // id inválido → quedate en home
-    fijarCaraPorEstado();
+    resetBalancePanel();
     ui.view = 'detalle'; ui.overlay = null;
     try {
       const st = root.history && root.history.state;
@@ -120,7 +125,8 @@
   function miNombre() { return miEmail ? String(miEmail).split('@')[0] : 'alguien'; }
   function sincronizarPresencia() {
     if (!(root.Api && root.Api.subscribePresence)) return;
-    const p = Store.select.activePrimada();
+    // Presencia VIVE dentro del detalle: en el home no hay primada "abierta operando" → desuscribir.
+    const p = (ui.view === 'detalle') ? Store.select.activePrimada() : null;
     const id = p ? p.id : null;
     const key = id ? (id + '|' + miNombre()) : null;
     if (key === presenciaKey) return;                 // misma primada + mismo nombre → nada que hacer
@@ -146,7 +152,8 @@
   let vivoUnsub = null, vivoPrmId = null;
   function sincronizarVivo() {
     if (!(root.Api && root.Api.subscribeConsumos)) return;
-    const p = Store.select.activePrimada();
+    // Sync en vivo solo mientras se OPERA (detalle); en el home se desuscribe (se re-suscribe al entrar).
+    const p = (ui.view === 'detalle') ? Store.select.activePrimada() : null;
     const id = p ? p.id : null;
     if (id === vivoPrmId) return;                 // misma primada activa → nada que re-suscribir
     if (vivoUnsub) { try { vivoUnsub(); } catch (e) {} vivoUnsub = null; }
@@ -166,13 +173,10 @@
 
   function activeId() { const p = Store.select.activePrimada(); return p ? p.id : null; }
 
-  // La CARA por defecto de Primadas sale del ESTADO de la primada activa: una cerrada abre en su
-  // 'balance' (documento final, solo-lectura); una abierta abre en 'operacion' (Consumos). Se fija al
-  // cambiar de primada activa (seleccionar/crear/cargar) y al cerrar/reabrir. set-cara la conmuta a mano.
-  function fijarCaraPorEstado() {
-    const p = Store.select.activePrimada();
-    ui.cara = (p && p.estado === 'cerrada') ? 'balance' : 'operacion';
-  }
+  // El panel de Balance del detalle arranca con su DEFAULT por estado (null → la Vista deriva: cerrada =
+  // abierto, abierta = colapsado). Se resetea al entrar a una primada y al cerrar/reabrir, para que el
+  // cambio de estado re-derive el default (p. ej. al cerrar, el Balance se despliega solo).
+  function resetBalancePanel() { ui.balanceOpen = null; }
 
   /* ---------- Clicks (delegados en document) ---------- */
   function onClick(ev) {
@@ -247,8 +251,8 @@
       // ----- selector de primada (LEGADO, dead en IA list→detalle; lo reemplaza el home) -----
       case 'open-selector': ui.overlay = 'selector-primada'; rerender(); return;
 
-      // ----- cara del tab Primadas (Consumos | Balance): navegación, NO escritura (no entra al gate) -----
-      case 'set-cara': ui.cara = (b.dataset.cara === 'balance') ? 'balance' : 'operacion'; rerender(); return;
+      // ----- panel de Balance del detalle (debajo de la Lista viva, mismo scroll): NO escritura -----
+      case 'toggle-balance-panel': ui.balanceOpen = !View.balanceAbierto(Store.select.activePrimada(), ui); rerender(); return;
 
       // ----- compartir informe como imagen (PNG → share sheet / descarga): I/O de vista, NO escritura -----
       case 'compartir-informe': { const p = Store.select.activePrimada(); if (p && View.shareInforme) View.shareInforme(p); return; }
@@ -301,7 +305,7 @@
         return;
       }
       // Elegir una primada desde la hoja del selector: activa y cierra la hoja.
-      case 'select-primada':   A.seleccionarPrimada(id); fijarCaraPorEstado(); ui.overlay = null; rerender(); return;
+      case 'select-primada':   A.seleccionarPrimada(id); resetBalancePanel(); ui.overlay = null; rerender(); return;
       // Conmuta la pestaña interna de config del evento activo (Asistentes | Productos) en el gear › Primadas.
       case 'config-tab':       ui.configTab = (b.dataset.ctab === 'productos') ? 'productos' : 'asistentes'; rerender(); return;
       // Acciones destructivas: con confirmación (la cuenta cerrada congela consumos).
@@ -310,10 +314,10 @@
       // (return) para que el pintado final refleje el nuevo estado (cerrada → 'balance', abierta → 'operacion').
       case 'cerrar-primada':
         if (!root.confirm || root.confirm('¿Cerrar la cuenta?')) {
-          A.cerrarPrimada(id); fijarCaraPorEstado(); View.toast('Cuenta cerrada'); rerender();
+          A.cerrarPrimada(id); resetBalancePanel(); View.toast('Cuenta cerrada'); rerender();
         }
         return;
-      case 'reabrir-primada':  A.reabrirPrimada(id); fijarCaraPorEstado(); View.toast('Cuenta reabierta'); rerender(); return;
+      case 'reabrir-primada':  A.reabrirPrimada(id); resetBalancePanel(); View.toast('Cuenta reabierta'); rerender(); return;
       case 'borrar-primada':
         if (!root.confirm || root.confirm('¿Borrar la primada?')) {
           A.borrarPrimada(id); ui.overlay = null; View.toast('Primada borrada'); rerender(); return;
@@ -507,7 +511,7 @@
     if (View.renderAuthButton) View.renderAuthButton(Auth && Auth.enabled() ? (sesionActiva ? 'in' : 'out') : 'placeholder');
     rerender();                                // "Cargando…" mientras hidrata
     await Store.load();                        // hidrata el AppState desde Api (async)
-    fijarCaraPorEstado();                      // cara inicial por estado de la primada activa cargada
+    resetBalancePanel();                       // panel de balance: default por estado de la primada cargada
     rerender();
   }
 
@@ -552,7 +556,7 @@
       root.Api.init({ url: root.CONFIG.supabase.url, anonKey: root.CONFIG.supabase.anonKey });
     }
     Store.subscribe(rerender);                 // re-render completo en cada commit del Store
-    if (Store.subscribeSync) Store.subscribeSync(s => View.renderSync && View.renderSync(s));
+    if (Store.subscribeSync) Store.subscribeSync(s => { ultimoSync = s; refrescarSync(); });
     init();
     await gate();                              // auth gate: login o app
   }

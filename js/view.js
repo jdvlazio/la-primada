@@ -696,16 +696,23 @@
 
   /* ============================================================
      DETALLE — espacio operativo de la primada activa. La identidad (nombre/mes) vive en la topbar.
-     INTERINO (Fase 1): el seg-nav Consumos|Balance se mantiene; en Fase 2 el Balance pasa a panel inferior.
+     El Balance ya NO es un seg-nav: es un PANEL inferior (mismo scroll), subordinado a la Lista viva.
+     Un chip "Balance ▲/▼" lo despliega/colapsa. Default por estado: ABIERTA = colapsado (Consumos es lo
+     que importa); CERRADA = desplegado (el Balance es el documento final). Reusa balancePrimada() tal cual.
      ============================================================ */
+  // ¿El panel de Balance está desplegado? null = default por estado (cerrada→sí, abierta→no); bool = manual.
+  function balanceAbierto(p, ui) {
+    if (ui && ui.balanceOpen != null) return !!ui.balanceOpen;
+    return !!(p && p.estado === 'cerrada');
+  }
   function detalleBody(state, ui) {
     const activa = S().activePrimada();
     if (!activa) return homeBody(state, ui);
-    const cara = (ui && ui.cara === 'balance') ? 'balance' : 'operacion';
-    const seg = (key, label) => `<button class="seg ${cara === key ? 'on' : ''}" data-act="set-cara" data-cara="${key}">${label}</button>`;
-    const switcher = `<div class="cara-switch"><div class="seg-nav">${seg('operacion', 'Consumos')}${seg('balance', 'Balance')}</div></div>`;
-    const face = cara === 'balance' ? balancePrimada(activa, ui) : primadaDetalle(activa, ui);
-    return `${switcher}${face}`;
+    const abierto = balanceAbierto(activa, ui);
+    const chip = `<button class="balance-toggle ${abierto ? 'on' : ''}" data-act="toggle-balance-panel" aria-expanded="${abierto ? 'true' : 'false'}">
+      <span>Balance</span>${icon(abierto ? 'chevron-down' : 'chevron-up')}</button>`;
+    const panel = abierto ? `<div class="balance-panel">${balancePrimada(activa, ui)}</div>` : '';
+    return `${primadaDetalle(activa, ui)}<div class="balance-dock">${chip}${panel}</div>`;
   }
 
   // Hoja "···" de configuración de la primada activa (re-wrap de configPrimadaBody: Asistentes | Productos).
@@ -1139,18 +1146,20 @@
 
   // Indicador de sincronización con la nube. Crea/actualiza un chip flotante (no depende del
   // markup de index.html). { pendientes, error } viene del Store.subscribeSync.
-  function renderSync(s) {
+  // Indicador offline/sync: vive DENTRO del detalle (no en el home). `visible` lo gatea el controller
+  // (ui.view==='detalle'); fuera del detalle se oculta aunque haya pendientes (se ven al entrar a operar).
+  function renderSync(s, visible) {
     if (typeof document === 'undefined') return;
     let el = document.getElementById('syncIndicator');
     const hayError = s && s.error;
     const hayPend = s && s.pendientes > 0;
-    if (!hayError && !hayPend) { if (el) el.remove(); return; }
+    if (visible === false || (!hayError && !hayPend)) { if (el) el.remove(); return; }
     if (!el) { el = document.createElement('div'); el.id = 'syncIndicator'; el.className = 'sync-indicator'; document.body.appendChild(el); }
     el.classList.toggle('err', !!hayError);
     el.textContent = hayError ? ('⚠ ' + s.error) : '⟳ Guardando…';
     if (hayError) toast(s.error);
   }
 
-  root.View = { cache, render, showAppChrome, renderAuthButton, renderSync, toast, shareInforme, informeTemplateHTML };
+  root.View = { cache, render, showAppChrome, renderAuthButton, renderSync, balanceAbierto, toast, shareInforme, informeTemplateHTML };
   if (typeof module !== 'undefined' && module.exports) module.exports = { View: root.View };
 })(typeof window !== 'undefined' ? window : globalThis);

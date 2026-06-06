@@ -63,18 +63,20 @@ test('S5 — se crea una primada (wizard completo) y aparece su detalle', async 
   await expect(page.locator(SEL.asisFila).first()).toBeVisible();
 });
 
-test('S6 — el switch de cara (Consumos | Balance) conmuta el contenido', async ({ page }) => {
+test('S6 — el panel de Balance (chip) despliega/colapsa bajo la Lista viva', async ({ page }) => {
   await abrirApp(page);
   await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
   await crearPrimada(page, 'Ana');
-  // Recién creada (abierta) → abre en la cara Consumos: se ven los Asistentes, no el reparto.
-  await expect(page.locator(SEL.cara('operacion'))).toBeVisible();
+  // Abierta → panel colapsado por defecto: se ven los Asistentes, no el reparto. El chip está presente.
   await expect(page.locator(SEL.asisFila).first()).toBeVisible();
-  // Conmutar a Balance → aparece el reparto del fondo (no es un tab, es una cara).
-  await page.click(SEL.cara('balance'));
-  await expect(page.locator(`${SEL.cara('balance')}.on`)).toBeVisible();
+  await expect(page.locator(SEL.balanceToggle)).toBeVisible();
+  await expect(page.locator(SEL.balancePanel)).toHaveCount(0);
+  // Desplegar → aparece el reparto del fondo (mismo scroll, la Lista viva sigue arriba).
+  await page.click(SEL.balanceToggle);
+  await expect(page.locator(SEL.balancePanel)).toBeVisible();
   await expect(page.locator(SEL.screen)).toContainText('Ganancia');
-  // Volver a Consumos.
-  await page.click(SEL.cara('operacion'));
-  await expect(page.locator(SEL.asisFila).first()).toBeVisible();
+  await expect(page.locator(SEL.asisFila).first()).toBeVisible();   // coexisten
+  // Colapsar de nuevo.
+  await page.click(SEL.balanceToggle);
+  await expect(page.locator(SEL.balancePanel)).toHaveCount(0);
 });

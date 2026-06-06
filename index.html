@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260605-213836-aa78aaf">
+<meta name="build" content="20260605-214720-c369fcd">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -418,9 +418,17 @@
 
   /* Identidad de la primada activa (título grande) — usado por el dashboard Balance */
   .prm-name{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:22px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  /* Conmutador de CARA de la primada (Consumos | Balance): el Balance ya no es un tab, es una cara.
-     seg-nav centrado bajo el selector, separado de la cara que pinta debajo. */
+  /* Conmutador de CARA de la primada (legado seg-nav; el Balance pasó a panel inferior en la IA list→detalle). */
   .cara-switch{display:flex;justify-content:center;margin:var(--space-3) 0 var(--space-4)}
+
+  /* PANEL de Balance del DETALLE (IA list→detalle): subordinado a la Lista viva, mismo scroll. Un chip lo
+     despliega/colapsa; el panel aparece debajo. Default por estado (abierta colapsado, cerrada desplegado). */
+  .balance-dock{margin-top:var(--space-5);border-top:1px solid var(--line)}
+  .balance-toggle{display:flex;align-items:center;justify-content:center;gap:var(--space-2);width:100%;min-height:var(--tap-row);background:transparent;border:none;cursor:pointer;color:var(--ink-soft);font-family:inherit;font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase;padding:var(--space-3)}
+  .balance-toggle:active{opacity:.7}
+  .balance-toggle.on{color:var(--accent)}
+  .balance-toggle .icon{width:18px;height:18px}
+  .balance-panel{padding-top:var(--space-2)}
 
   /* ---------- SELECTOR de primada (barra superior del tab Primadas, DESIGN.md §2.11) ----------
      Navegación principal: selector tappable (flex:1) + engranaje (config) + "+" chico (nueva).
@@ -594,13 +602,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260605-213836-aa78aaf"></script>
-  <script src="js/util.js?v=20260605-213836-aa78aaf"></script>
-  <script src="js/api.js?v=20260605-213836-aa78aaf"></script>
-  <script src="js/auth.js?v=20260605-213836-aa78aaf"></script>
-  <script src="js/store.js?v=20260605-213836-aa78aaf"></script>
-  <script src="js/view.js?v=20260605-213836-aa78aaf"></script>
-  <script src="js/controller.js?v=20260605-213836-aa78aaf"></script>
+  <script src="js/config.js?v=20260605-214720-c369fcd"></script>
+  <script src="js/util.js?v=20260605-214720-c369fcd"></script>
+  <script src="js/api.js?v=20260605-214720-c369fcd"></script>
+  <script src="js/auth.js?v=20260605-214720-c369fcd"></script>
+  <script src="js/store.js?v=20260605-214720-c369fcd"></script>
+  <script src="js/view.js?v=20260605-214720-c369fcd"></script>
+  <script src="js/controller.js?v=20260605-214720-c369fcd"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).
