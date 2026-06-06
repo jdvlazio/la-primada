@@ -210,6 +210,12 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
   - **Cuerpo:** **Lista viva** (Consumos, Modelo 3) **+ panel de Balance** debajo (mismo scroll, subordinado). Un chip
     **"Balance ▲/▼"** lo despliega/colapsa (`toggle-balance-panel`, `ui.balanceOpen`). Default por estado: ABIERTA =
     colapsado; CERRADA = desplegado (documento final). Reusa `balancePrimada()` (Ganancia + Recaudo, state-aware).
+  - **Balance PODADO (auditoría):** el motor (`informePrincipal` y todos los selectores) calcula TODO con las identidades
+    del dominio, pero el **body solo MUESTRA lo accionable** (no la plomería contable). **Ganancia:** Cover · Margen ·
+    Ganancia · Parte igual c/u · (Sobrante solo si > 0). **Recaudo:** 🔑 Bre-B · Recupera · Entrega al Tesorero · "Debe".
+    Se quitaron del display: "Ahorradores: N" y la lista "Por persona" (redundantes con el teaser), y `Recaudo teórico` /
+    `Recaudado · de terceros · del principal` / `Por cobrar` (auto-abono = plomería; el héroe ya da "Por cobrar"). El
+    **auto-abono del principal sigue vivo en el modelo** (mantiene `real+pendiente=teórico`), solo no se pinta.
   - **Presencia** ("X está apuntando") y el **indicador offline** viven DENTRO del detalle (se desuscriben en el home).
 - **Ajustes GLOBALES = pantalla PLANA (sin tabs)**, desde el ⚙ del home (`ajustesSheet`). Secciones como
   **ACORDEONES con (v)**, COLAPSADAS por defecto (la primera pantalla queda corta; "Agregar persona" a la mano):

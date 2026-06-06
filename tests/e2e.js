@@ -240,11 +240,12 @@ check('Balance: cifra héroe (.bal-amount) visible sin tocar el acorde', !!q('.b
 check('Balance: el desglose (acc-body) está OCULTO por defecto', !q('.bal-card .acc-body') && !q('.acc-body'));
 // STATE-AWARE: primada ABIERTA → nota provisional bajo el héroe.
 check('Balance ABIERTA: nota "Provisional" bajo el héroe', /Provisional/.test(q('#screen').innerHTML));
-// Abrir el acorde del reparto → aparece el desglose (Cover/Margen/Sobrante…).
+// Abrir el acorde del reparto → aparece el desglose (Cover/Margen/Ganancia/Parte igual). Sobrante=0 → oculto (podado).
 click('[data-act="toggle-balance"][data-sec="reparto"]');
-check('Toggle reparto: el desglose se muestra (Sobrante en el acc-body)', /Sobrante/.test(q('#screen').innerHTML));
+check('Toggle reparto: el desglose se muestra (Margen en el acc-body)', /<span>Margen<\/span>/.test(q('#screen').innerHTML));
+check('Sobrante = 0 → NO se muestra (podado)', !/Sobrante/.test(q('#screen').innerHTML));
 click('[data-act="toggle-balance"][data-sec="reparto"]');   // colapsar de nuevo
-check('Toggle reparto: el desglose se oculta otra vez', !/Sobrante/.test(q('#screen').innerHTML));
+check('Toggle reparto: el desglose se oculta otra vez', !/<span>Margen<\/span>/.test(q('#screen').innerHTML));
 cerrarBalance();   // volver a operar
 
 // CORTESÍA: NO hay toggle por fila (eso metía "Sin cover" en todas). Se exonera desde "+ Exonerar cover" al
@@ -294,6 +295,12 @@ check('Recaudo ABIERTA: el texto "Por cobrar" ya NO aparece (0 veces, acorde col
 click('[data-act="toggle-balance"][data-sec="informe"]');
 check('Recaudo: la lista de deudores vive DENTRO del acorde ("Debe" + el deudor)',
   /Debe/.test(q('#screen').innerHTML) && new RegExp(beto.nombre).test(q('#screen').innerHTML));
+// PODA del Balance: el body deja Bre-B · Recupera · Entrega al Tesorero · Debe; SIN la plomería del auto-abono.
+check('Recaudo PODADO: body con Bre-B / Recupera / Entrega al Tesorero',
+  /<span>Bre-B<\/span>/.test(q('#screen').innerHTML) && /<span>Recupera<\/span>/.test(q('#screen').innerHTML)
+  && /Entrega al Tesorero/.test(q('#screen').innerHTML));
+check('Recaudo PODADO: SIN "Recaudo teórico" / "de terceros" / "del principal"',
+  !/Recaudo teórico/.test(q('#screen').innerHTML) && !/de terceros/.test(q('#screen').innerHTML) && !/del principal/.test(q('#screen').innerHTML));
 click('[data-act="toggle-balance"][data-sec="informe"]');   // colapsar de nuevo
 check('Recaudo: "provisional" NO aparece en esta tarjeta (sí queda en Ganancia)',
   (q('#screen').innerHTML.match(/provisional/gi) || []).length === 1);   // solo la nota de Ganancia

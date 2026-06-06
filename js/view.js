@@ -469,9 +469,6 @@
     const teaser = ahorr.length
       ? `Entrega ${$peso(pi)} a ${ahorr.length} ${ahorr.length === 1 ? 'Ahorrador' : 'Ahorradores'}`
       : 'Sin ahorradores';
-    const lista = ahorr.length
-      ? ahorr.map(a => `<div class="kv"><span>${e(nombrePersona(a.personaId))}</span><b>${$peso(pi)}</b></div>`).join('')
-      : `<div class="muted small">Sin ahorradores</div>`;
     const hero = `<div class="bal-hero">
         <div class="bal-label"><span class="dot ${cerrada ? 'closed' : ''}"></span>Ganancia</div>
         <div class="bal-amount">${$peso(gan)}</div>
@@ -481,15 +478,15 @@
         <span class="acc-caret ${abierto ? 'open' : ''}">${icon('chevron-down')}</span>
         <span class="acc-sub">${teaser}</span>
       </button>`;
+    // PODADO: el desglose deriva la Ganancia (Cover + Margen) y muestra la parte igual c/u. "Ahorradores: N"
+    // (ya en el teaser), la lista "Por persona" (N veces el mismo monto) y "Sobrante: $0" se ELIMINARON.
+    // El Sobrante solo aparece si es > 0 (lo indivisible que queda en el fondo; lo común es 0).
     const body = abierto ? `<div class="acc-body">
         <div class="kv"><span>Cover</span><b>${$peso(sel.coverCobrado(p))}</b></div>
         <div class="kv"><span>Margen</span><b>${$peso(sel.margenTotal(p))}</b></div>
         <div class="kv total"><span>Ganancia</span><b>${$peso(gan)}</b></div>
-        <div class="kv"><span>Ahorradores</span><b>${ahorr.length}</b></div>
-        <div class="kv"><span>Parte igual</span><b>${$peso(pi)}</b></div>
-        <div class="kv"><span>Sobrante</span><b>${$peso(sob)}</b></div>
-        <div class="sub">Por persona</div>
-        ${lista}
+        <div class="kv"><span>Parte igual c/u</span><b>${$peso(pi)}</b></div>
+        ${sob > 0 ? `<div class="kv"><span>Sobrante al fondo</span><b>${$peso(sob)}</b></div>` : ''}
       </div>` : '';
     return `<div class="card dark acc-card ${abierto ? 'open' : ''}">${hero}${toggle}${body}</div>`;
   }
@@ -541,15 +538,14 @@
     // hoja Pagar y el PNG). Si la Bre-B se agregó DESPUÉS de crear la primada (o se asignó el principal con
     // "Hacer principal"), el snapshot puede estar vacío pero la llave existe en el directorio → la mostramos.
     const breBRecaudo = (p.pago && p.pago.breB) || (prinId ? (sel.persona(prinId) || {}).breB : null) || '';
+    // PODADO: el body deja lo que el anfitrión USA para operar — su llave para recibir, cuánto recupera de su
+    // bolsillo, cuánto entrega al Tesorero, y quién debe. Se ELIMINARON: "Recaudo teórico", el desglose de
+    // "Recaudado / · de terceros / · del principal" (la plomería del auto-abono, confusa) y "Por cobrar"
+    // (ya es el héroe cuando está abierta). Las identidades viven en el modelo (informePrincipal), no en pantalla.
     const body = abierto ? `<div class="acc-body">
         <div class="kv"><span>Bre-B</span><b>${breBRecaudo ? e(breBRecaudo) : '—'}</b></div>
-        <div class="kv"><span>Recaudo teórico</span><b>${$peso(inf.recaudadoTeorico)}</b></div>
         <div class="kv"><span>Recupera</span><b>${$peso(inf.recuperaPrincipal)}</b></div>
         <div class="kv total"><span>Entrega al Tesorero</span><b>${$peso(inf.entregaTesorero)}</b></div>
-        <div class="kv"><span>Recaudado</span><b>${$peso(inf.recaudadoReal)}</b></div>
-        <div class="kv subkv"><span>· de terceros</span><b>${$peso(inf.pagadoTerceros)}</b></div>
-        <div class="kv subkv"><span>· del principal</span><b>${$peso(inf.autoAbonoPrincipal)}</b></div>
-        <div class="kv"><span>Por cobrar</span><b>${$peso(inf.saldoPendiente)}</b></div>
         <div class="sub">Debe</div>
         ${deudList}
       </div>` : '';
