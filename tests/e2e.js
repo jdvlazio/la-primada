@@ -157,6 +157,12 @@ check('Incompleta: sin principal en la topbar del detalle', /sin principal/.test
 section('Asistencias desde el directorio');
 click('[data-act="open-add-asis"]');   // abre la HOJA simple del directorio (overlay add-asis)
 check('Hoja Agregar asistente abierta', !q('#overlay').hidden && /Agregar asistente/.test(q('#overlay').innerHTML));
+// Atajo "Sin cover" (cortesía) SOLO cuando el cover del grupo es > 0 (default 15.000/10.000 → sí aparece).
+check('Cover > 0: el atajo "Sin cover" aparece en las filas', !!q('[data-act="add-asistencia-cortesia"]'));
+// Cover = 0 (ambos grupos) → el atajo se OCULTA: exonerar de 0 no tiene sentido (no se lee como etiqueta).
+Store.actions.setCover({ ahorrador: 0, invitado: 0 });
+check('Cover = 0: el atajo "Sin cover" se oculta', !q('[data-act="add-asistencia-cortesia"]'));
+Store.actions.setCover({ ahorrador: 15000, invitado: 10000 });   // restaurar para el resto del flujo
 click(`[data-act="add-asistencia"][data-pid="${ana.id}"]`);   // un toque agrega
 click(`[data-act="add-asistencia"][data-pid="${beto.id}"]`);
 click('[data-act="close-overlay"]');

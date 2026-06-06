@@ -398,17 +398,24 @@
       <div class="empty-soft">Sin primada</div></div>`;
     const dentro = new Set(p.asistencias.map(a => a.personaId));
     const fuera = S().personasOrdenadas().filter(per => !dentro.has(per.id));
-    // Cada fila ofrece DOS formas de agregar: normal (cobra el cover del grupo) o "Sin cover" (cortesía:
-    // niños/invitados de cortesía). La exoneración se DECIDE aquí, al agregar — la lista compacta de
-    // Configurar solo la muestra, no la edita (decisión de producto). Tras agregar, la fila desaparece.
+    // Cada fila agrega con "+ Agregar" (cobra el cover del grupo). El atajo "Sin cover" (cortesía: niños/
+    // invitados de cortesía → agrega EXONERADO) se muestra SOLO cuando el cover del grupo es > 0: si el grupo
+    // no paga cover, exonerar no tiene sentido y el botón se oculta (menos ruido; no se lee como etiqueta).
+    // La exoneración se DECIDE aquí, al agregar — la lista de Configurar solo la muestra, no la edita.
     const filas = fuera.length
-      ? fuera.map(per => `<div class="addrow">
-          <span class="acc-id"><b>${e(per.nombre)}</b> ${rolTag(per.estado)}</span>
-          <span class="addrow-acc">
-            <button class="xmini cortesia" data-act="add-asistencia-cortesia" data-pid="${per.id}">Sin cover</button>
-            <button class="mini" data-act="add-asistencia" data-pid="${per.id}">${icon('plus-circle')}Agregar</button>
-          </span>
-        </div>`).join('')
+      ? fuera.map(per => {
+          const cover = S().coverDe(p, { estadoEnEseMomento: per.estado, rol: 'asistente', coverExonerado: false });
+          const cortesia = cover > 0
+            ? `<button class="xmini cortesia" data-act="add-asistencia-cortesia" data-pid="${per.id}">Sin cover</button>`
+            : '';
+          return `<div class="addrow">
+            <span class="acc-id"><b>${e(per.nombre)}</b> ${rolTag(per.estado)}</span>
+            <span class="addrow-acc">
+              ${cortesia}
+              <button class="mini" data-act="add-asistencia" data-pid="${per.id}">${icon('plus-circle')}Agregar</button>
+            </span>
+          </div>`;
+        }).join('')
       : '<div class="empty-soft">Ya están todos</div>';
     return `<div class="sheet full">
       <div class="sheet-head">
