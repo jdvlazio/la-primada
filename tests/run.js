@@ -486,8 +486,9 @@ section("Migración: 'programada' (histórica) → 'abierta' con autosana");
   const p = norm.primadas.find(x => x.id === 'prm_vieja_prog');
   eq("'programada' histórica → estado 'abierta'", p.estado, 'abierta');
   check('autosana: rellena los productos por defecto (no queda vacía)', p.productos.length > 0);
-  check("autosana: fecha '' → hoy (YYYY-MM-DD), como hacía abrirPrimada", /^\d{4}-\d{2}-\d{2}$/.test(p.fecha));
-  eq('conserva el mes contable', p.mesContable, '2026-08');
+  // DÍA OPCIONAL (nuevo): una fecha vacía NO se rellena con hoy → queda SIN día (''); el mes (ancla) se conserva.
+  eq("día opcional: fecha '' se conserva SIN día (no se rellena con hoy)", p.fecha, '');
+  eq('conserva el mes contable (ancla)', p.mesContable, '2026-08');
   check('conserva organizadores/principal (Ana principal)', p.asistencias.find(a => a.personaId === ana).rol === 'principal');
   // ya es una abierta normal: aparece en el historial por año, entra a las fórmulas (recaudado computable)
   check('aparece en primadasPorAnio (historial)', norm.primadas.some(x => x.id === 'prm_vieja_prog'));

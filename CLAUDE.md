@@ -223,9 +223,13 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
   claro (`.cuenta-sec`). "+ Agregar persona" siempre visible. Reusa `personasBody` + `ajustesBody` (drill-in
   `personaEditView`). (El viejo gear de 4 tabs, `overlaySheet`/`calendarioBody`/`primadaConfigTab`, se ELIMINÓ.)
 - **Fondo** (tesorería futura) ya NO es un tab: se reubicará en una pasada futura (placeholder pendiente).
-- **Identidad de la primada:** fecha/mes se fijan al **crear** (wizard, sin edición posterior). El **nombre** por
-  defecto = **suma de TODOS los organizadores** (`nombreSugerido`, ya no capa en 2) y es **EDITABLE** en Configurar
-  (campo "Nombre", acción `renombrarPrimada`, commitQuiet) para casos especiales.
+- **Identidad de la primada (TODO editable en Configurar, commitQuiet):** **Nombre** (por defecto = suma de TODOS
+  los organizadores `nombreSugerido`, `renombrarPrimada`) · **Mes** (`mesContable`, el ancla; `setMesContable` —
+  si tiene día, lo MUEVE al nuevo mes) · **Día OPCIONAL** (`setDiaPrimada` — vacío = "sin día"; 1–31 = fecha completa).
+  El wizard también crea con **mes + día opcional** (default: mes actual, SIN día — se programa el mes y el día se
+  agrega después). **El día puede estar vacío:** el normalizador YA NO rellena `fecha:''` con hoy (queda sin día); el
+  home muestra solo el mes (`monthYear`) cuando no hay día. El **mesContable puede diferir** de la fecha del evento
+  (el modelo lo soporta vía `createPrimada`/acciones; el editor simple los mueve juntos).
 - Toda feature nueva debe caber en esta IA (home ↔ detalle). Si no cabe → **pausar y consultar**.
 
 ## Modelo de datos (esquema v6 — DEFINITIVO)
@@ -425,8 +429,9 @@ Casos clave del salto a v4 (siguen vigentes dentro del normalizador):
     (Julio con Mayo activa) va en **Próximas**, no en Pasadas. Estado vacío (0 primadas) orienta al "+" del home.
   - **MIGRACIÓN (tolerancia hacia atrás):** `normEstadoPrimada` mapea cualquier `'programada'` histórica → `'abierta'`.
     Como `Store.load()` aplica `migrate()` también a los datos de Supabase, esto **auto-convierte** las filas viejas en
-    **cada lectura**, y el normalizador **AUTOSANA** (rellena `productos` por defecto + `fecha` de hoy si estaba `''`),
-    igual que hacía `abrirPrimada`. La app no depende del SQL para funcionar. **SQL de limpieza (corrido aparte):**
+    **cada lectura**, y el normalizador **AUTOSANA** los `productos` por defecto. **(Día opcional, cambio v-actual: el
+    normalizador YA NO rellena `fecha:''` con hoy — una fecha vacía queda SIN día, con el mes como ancla.)**
+    La app no depende del SQL para funcionar. **SQL de limpieza (corrido aparte):**
     `UPDATE primadas SET estado='abierta' WHERE estado='programada'` (solo la columna; el jsonb se autosana al leer/escribir).
   - **Persistencia de `fecha` (sigue vigente):** la columna DATE `fecha` es `NOT NULL`; una fila con `fecha:''` recibe un
     **placeholder = `mesContable + '-01'`** en la columna y la fecha real en `data.fecha` (defensivo; ya casi no aplica

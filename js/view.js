@@ -156,7 +156,16 @@
     // editable para casos especiales. Al cerrar la hoja, el próximo render refleja el nombre en topbar/home.
     const nombreFld = `<label class="fld cfg-nombre"><span>Nombre</span>
       <input class="ti" data-ch="rename-primada" data-id="${p.id}" value="${e(p.nombre)}" maxlength="40" aria-label="Nombre de la primada"></label>`;
-    return `${nombreFld}<div class="seg-nav cfg-seg">${seg('asistentes', 'Asistentes', p.asistencias.length)}${seg('productos', 'Productos', p.productos.length)}</div>${body}`;
+    // FECHA editable con DÍA OPCIONAL: Mes (ancla, siempre) + Día (opcional). Pasa seguido que se programa el mes
+    // sin saber el día aún; y el mes se puede mover. Vacío el día = "sin día" (el home muestra solo el mes).
+    const dia = (/^\d{4}-\d{2}-(\d{2})$/.exec(String(p.fecha)) || [])[1] || '';
+    const fechaFld = `<div class="grid2 cfg-fecha">
+      <label class="fld"><span>Mes</span>
+        <input class="ti" type="month" data-ch="mes-primada" data-id="${p.id}" value="${e(p.mesContable)}" aria-label="Mes de la primada"></label>
+      <label class="fld"><span>Día <span class="muted">(opcional)</span></span>
+        <input class="ti" type="number" min="1" max="31" inputmode="numeric" placeholder="—" data-ch="dia-primada" data-id="${p.id}" value="${dia}" aria-label="Día de la primada (opcional)"></label>
+    </div>`;
+    return `${nombreFld}${fechaFld}<div class="seg-nav cfg-seg">${seg('asistentes', 'Asistentes', p.asistencias.length)}${seg('productos', 'Productos', p.productos.length)}</div>${body}`;
   }
 
   // Tab ASISTENTES: lista COMPACTA agrupada (Ahorradores / Invitados). PRINCIPIO "muestra la excepción,
@@ -878,13 +887,15 @@
   }
 
   function wizardPaso3(state, w) {
+    const dia = (/^\d{4}-\d{2}-(\d{2})$/.exec(String(w.fecha)) || [])[1] || '';
     return `<div class="wz-step">
       <div class="grid2">
-        <label class="fld"><span>Fecha</span>
-          <input class="ti" type="date" id="wz-fecha" value="${e(w.fecha)}"></label>
-        <label class="fld"><span>Mes contable</span>
+        <label class="fld"><span>Mes</span>
           <input class="ti" type="month" id="wz-mes" value="${e(w.mesContable)}"></label>
+        <label class="fld"><span>Día <span class="muted">(opcional)</span></span>
+          <input class="ti" type="number" min="1" max="31" inputmode="numeric" placeholder="—" id="wz-dia" value="${dia}"></label>
       </div>
+      <div class="muted small mt-2">Si aún no sabés el día, dejalo vacío — lo agregás después en Configurar.</div>
       <div class="sub">Resumen</div>
       <div class="kv"><span>Anfitrión</span><b>${w.principalId ? e(nombrePersona(w.principalId)) : '—'}</b></div>
       <div class="kv"><span>Organizadores</span><b>${1 + w.coorg.length}</b></div>

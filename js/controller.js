@@ -20,9 +20,10 @@
   // Inicializa el estado del wizard "Nueva primada": principal vacío, sin co-organizadores,
   // productos = copia editable del catálogo por defecto, fecha = hoy, mes = mes de hoy.
   function nuevoWizard() {
-    const hoy = Util.currentDate ? Util.currentDate() : '';
     const prods = (CONFIG.defaultProducts || []).map(p => ({ emoji: p.emoji, nombre: p.nombre, costoNeto: p.costoNeto, precioVenta: p.precioVenta }));
-    return { paso: 1, principalId: '', coorg: [], productos: prods, fecha: hoy, mesContable: Util.mesDeFecha ? Util.mesDeFecha(hoy) : '' };
+    // Por defecto: mes ACTUAL, SIN día (el caso común — se programa el mes, el día se agrega después).
+    const mes = Util.currentMonth ? Util.currentMonth() : (Util.mesDeFecha && Util.currentDate ? Util.mesDeFecha(Util.currentDate()) : '');
+    return { paso: 1, principalId: '', coorg: [], productos: prods, fecha: '', mesContable: mes };
   }
 
   // Vuelca los inputs del paso actual del wizard al estado ui.wizard (antes de avanzar/crear).
@@ -39,7 +40,14 @@
         if (campo === 'emoji') w.productos[i].emojiManual = (el.dataset.auto === '0');
       });
     }
-    if (w.paso === 3) { const f = val('wz-fecha'), m = val('wz-mes'); if (f !== undefined) w.fecha = f; if (m !== undefined) w.mesContable = m; }
+    if (w.paso === 3) {
+      const m = val('wz-mes'), d = val('wz-dia');
+      if (m !== undefined && /^\d{4}-\d{2}$/.test(m)) w.mesContable = m;
+      // día OPCIONAL: compone w.fecha = mes-día (1–31) o '' (sin día)
+      const mes = /^\d{4}-\d{2}/.test(String(w.mesContable)) ? String(w.mesContable).slice(0, 7) : '';
+      const n = Number(d);
+      w.fecha = (mes && d !== undefined && d !== '' && n >= 1 && n <= 31) ? (mes + '-' + String(n).padStart(2, '0')) : '';
+    }
   }
 
   // ui = estado EFÍMERO (no dominio, no se persiste):
@@ -449,6 +457,8 @@
       case 'rol':            tryAction(() => A.setRol(prm, pid, v)); break;
       case 'rename-persona': A.renombrarPersona(pid, v); break;
       case 'rename-primada': A.renombrarPrimada(id, v); break;   // nombre editable (commitQuiet, sin re-render)
+      case 'mes-primada':    A.setMesContable(id, v); break;     // mes (ancla) editable; mueve el día si lo hay
+      case 'dia-primada':    A.setDiaPrimada(id, v); break;      // día opcional (vacío = sin día)
       case 'breb-persona':   A.setBreBPersona(pid, v); break;
       case 'cover-ahorrador': A.setCover({ ahorrador: v }); break;
       case 'cover-invitado':  A.setCover({ invitado: v }); break;

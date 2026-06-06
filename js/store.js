@@ -57,6 +57,17 @@
     if (/^\d{4}-\d{2}$/.test(s)) return s + '-01';
     return Util.currentDate();
   }
+  // DÍA OPCIONAL: una fecha completa YYYY-MM-DD conserva el día; cualquier otra cosa = SIN día ('').
+  // El ancla es el MES (mesContable); la fecha (día) es opcional. Reemplaza al viejo '' → hoy en la carga.
+  function fechaOpcional(f) { return /^\d{4}-\d{2}-\d{2}$/.test(String(f || '')) ? String(f) : ''; }
+  function diaDeFecha(f) { const m = /^\d{4}-\d{2}-(\d{2})$/.exec(String(f || '')); return m ? Number(m[1]) : null; }
+  function mesPrefijo(s) { const m = /^(\d{4}-\d{2})/.exec(String(s || '')); return m ? m[1] : null; }
+  // Mes ancla de una primada: el mesContable explícito, o el de su fecha (con día), o el prefijo de su fecha, o el mes actual.
+  function mesAncla(p) {
+    if (/^\d{4}-\d{2}$/.test(String(p.mesContable))) return p.mesContable;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(p.fecha))) return Util.mesDeFecha(p.fecha);
+    return mesPrefijo(p.fecha) || (Util.currentMonth ? Util.currentMonth() : '');
+  }
   function normProducts(arr) {
     return (arr || []).map(p => {
       const precioVenta = Number(p.precioVenta != null ? p.precioVenta : p.price) || 0;
@@ -234,7 +245,7 @@
       // igual que hacía el viejo abrirPrimada (productos + fecha de hoy si estaba por definir).
       const defs = (s.settings.defaultProducts && s.settings.defaultProducts.length) ? s.settings.defaultProducts : catalogoBase();
       const productos = normProducts(p.productos && p.productos.length ? p.productos : defs);
-      const fecha = normFecha(p.fecha);              // '' (por definir) → hoy, como hacía abrirPrimada
+      const fecha = fechaOpcional(p.fecha);          // día OPCIONAL: fecha completa conserva día; resto = '' (sin día)
       const asisRaw = Array.isArray(p.asistencias) ? p.asistencias : (Array.isArray(p.asistentes) ? p.asistentes : []);
       const asistencias = asisRaw.map(a => {
         const rol = normRol(a.rol);
@@ -269,7 +280,7 @@
         id: p.id || Util.uid('prm'),
         nombre: String(p.nombre || p.familia || 'Primada').slice(0, 40),
         fecha,
-        mesContable: /^\d{4}-\d{2}$/.test(String(p.mesContable)) ? p.mesContable : (fecha ? Util.mesDeFecha(fecha) : ''),
+        mesContable: mesAncla(p),
         organizadorPrincipalId: principalId,
         pago: { breB: (p.pago && p.pago.breB != null && p.pago.breB !== '') ? String(p.pago.breB) : null },
         cover: normCover(p.cover),
@@ -567,7 +578,7 @@
         if (!principalPer) throw new Error('createPrimada: el organizador principal no existe');
         if (principalPer.estado !== 'ahorrador') throw new Error('createPrimada: el organizador principal debe ser ahorrador');
       }
-      const f = normFecha(fecha || Util.currentDate());
+      const f = fechaOpcional(fecha);                // día OPCIONAL: si no viene fecha completa → SIN día ('')
       // productos: si el wizard pasa un set propio (editado/desde cero) se usa ese (snapshot del evento);
       // si no, se copia el catálogo por defecto. En ambos casos aportadoPor por defecto = principal.
       const baseProductos = (Array.isArray(productos) && productos.length) ? productos : state.settings.defaultProducts;
@@ -586,7 +597,7 @@
         id: Util.uid('prm'),
         nombre: (nombre && String(nombre).trim()) ? String(nombre).slice(0, 40) : select.nombreSugerido(organizadores),
         fecha: f,
-        mesContable: /^\d{4}-\d{2}$/.test(String(mesContable)) ? mesContable : Util.mesDeFecha(f),
+        mesContable: mesAncla({ mesContable, fecha: f }),   // mes explícito (puede diferir de la fecha) o derivado
         organizadorPrincipalId: principalId || null,
         pago: { breB: principalPer ? principalPer.breB : null },
         cover: { ...state.settings.cover },        // SNAPSHOT del cover vigente
@@ -600,8 +611,24 @@
     // activePrimadaId es LOCAL por dispositivo → no se sincroniza; solo se espeja local.
     seleccionarPrimada(id) { if (findPrimada(id)) { state.activePrimadaId = id; commit({ local: true }); } },
     renombrarPrimada(id, nombre) { const p = findPrimada(id); if (!p) return; p.nombre = String(nombre || p.nombre).slice(0, 40); commitQuiet({ kind: 'primada', id }); },
-    setFecha(id, fecha) { const p = findPrimada(id); if (!p) return; p.fecha = normFecha(fecha); commitQuiet({ kind: 'primada', id }); },
-    setMesContable(id, mes) { const p = findPrimada(id); if (!p) return; if (/^\d{4}-\d{2}$/.test(String(mes))) { p.mesContable = mes; commitQuiet({ kind: 'primada', id }); } },
+    setFecha(id, fecha) { const p = findPrimada(id); if (!p) return; p.fecha = fechaOpcional(fecha); commitQuiet({ kind: 'primada', id }); },
+    // Editar el MES de la primada (mesContable, el ancla). Si tiene día, lo MUEVE al nuevo mes; si no, queda sin día.
+    setMesContable(id, mes) {
+      const p = findPrimada(id); if (!p) return;
+      if (!/^\d{4}-\d{2}$/.test(String(mes))) return;
+      p.mesContable = mes;
+      const d = diaDeFecha(p.fecha);
+      p.fecha = d ? (mes + '-' + String(d).padStart(2, '0')) : '';
+      commitQuiet({ kind: 'primada', id });
+    },
+    // Editar el DÍA (opcional) dentro del mes de la primada. Vacío/0/fuera de rango = SIN día (''); 1–31 = fecha completa.
+    setDiaPrimada(id, dia) {
+      const p = findPrimada(id); if (!p) return;
+      const mes = mesPrefijo(p.mesContable); if (!mes) return;
+      const n = Number(dia);
+      p.fecha = (dia !== '' && dia != null && n >= 1 && n <= 31) ? (mes + '-' + String(n).padStart(2, '0')) : '';
+      commitQuiet({ kind: 'primada', id });
+    },
     // Al CERRAR se SELLA el cover vigente en el snapshot (historia congelada): de ahí en más coverDe usa
     // primada.cover, ya no settings. Antes de cerrar, una abierta deriva del cover vigente (ver coverDe).
     cerrarPrimada(id) { const p = findPrimada(id); if (!p) return; p.cover = { ...state.settings.cover }; p.estado = 'cerrada'; commit({ kind: 'primada', id }); },

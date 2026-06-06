@@ -580,9 +580,9 @@ setVal('[data-wz="emoji"][data-i="0"]', '🍹');
 setVal('[data-wz="costoNeto"][data-i="0"]', '4000');
 setVal('[data-wz="precioVenta"][data-i="0"]', '12000');
 click('[data-act="wz-siguiente"]');                         // → paso 3
-check('Avanzó al paso 3 (fecha y mes)', /wz-title">Fecha/.test(q('#overlay').innerHTML));
-setVal('#wz-fecha', '2026-05-31');
+check('Avanzó al paso 3 (Fecha: mes + día opcional)', /wz-title">Fecha/.test(q('#overlay').innerHTML) && !!q('#wz-mes') && !!q('#wz-dia'));
 setVal('#wz-mes', '2026-06');
+setVal('#wz-dia', '15');
 click('[data-act="wz-crear"]');                             // crear
 check('Wizard cerrado tras crear', q('#overlay').hidden);
 eq('Se creó 1 primada nueva', st().primadas.length, primadasAntes + 1);
@@ -595,8 +595,8 @@ check('Wizard: Beto co-organizador (rol organizador)', nueva.asistencias.find(a 
 eq('Wizard: 1 producto (Cóctel)', nueva.productos.length, 1);
 eq('Wizard: producto Cóctel nombre', nueva.productos[0].nombre, 'Cóctel');
 eq('Wizard: margen Cóctel = 8000', Store.select.margenProducto(nueva.productos[0]), 8000);
-eq('Wizard: fecha 2026-05-31', nueva.fecha, '2026-05-31');
-eq('Wizard: mes contable 2026-06 (distinto a la fecha)', nueva.mesContable, '2026-06');
+eq('Wizard: fecha = mes + día (2026-06-15)', nueva.fecha, '2026-06-15');
+eq('Wizard: mes contable 2026-06', nueva.mesContable, '2026-06');
 // cancelar un wizard nuevo no crea nada
 const antesCancelar = st().primadas.length;
 irHome(); click('[data-act="new-primada"]');
@@ -686,6 +686,28 @@ eq('Renombrar desde Configurar aplica al modelo', st().primadas.find(p => p.id =
 click('[data-act="close-overlay"]');
 irHome();
 check('El nombre editado se refleja en el home (hero/topbar)', /Cumple de Caro/.test(q('#screen').innerHTML) || /Cumple de Caro/.test(q('#topbar').innerHTML));
+
+/* ---------- 16. Fecha con DÍA OPCIONAL (programar mes sin día; agregar/mover/quitar el día) ---------- */
+section('Fecha: día opcional — programar el mes sin día; editar mes/día en Configurar');
+const reEsc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const idF = Store.actions.createPrimada({ principalId: ana.id, organizadores: [ana.id], mesContable: '2026-09' });  // SIN día
+eq('Crear con solo el mes → fecha SIN día (vacía)', st().primadas.find(p => p.id === idF).fecha, '');
+eq('mesContable queda en el mes elegido', st().primadas.find(p => p.id === idF).mesContable, '2026-09');
+Store.actions.seleccionarPrimada(idF); irHome();
+check('Home sin día: el hero muestra el MES (no un día)', new RegExp(reEsc(window.Util.monthYear('2026-09'))).test(q('#screen').innerHTML));
+// Configurar: el editor de fecha (Mes + Día opcional).
+entrarDetalle(idF);
+click('[data-act="open-config-primada"]');
+check('Configurar: campos Mes + Día presentes', !!q(`[data-ch="mes-primada"][data-id="${idF}"]`) && !!q(`[data-ch="dia-primada"][data-id="${idF}"]`));
+setVal(`[data-ch="dia-primada"][data-id="${idF}"]`, '12');
+eq('Agregar el día 12 → fecha = mes + día', st().primadas.find(p => p.id === idF).fecha, '2026-09-12');
+setVal(`[data-ch="mes-primada"][data-id="${idF}"]`, '2026-11');
+eq('Mover el mes → mesContable nuevo', st().primadas.find(p => p.id === idF).mesContable, '2026-11');
+eq('Mover el mes → el día se MUEVE al nuevo mes (2026-11-12)', st().primadas.find(p => p.id === idF).fecha, '2026-11-12');
+setVal(`[data-ch="dia-primada"][data-id="${idF}"]`, '');
+eq('Quitar el día (vacío) → fecha SIN día', st().primadas.find(p => p.id === idF).fecha, '');
+eq('Al quitar el día, el mes (ancla) se conserva', st().primadas.find(p => p.id === idF).mesContable, '2026-11');
+click('[data-act="close-overlay"]');
 
 /* ---------- Resumen ---------- */
 console.log(`\n${'='.repeat(50)}`);
