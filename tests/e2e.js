@@ -344,8 +344,8 @@ check('Informe: sin Bre-B → la línea 🔑 se omite', !/informe-llave/.test(in
 const prevBreB = prm().pago.breB;
 prm().pago.breB = 'ana@bre-b';
 const conLlave = window.View.informeTemplateHTML(prm());
-check('Informe: "🔑 Bre-B:" neutro + el VALOR en teal (.informe-llave-val)',
-  /informe-llave">🔑 Bre-B: <span class="informe-llave-val">ana@bre-b<\/span>/.test(conLlave));
+check('Informe: "🔑 Bre-B:" neutro + el VALOR en teal (regla global .breb-val)',
+  /informe-llave">🔑 Bre-B: <span class="breb-val">ana@bre-b<\/span>/.test(conLlave));
 check('Informe: la 🔑 va tras el título y antes de los asistentes',
   conLlave.indexOf('informe-title') < conLlave.indexOf('informe-llave') &&
   conLlave.indexOf('informe-llave') < conLlave.indexOf('informe-asis'));
@@ -355,12 +355,12 @@ prm().pago.breB = prevBreB || null;   // restaurar el snapshot
 prm().pago.breB = null;                                  // snapshot vacío (como una primada vieja)
 Store.actions.setBreBPersona(ana.id, 'ana-nueva@bre-b'); // llave agregada a la persona después
 check('Informe (PNG): Bre-B por FALLBACK a la persona principal cuando el snapshot es null',
-  /informe-llave">🔑 Bre-B: <span class="informe-llave-val">ana-nueva@bre-b<\/span>/.test(window.View.informeTemplateHTML(prm())));
+  /informe-llave">🔑 Bre-B: <span class="breb-val">ana-nueva@bre-b<\/span>/.test(window.View.informeTemplateHTML(prm())));
 // Y EN LA APP (Balance, bloque Cobro): la línea "Bre-B" usa el MISMO fallback (antes mostraba "—").
 abrirBalance();
 click('[data-act="toggle-balance"][data-sec="balance"]');     // abrir el desglose del Balance
-check('Balance (app): Bre-B por FALLBACK al principal, no "—"',
-  /<span>Bre-B<\/span><b>ana-nueva@bre-b<\/b>/.test(q('#screen').innerHTML));
+check('Balance (app): Bre-B por FALLBACK al principal, en teal (.breb-val), no "—"',
+  /<span>Bre-B<\/span><b class="breb-val">ana-nueva@bre-b<\/b>/.test(q('#screen').innerHTML));
 click('[data-act="toggle-balance"][data-sec="balance"]');     // colapsar
 cerrarBalance();        // volver a operar
 Store.actions.setBreBPersona(ana.id, '');                // restaurar (persona sin llave)

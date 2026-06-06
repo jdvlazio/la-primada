@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260606-144617-0295b89">
+<meta name="build" content="20260606-145333-66a741c">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -154,6 +154,10 @@
   .kv:first-of-type{border-top:none}
   .kv span{color:var(--ink-soft)}
   .kv b{font-weight:700}
+  /* REGLA GLOBAL — VALOR de la llave Bre-B en teal (el dato que más importa a quien va a pagar); la
+     etiqueta "Bre-B" queda neutra. Se usa en todo lugar donde se MUESTRA una llave para recibir/pagar
+     (informe PNG, panel de Balance, hoja Pagar). NO aplica al input de edición en Personas. */
+  .breb-val{color:var(--accent);font-weight:700}
 
   /* Jerarquía por tipografía (no por cajas): título de sección más definido por peso/tamaño. */
   .h2{font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);margin:0}
@@ -340,7 +344,6 @@
   .informe-title{font-weight:800;font-size:24px;line-height:1.06;letter-spacing:-.02em;color:var(--ink)}
   /* Bre-B: la ETIQUETA "🔑 Bre-B:" neutra; el VALOR (la llave para pagar, lo que más importa) en teal. */
   .informe-llave{margin-top:5px;font-weight:600;font-size:12.5px;color:var(--ink-soft);word-break:break-all}
-  .informe-llave-val{color:var(--accent);font-weight:700}
   /* HÉROE: banda con la cifra (Ganancia teal / Por cobrar ámbar). COMPACTA (padding chico) para que quede
      limpio: el peso lo da el color y la tipografía, no el tamaño de la caja. */
   .informe-hero{margin:var(--space-3) 0;padding:var(--space-2) var(--space-3);border-radius:12px;
@@ -449,7 +452,7 @@
   .pagar-to{font-size:14px;color:var(--ink-soft)}
   .pagar-to b{color:var(--ink);font-weight:700}
   .pagar-llave{display:flex;align-items:center;gap:var(--space-2);justify-content:space-between;background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius-md);padding:var(--space-2) var(--space-3);margin-top:var(--space-1)}
-  .pagar-llave-val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:16px;font-weight:700;color:var(--ink);word-break:break-all;text-align:left}
+  .pagar-llave-val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:16px;font-weight:700;word-break:break-all;text-align:left}
   .xmini{border:none;background:none;cursor:pointer;color:var(--ink-soft);font-size:13px;padding:var(--space-1);border-radius:var(--radius-sm)}
   .xmini:active{transform:scale(.85)}
 
@@ -682,13 +685,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260606-144617-0295b89"></script>
-  <script src="js/util.js?v=20260606-144617-0295b89"></script>
-  <script src="js/api.js?v=20260606-144617-0295b89"></script>
-  <script src="js/auth.js?v=20260606-144617-0295b89"></script>
-  <script src="js/store.js?v=20260606-144617-0295b89"></script>
-  <script src="js/view.js?v=20260606-144617-0295b89"></script>
-  <script src="js/controller.js?v=20260606-144617-0295b89"></script>
+  <script src="js/config.js?v=20260606-145333-66a741c"></script>
+  <script src="js/util.js?v=20260606-145333-66a741c"></script>
+  <script src="js/api.js?v=20260606-145333-66a741c"></script>
+  <script src="js/auth.js?v=20260606-145333-66a741c"></script>
+  <script src="js/store.js?v=20260606-145333-66a741c"></script>
+  <script src="js/view.js?v=20260606-145333-66a741c"></script>
+  <script src="js/controller.js?v=20260606-145333-66a741c"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).

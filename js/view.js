@@ -84,7 +84,7 @@
     const principalId = p.organizadorPrincipalId;
     const breBRaw = (p.pago && p.pago.breB) || (principalId ? (sel.persona(principalId) || {}).breB : null) || '';
     const breB = breBRaw ? String(breBRaw).trim() : '';
-    const llave = breB ? `<div class="informe-llave">🔑 Bre-B: <span class="informe-llave-val">${e(breB)}</span></div>` : '';
+    const llave = breB ? `<div class="informe-llave">🔑 Bre-B: <span class="breb-val">${e(breB)}</span></div>` : '';
     return `<div class="informe-card">
         <div class="informe-head">
           <span class="informe-brand">Primad<span class="informe-brand-ac">app</span></span>
@@ -353,7 +353,7 @@
     const nombrePrin = principalId ? nombrePersona(principalId) : '—';
     const llaveBlock = llave
       ? `<div class="pagar-llave">
-           <span class="pagar-llave-val">${e(llave)}</span>
+           <span class="pagar-llave-val breb-val">${e(llave)}</span>
            <button class="mini ghost" data-act="copiar-llave" data-llave="${e(llave)}">${icon('copy')}Copiar</button>
          </div>`
       : `<div class="muted small">El anfitrión aún no tiene una llave Bre-B.
@@ -688,7 +688,7 @@
     const cobro = !completa
       ? `<div class="kv"><span class="muted small">Asigná un anfitrión para el cobro</span></div>`
       : (deud.length
-          ? `<div class="kv"><span>Bre-B</span><b>${breB ? e(breB) : '—'}</b></div><div class="sub">Debe</div>${pendRows}${saldRows}`
+          ? `<div class="kv"><span>Bre-B</span><b${breB ? ' class="breb-val"' : ''}>${breB ? e(breB) : '—'}</b></div><div class="sub">Debe</div>${pendRows}${saldRows}`
           : saldRows);
 
     // CUENTAS (referencia) DESPUÉS: parte igual (lo que toca), cómo se compone (cover/margen), reembolso
