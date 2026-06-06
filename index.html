@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260606-124526-009c96d">
+<meta name="build" content="20260606-133343-2cb0e79">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -355,12 +355,10 @@
   .informe-resumen.gan{color:var(--accent)}
   .informe-resumen.cobrar{color:var(--amber)}
   .informe-foot{margin-top:var(--space-3);text-align:center;font-size:11px;color:#9aa8a6}
-  .kv.total{border-top:2px solid var(--line);margin-top:var(--space-1);padding-top:var(--space-2);font-weight:700}
-  .card.dark .kv.total{border-top-color:rgba(255,255,255,.22)}
-  /* "Ganancia" (único uso de .kv.total: tarjeta Ganancia dark + body del Recaudo light) SIEMPRE en el
-     acento teal = dinero positivo, coherente con el tono "entregado" del héroe. Mismo color en ambos
-     acordeones (antes el dark lo pisaba con un dorado #ffd9a0 → dos colores para el mismo valor). */
-  .kv.total b{color:var(--accent);font-size:15px}
+  /* Balance consolidado: divisor entre lo ACCIONABLE (Cobro) y las CUENTAS de referencia; y fila "dim"
+     (atenuada) para el Reembolso = costo, NO ingreso (puede ser > ganancia y confundir si va a peso full). */
+  .bal-sep{height:1px;background:var(--line-soft);margin:var(--space-3) 0}
+  .kv.dim span,.kv.dim b{color:var(--ink-soft)}
   .sub{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);margin:var(--space-4) 0 var(--space-1)}
   .kv.subkv{border-top:none;padding:var(--space-1) 0;font-size:12px;color:var(--ink-soft)}
   .kv.subkv span{padding-left:var(--space-3)}
@@ -678,13 +676,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260606-124526-009c96d"></script>
-  <script src="js/util.js?v=20260606-124526-009c96d"></script>
-  <script src="js/api.js?v=20260606-124526-009c96d"></script>
-  <script src="js/auth.js?v=20260606-124526-009c96d"></script>
-  <script src="js/store.js?v=20260606-124526-009c96d"></script>
-  <script src="js/view.js?v=20260606-124526-009c96d"></script>
-  <script src="js/controller.js?v=20260606-124526-009c96d"></script>
+  <script src="js/config.js?v=20260606-133343-2cb0e79"></script>
+  <script src="js/util.js?v=20260606-133343-2cb0e79"></script>
+  <script src="js/api.js?v=20260606-133343-2cb0e79"></script>
+  <script src="js/auth.js?v=20260606-133343-2cb0e79"></script>
+  <script src="js/store.js?v=20260606-133343-2cb0e79"></script>
+  <script src="js/view.js?v=20260606-133343-2cb0e79"></script>
+  <script src="js/controller.js?v=20260606-133343-2cb0e79"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).

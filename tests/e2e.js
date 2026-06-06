@@ -231,21 +231,22 @@ eq('Ana (principal) sin cover', Store.select.coverDe(prm(), anaAsis()), 0);
 
 // Ganancia ANTES de exonerar: cover 10000 + margen 2*(3500-2500)=2000 → 12000
 eq('Ganancia = cover + margen (12.000)', Store.select.ganancia(prm()), 12000);
-// El reparto vive en el PANEL de Balance (colapsado por defecto en una abierta) → no aparece hasta desplegarlo.
-check('Reparto NO está con el panel colapsado', !/Ganancia/.test(q('#screen').innerHTML));
+// El Balance (UNA tarjeta consolidada) vive en el PANEL, colapsado por defecto en una abierta → no aparece hasta desplegar.
+check('Balance NO está con el panel colapsado', !/Ganancia/.test(q('#screen').innerHTML));
 abrirBalance();
-check('Reparto visible al desplegar el panel de Balance', /Ganancia/.test(q('#screen').innerHTML));
-// HERO NUMBER: la cifra protagonista (.bal-amount) está SIEMPRE visible, sin abrir el acorde.
+check('Balance visible al desplegar el panel (héroe Ganancia)', /Ganancia/.test(q('#screen').innerHTML));
+// HERO NUMBER: la cifra protagonista (.bal-amount) está SIEMPRE visible, sin abrir el desglose.
 check('Balance: cifra héroe (.bal-amount) visible sin tocar el acorde', !!q('.bal-amount'));
-check('Balance: el desglose (acc-body) está OCULTO por defecto', !q('.bal-card .acc-body') && !q('.acc-body'));
+check('Balance: el desglose (acc-body) está OCULTO por defecto', !q('.acc-body'));
 // STATE-AWARE: primada ABIERTA → nota provisional bajo el héroe.
 check('Balance ABIERTA: nota "Provisional" bajo el héroe', /Provisional/.test(q('#screen').innerHTML));
-// Abrir el acorde del reparto → aparece el desglose (Cover/Margen/Ganancia/Parte igual). Sobrante=0 → oculto (podado).
-click('[data-act="toggle-balance"][data-sec="reparto"]');
-check('Toggle reparto: el desglose se muestra (Margen en el acc-body)', /<span>Margen<\/span>/.test(q('#screen').innerHTML));
+// Abrir el desglose → CUENTAS (Cover/Margen/Parte igual). "Ganancia" NO se repite como línea (solo héroe). Sobrante=0 → oculto.
+click('[data-act="toggle-balance"][data-sec="balance"]');
+check('Toggle: el desglose se muestra (Margen en el acc-body)', /<span>Margen<\/span>/.test(q('#screen').innerHTML));
+check('Desglose NO repite "Ganancia" como línea (vive solo en el héroe)', !/<span>Ganancia<\/span>/.test(q('#screen').innerHTML));
 check('Sobrante = 0 → NO se muestra (podado)', !/Sobrante/.test(q('#screen').innerHTML));
-click('[data-act="toggle-balance"][data-sec="reparto"]');   // colapsar de nuevo
-check('Toggle reparto: el desglose se oculta otra vez', !/<span>Margen<\/span>/.test(q('#screen').innerHTML));
+click('[data-act="toggle-balance"][data-sec="balance"]');   // colapsar de nuevo
+check('Toggle: el desglose se oculta otra vez', !/<span>Margen<\/span>/.test(q('#screen').innerHTML));
 cerrarBalance();   // volver a operar
 
 // CORTESÍA: NO hay toggle por fila (eso metía "Sin cover" en todas). Se exonera desde "+ Exonerar cover" al
@@ -268,44 +269,40 @@ abrirConfig();
 check('Configurar: solo el exonerado muestra "sin cover" (tag tenue)', /class="sin-cover"/.test(q('#overlay').innerHTML));
 click('[data-act="close-overlay"]');
 
-/* ---------- 7. Balance: Ganancia y Recaudo ---------- */
-section('Balance: Ganancia + Recaudo (proceso de cobro)');
+/* ---------- 7. Balance consolidado (UNA tarjeta): héroe Ganancia + cobro + cuentas ---------- */
+section('Balance consolidado: un héroe (Ganancia), teaser por deuda, cobro + cuentas');
 const inf = Store.select.informePrincipal(prm());
 check('Informe completo (ya hay principal)', inf.incompleta === false);
 eq('Entrega al Tesorero = ganancia', inf.entregaTesorero, Store.select.ganancia(prm()));
 eq('Parte igual a la única ahorradora (Ana) = ganancia', Store.select.parteIgual(prm()), 2000);
 eq('Sobrante indivisible = 0', Store.select.sobranteFondo(prm()), 0);
-// La 2ª tarjeta etiqueta el héroe por lo que ES: ABIERTA → "Por cobrar" (antes decía "Recaudo" pero el
-// número era lo contrario y confundía). Sin nombre ni rol.
 abrirBalance();
-check('2ª tarjeta: héroe "Por cobrar" (no nombre/rol)', /Por cobrar/.test(q('#screen').innerHTML) && !/Principal — Ana/.test(q('#screen').innerHTML));
-// Beto debe (cover 0, pero 2 cervezas = 7.000 sin pagar) → ABIERTA: héroe en registro PENDIENTE ámbar
-// (.por-cobrar). NO destructivo (salmón) ni "entregado" (teal): la deuda es proceso, no alarma (DESIGN.md §1).
-check('Recaudo ABIERTA: el héroe usa el registro pendiente ámbar (.por-cobrar), no "entregado"',
-  /class="bal-amount por-cobrar"/.test(q('#screen').innerHTML) && !/bal-amount entregado/.test(q('#screen').innerHTML));
-// El TOGGLE no repite un número (regla: no repetir información) — es solo el afordance "Desglose" para abrir el
-// reparto. El número clave ya está en el héroe; reembolso/ganancia viven en el body al expandir.
-check('Recaudo ABIERTA: el toggle es afordance neutral "Desglose" (no repite la ganancia ni 2ª persona)',
-  /class="acc-sub">Desglose</.test(q('#screen').innerHTML) && !/Entregás/.test(q('#screen').innerHTML)
-  && !/Ganancia .*al Tesorero/.test(q('#screen').innerHTML));
-// MENOS ES MÁS: el héroe del Recaudo NO lleva microcopy (el conteo "de N personas" confundía). Quién debe
-// vive un nivel abajo, en la lista del acordeón ("Debe").
-check('Recaudo ABIERTA: el héroe NO muestra conteo "de N personas"', !/de \d+ persona/.test(q('#screen').innerHTML));
-// El detalle de quién debe sigue disponible al abrir el acordeón del Recaudo.
-click('[data-act="toggle-balance"][data-sec="informe"]');
-check('Recaudo: la lista de deudores vive DENTRO del acorde ("Debe" + el deudor)',
-  /Debe/.test(q('#screen').innerHTML) && new RegExp(beto.nombre).test(q('#screen').innerHTML));
-// PODA + MINIMALISMO: el body deja Bre-B · Reembolso de productos · Ganancia · Debe; SIN la plomería del
-// auto-abono y SIN el "Al Anfitrión/Al Tesorero" (cada línea NOMBRA la parte, sin actor ni texto tenue).
-check('Recaudo PODADO: body con Bre-B / Reembolso de productos / Ganancia (sin "Al Anfitrión", sin 2ª persona)',
-  /<span>Bre-B<\/span>/.test(q('#screen').innerHTML) && /<span>Reembolso de productos<\/span>/.test(q('#screen').innerHTML)
-  && /<span>Ganancia<\/span>/.test(q('#screen').innerHTML) && !/Al Anfitrión/.test(q('#screen').innerHTML)
-  && !/Recuperás/.test(q('#screen').innerHTML));
-check('Recaudo PODADO: SIN "Recaudo teórico" / "de terceros" / "del principal"',
-  !/Recaudo teórico/.test(q('#screen').innerHTML) && !/de terceros/.test(q('#screen').innerHTML) && !/del principal/.test(q('#screen').innerHTML));
-click('[data-act="toggle-balance"][data-sec="informe"]');   // colapsar de nuevo
-check('Recaudo: "provisional" NO aparece en esta tarjeta (sí queda en Ganancia)',
-  (q('#screen').innerHTML.match(/provisional/gi) || []).length === 1);   // solo la nota de Ganancia
+// UN solo héroe = Ganancia (ya NO hay un 2º héroe "Por cobrar"/"Entregado"). Sin nombre ni rol.
+check('Balance: un solo héroe "Ganancia" (ya no hay 2ª tarjeta "Por cobrar")',
+  /class="bal-label">[^]*?Ganancia/.test(q('#screen').innerHTML) && !/Por cobrar/.test(q('#screen').innerHTML)
+  && !/Entregado al Tesorero/.test(q('#screen').innerHTML) && !/Principal — Ana/.test(q('#screen').innerHTML));
+// TEASER state-aware POR DEUDA: Beto debe $7.000 → "Falta cobrar $7.000" (la señal VIVA), no el reparto.
+check('Teaser ABIERTA con deuda: "Falta cobrar $7.000" (señal viva, no el reparto)',
+  /class="acc-sub">Falta cobrar \$7\.000</.test(q('#screen').innerHTML) && !/a cada ahorrador/.test(q('#screen').innerHTML));
+// Abrir el desglose: COBRO primero (Bre-B + Debe + deudor), un divisor, luego CUENTAS.
+click('[data-act="toggle-balance"][data-sec="balance"]');
+const cuerpo = q('#screen').innerHTML;
+check('Desglose COBRO: Bre-B + "Debe" + el deudor (Beto)',
+  /<span>Bre-B<\/span>/.test(cuerpo) && /Debe/.test(cuerpo) && new RegExp(beto.nombre).test(cuerpo));
+check('Desglose: divisor .bal-sep separa Cobro de Cuentas', /class="bal-sep"/.test(cuerpo));
+check('Desglose CUENTAS: Parte igual c/u · Cover · Margen · Reembolso (atenuado .kv.dim)',
+  /Parte igual c\/u/.test(cuerpo) && /<span>Cover<\/span>/.test(cuerpo) && /<span>Margen<\/span>/.test(cuerpo)
+  && /class="kv dim"><span>Reembolso de productos<\/span>/.test(cuerpo));
+// Reembolso ($5.000 = 2×2.500) puede ser > Ganancia ($2.000): por eso va ATENUADO (.kv.dim), NO como ingreso.
+check('Reembolso de productos = $5.000, atenuado (.kv.dim)',
+  /class="kv dim"><span>Reembolso de productos<\/span><b>\$5\.000/.test(cuerpo));
+// "Ganancia" NO se repite como línea (solo el héroe); sin "Por cobrar" ni la plomería del auto-abono.
+check('Desglose sin "Ganancia" repetida, sin "Por cobrar/Recaudo teórico/de terceros/del principal"',
+  !/<span>Ganancia<\/span>/.test(cuerpo) && !/Por cobrar/.test(cuerpo) && !/Recaudo teórico/.test(cuerpo)
+  && !/de terceros/.test(cuerpo) && !/del principal/.test(cuerpo) && !/Recuperás/.test(cuerpo));
+click('[data-act="toggle-balance"][data-sec="balance"]');   // colapsar de nuevo
+check('Balance: "provisional" aparece UNA sola vez (la nota del héroe abierta)',
+  (q('#screen').innerHTML.match(/provisional/gi) || []).length === 1);
 cerrarBalance();
 
 /* ---------- 7b. Informe compartible (template PNG) ---------- */
@@ -350,12 +347,12 @@ prm().pago.breB = null;                                  // snapshot vacío (com
 Store.actions.setBreBPersona(ana.id, 'ana-nueva@bre-b'); // llave agregada a la persona después
 check('Informe (PNG): Bre-B por FALLBACK a la persona principal cuando el snapshot es null',
   /informe-llave">🔑 Bre-B ana-nueva@bre-b/.test(window.View.informeTemplateHTML(prm())));
-// Y EN LA APP (Recaudo, acordeón "informe"): la línea "Bre-B" usa el MISMO fallback (antes mostraba "—").
+// Y EN LA APP (Balance, bloque Cobro): la línea "Bre-B" usa el MISMO fallback (antes mostraba "—").
 abrirBalance();
-click('[data-act="toggle-balance"][data-sec="informe"]');     // abrir el acordeón del Recaudo
-check('Recaudo (app): Bre-B por FALLBACK al principal, no "—"',
+click('[data-act="toggle-balance"][data-sec="balance"]');     // abrir el desglose del Balance
+check('Balance (app): Bre-B por FALLBACK al principal, no "—"',
   /<span>Bre-B<\/span><b>ana-nueva@bre-b<\/b>/.test(q('#screen').innerHTML));
-click('[data-act="toggle-balance"][data-sec="informe"]');     // colapsar
+click('[data-act="toggle-balance"][data-sec="balance"]');     // colapsar
 cerrarBalance();        // volver a operar
 Store.actions.setBreBPersona(ana.id, '');                // restaurar (persona sin llave)
 // View.shareInforme existe y es invocable (la captura/share real se prueba en navegador, no en jsdom).
@@ -422,28 +419,26 @@ click(`[data-act="open-pagar"][data-pid="${beto.id}"]`);
 click(`[data-act="marcar-pagado"][data-pid="${beto.id}"]`);
 eq('Re-marcado pagado (persistencia)', betoAsis().pagado, true);
 
-/* ---------- 8b·3. Feedback visual del pago: check en Consumos + Recaudo no oculta saldados ---------- */
-section('Pago saldado: check en la tarjeta Consumos + Recaudo lista al saldado (nadie desaparece)');
+/* ---------- 8b·3. Feedback del pago: check en Consumos + el saldado SALE del cobro del Balance ---------- */
+section('Pago saldado: check en Consumos; el Balance muestra solo quién DEBE (el saldado sale del cobro)');
 // Beto saldado (saldo 0, total 7.000>0). En la cara Consumos su fila debe llevar check + nombre teal.
 cerrarBalance(); activar(beto.id);
 check('Consumos: Beto saldado muestra .asis-check junto al nombre',
   /asis-check/.test(q('#screen').querySelector(`[data-act="activar-asis"][data-pid="${beto.id}"]`).innerHTML));
 check('Consumos: la fila saldada lleva el nombre en teal (.asis-fila-id.saldado)',
   !!q('#screen').querySelector(`.asis-fila[data-pid="${beto.id}"] .asis-fila-id.saldado`));
-// Recaudo: Beto NO desaparece — aparece al final como saldado (.kv.saldada con check), no como deudor ámbar.
+// Balance: nadie debe → el bloque COBRO desaparece y el teaser pasa al reparto. El saldado NO se lista en el
+// Balance (este muestra solo quién DEBE; el "ya pagó" vive en el check de Consumos — minimalismo).
 abrirBalance();
-click('[data-act="toggle-balance"][data-sec="informe"]');   // expandir el acorde del Recaudo (la lista vive dentro)
-const recaudo = q('#screen').innerHTML;
-check('Recaudo: bloque saldadas presente (.kv.saldada) con Beto y un check',
-  /kv saldada/.test(recaudo) && new RegExp('kv saldada[^]*asis-check[^]*' + beto.nombre).test(recaudo));
-check('Recaudo: Beto ya NO figura como pendiente con monto ámbar (.pend)',
-  !new RegExp(beto.nombre + '</span><b class="pend"').test(recaudo));
-// El VALOR no desaparece: la fila saldada muestra el monto que pagó (su total) en teal (.pagado).
-const totalBeto = Store.select.totalAsistencia(prm(), betoAsis());
-const pesoRe = window.Util.peso(totalBeto).replace(/[.$]/g, '\\$&');   // escapa $ y . para el RegExp
-check('Recaudo: saldado conserva el monto pagado (.kv.saldada con <b class="pagado"> + total de Beto)',
-  new RegExp('kv saldada"><span>[^]*' + beto.nombre + '</span><b class="pagado">' + pesoRe).test(recaudo));
-click('[data-act="toggle-balance"][data-sec="informe"]');   // colapsar de nuevo (no contaminar tests posteriores)
+check('Balance: nadie debe → teaser al reparto ("a cada ahorrador"), sin "Falta cobrar"',
+  /a cada ahorrador/.test(q('#screen').innerHTML) && !/Falta cobrar/.test(q('#screen').innerHTML));
+click('[data-act="toggle-balance"][data-sec="balance"]');   // expandir el desglose
+const tras = q('#screen').innerHTML;
+check('Balance: SIN bloque "Debe" ni el deudor (todos saldados → no hay cobro)',
+  !/<div class="sub">Debe<\/div>/.test(tras) && !new RegExp(beto.nombre + '</span><b class="pend"').test(tras));
+check('Balance: SIN línea Bre-B (no hay nada que cobrar)', !/<span>Bre-B<\/span>/.test(tras));
+check('Balance: SIN bloque saldadas (.kv.saldada eliminado — el Balance no lista a quien ya pagó)', !/kv saldada/.test(tras));
+click('[data-act="toggle-balance"][data-sec="balance"]');   // colapsar de nuevo (no contaminar tests posteriores)
 
 /* ---------- 8b·2. CTA contextual "Todos pagaron · Cerrar primada" (P5 lote visual) ---------- */
 section('CTA "Todos pagaron · Cerrar primada" aparece y cierra (P5)');
@@ -458,21 +453,22 @@ click(cta);                                                      // cerrar por e
 eq('Primada cerrada vía CTA', prm().estado, 'cerrada');
 // PANEL por estado (IA list→detalle): al cerrar, el panel de Balance se DESPLIEGA solo (documento final);
 // la Lista viva (Consumos) sigue presente arriba (congelada). El cálculo no cambia.
-check('Cerrada → panel de Balance desplegado (reparto)', balanceVisible() && /Ganancia/.test(q('#screen').innerHTML));
+check('Cerrada → panel de Balance desplegado (héroe Ganancia)', balanceVisible() && /Ganancia/.test(q('#screen').innerHTML));
 check('Lista viva + chip de Balance coexisten (mismo scroll)',
   !!q('[data-act="toggle-balance-panel"]') && /Asistentes/.test(q('#screen').innerHTML));
 check('Chip de Balance marcado activo (on) al abrir cerrada',
   /class="balance-toggle on"/.test(q('#screen').innerHTML));
-// STATE-AWARE en CERRADA: documento final → SIN nota provisional (Ganancia); Recaudo = lo ENTREGADO.
-check('Cerrada: SIN nota "Provisional" (ni en Ganancia ni en Recaudo)', !/[Pp]rovisional/.test(q('#screen').innerHTML));
-check('Cerrada Recaudo: héroe tono "entregado" (teal/--accent)', /class="bal-amount entregado"/.test(q('#screen').innerHTML));
-check('Cerrada Recaudo: héroe etiquetado "Entregado al Tesorero"', /Entregado al Tesorero/.test(q('#screen').innerHTML));
-// CERRADA: el toggle también es el afordance neutral "Desglose" (no repite números ni usa 2ª persona).
-check('Cerrada Recaudo: toggle neutral "Desglose" (sin "Recuperaste", sin "Costo … al Anfitrión")',
-  /class="acc-sub">Desglose</.test(q('#screen').innerHTML) && !/Recuperaste/.test(q('#screen').innerHTML)
-  && !/Costo .*al Anfitrión/.test(q('#screen').innerHTML));
-// CERRADA: el héroe ya NO dice "Por cobrar" (es lo entregado, no lo pendiente).
-check('Cerrada Recaudo: sin "Por cobrar"', !/Por cobrar/.test(q('#screen').innerHTML));
+// STATE-AWARE en CERRADA (documento final): SIN nota provisional; UN solo héroe = Ganancia, tono NEUTRO
+// (ya no hay 2º héroe "Por cobrar"/"Entregado al Tesorero"). Nadie debe → sin bloque de cobro.
+check('Cerrada: SIN nota "Provisional"', !/[Pp]rovisional/.test(q('#screen').innerHTML));
+check('Cerrada: héroe único "Ganancia" (sin "Por cobrar" ni "Entregado al Tesorero")',
+  /class="bal-label">[^]*?Ganancia/.test(q('#screen').innerHTML) && !/Por cobrar/.test(q('#screen').innerHTML)
+  && !/Entregado al Tesorero/.test(q('#screen').innerHTML));
+check('Cerrada: héroe Ganancia en tono neutro (.bal-amount sin "entregado"/"por-cobrar")',
+  /class="bal-amount">/.test(q('#screen').innerHTML) && !/bal-amount entregado/.test(q('#screen').innerHTML)
+  && !/bal-amount por-cobrar/.test(q('#screen').innerHTML));
+check('Cerrada saldada: teaser al reparto ("a cada ahorrador"), sin "Falta cobrar"',
+  /a cada ahorrador/.test(q('#screen').innerHTML) && !/Falta cobrar/.test(q('#screen').innerHTML));
 cerrarBalance();           // la cara Consumos sigue accesible…
 check('Cara Consumos accesible con la cuenta cerrada', /Asistentes/.test(q('#screen').innerHTML));
 activar(beto.id);                                                // activar para ver sus chips (solo lectura)
