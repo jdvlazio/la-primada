@@ -245,14 +245,20 @@
   }
   function asistenteFilaCompacta(p, a, coverGrupo, cerrada, incompleta) {
     const esPrin = S().esPrincipal(p, a);
-    // EXCEPCIÓN: el cover efectivo de la persona difiere del grupo (0 vs >0) → exonerado o cover-free por rol.
-    const sinCover = coverGrupo > 0 && S().coverDe(p, a) === 0;
     // Fix mínimo: solo mientras la primada esté incompleta y la persona sea ahorrador (INVARIANTE #2).
     const puedePrincipal = incompleta && !cerrada && a.estadoEnEseMomento === 'ahorrador' && !esPrin;
+    // CORTESÍA: toggle "Sin cover" por asistente (exonera el cover a niños/invitados gratis). Solo tiene
+    // sentido en un asistente que SÍ pagaría cover (rol 'asistente' y cover del grupo > 0); los organizadores
+    // ya son cover-free por rol. Estado activo (.on) = exonerado. No editable con la cuenta cerrada.
+    const puedeExonerar = !cerrada && a.rol === 'asistente' && coverGrupo > 0;
+    const toggleCover = puedeExonerar
+      ? `<button class="xmini cover-toggle ${a.coverExonerado ? 'on' : ''}" data-act="toggle-exonerado" data-pid="${a.personaId}" aria-pressed="${a.coverExonerado ? 'true' : 'false'}" title="Cortesía: sin cover">Sin cover</button>`
+      : '';
     return `<div class="asis-compact">
-      <span class="asis-compact-id">${esPrin ? '<span class="dot prin" title="Anfitrión"></span>' : '<span class="dot neutral"></span>'}<b>${e(nombrePersona(a.personaId))}</b>${sinCover ? '<span class="sin-cover">Sin cover</span>' : ''}</span>
+      <span class="asis-compact-id">${esPrin ? '<span class="dot prin" title="Anfitrión"></span>' : '<span class="dot neutral"></span>'}<b>${e(nombrePersona(a.personaId))}</b></span>
       <span class="asis-compact-acc">
         ${puedePrincipal ? `<button class="xmini hacer-prin" data-act="hacer-principal" data-pid="${a.personaId}">Hacer anfitrión</button>` : ''}
+        ${toggleCover}
         <button class="xmini" data-act="remove-asistencia" data-pid="${a.personaId}" ${cerrada ? 'disabled' : ''} aria-label="Quitar de la primada">${icon('x')}</button>
       </span>
     </div>`;
@@ -398,24 +404,14 @@
       <div class="empty-soft">Sin primada</div></div>`;
     const dentro = new Set(p.asistencias.map(a => a.personaId));
     const fuera = S().personasOrdenadas().filter(per => !dentro.has(per.id));
-    // Cada fila agrega con "+ Agregar" (cobra el cover del grupo). El atajo "Sin cover" (cortesía: niños/
-    // invitados de cortesía → agrega EXONERADO) se muestra SOLO cuando el cover del grupo es > 0: si el grupo
-    // no paga cover, exonerar no tiene sentido y el botón se oculta (menos ruido; no se lee como etiqueta).
-    // La exoneración se DECIDE aquí, al agregar — la lista de Configurar solo la muestra, no la edita.
+    // Agregar = UN solo gesto: "+ Agregar" (entra cobrando el cover de su grupo). La CORTESÍA (exonerar el
+    // cover a niños/invitados gratis) NO se decide aquí (era confuso): se hace después con el toggle "Sin cover"
+    // por asistente en Configurar › Asistentes. Tras agregar, la fila desaparece de esta hoja.
     const filas = fuera.length
-      ? fuera.map(per => {
-          const cover = S().coverDe(p, { estadoEnEseMomento: per.estado, rol: 'asistente', coverExonerado: false });
-          const cortesia = cover > 0
-            ? `<button class="xmini cortesia" data-act="add-asistencia-cortesia" data-pid="${per.id}">Sin cover</button>`
-            : '';
-          return `<div class="addrow">
-            <span class="acc-id"><b>${e(per.nombre)}</b> ${rolTag(per.estado)}</span>
-            <span class="addrow-acc">
-              ${cortesia}
-              <button class="mini" data-act="add-asistencia" data-pid="${per.id}">${icon('plus-circle')}Agregar</button>
-            </span>
-          </div>`;
-        }).join('')
+      ? fuera.map(per => `<div class="addrow">
+          <span class="acc-id"><b>${e(per.nombre)}</b> ${rolTag(per.estado)}</span>
+          <button class="mini" data-act="add-asistencia" data-pid="${per.id}">${icon('plus-circle')}Agregar</button>
+        </div>`).join('')
       : '<div class="empty-soft">Ya están todos</div>';
     return `<div class="sheet full">
       <div class="sheet-head">

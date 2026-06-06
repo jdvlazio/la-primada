@@ -71,7 +71,7 @@
   // open-pagar) NO están aquí: la app es usable en LECTURA con solo el link. seleccionar-primada es local.
   const WRITE_ACTS = new Set([
     'new-primada', 'wz-crear', 'cerrar-primada', 'reabrir-primada', 'borrar-primada',
-    'add-asistencia', 'add-asistencia-cortesia', 'hacer-principal', 'remove-asistencia', 'toggle-exonerado', 'item-plus', 'item-minus',
+    'add-asistencia', 'hacer-principal', 'remove-asistencia', 'toggle-exonerado', 'item-plus', 'item-minus',
     'remove-producto', 'add-producto', 'marcar-pagado', 'set-no-pagado', 'add-persona', 'set-estado-persona',
     'borrar-mi-cuenta',
   ]);
@@ -331,8 +331,8 @@
       case 'open-add-asis': ui.overlay = 'add-asis'; rerender(); return;
       // En la hoja: cada fila lleva data-pid → agregar y quedarse en la hoja para sumar varios.
       case 'add-asistencia': { if (pid) A.addAsistencia(prm, pid); break; }
-      // "Sin cover" (cortesía): la exoneración se DECIDE al agregar (niños/cortesía). Agrega + exonera.
-      case 'add-asistencia-cortesia': { if (pid) { A.addAsistencia(prm, pid); A.toggleCoverExonerado(prm, pid); } break; }
+      // CORTESÍA (exonerar el cover): toggle "Sin cover" por asistente en Configurar (ya no se decide al agregar).
+      case 'toggle-exonerado': { if (pid) A.toggleCoverExonerado(prm, pid); break; }
       // "Hacer principal" (fix mínimo de primada incompleta): asigna el rol principal a un ahorrador.
       // INVARIANTE #2: setRol('principal') lanza si el snapshot no es ahorrador → tryAction avisa.
       case 'hacer-principal':  tryAction(() => A.setRol(prm, pid, 'principal')); break;
@@ -340,7 +340,6 @@
       case 'remove-asistencia':
         if (!root.confirm || root.confirm('¿Quitar al asistente?')) { A.removeAsistencia(prm, pid); if (ui.activaPid === pid) ui.activaPid = null; }
         break;
-      case 'toggle-exonerado':  A.toggleCoverExonerado(prm, pid); break;
       // MODELO 3 — Lista viva: el chip (consumido o disponible) usa item-plus/minus directo (changeItem).
       // El disponible 0→1 también es item-plus (ya no hay "add-item" ni picker aparte).
       case 'item-plus':         A.changeItem(prm, pid, b.dataset.prod, +1); marcarApuntando(); break;

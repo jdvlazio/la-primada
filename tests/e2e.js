@@ -157,12 +157,8 @@ check('Incompleta: sin anfitrión en la topbar del detalle', /sin anfitrión/.te
 section('Asistencias desde el directorio');
 click('[data-act="open-add-asis"]');   // abre la HOJA simple del directorio (overlay add-asis)
 check('Hoja Agregar asistente abierta', !q('#overlay').hidden && /Agregar asistente/.test(q('#overlay').innerHTML));
-// Atajo "Sin cover" (cortesía) SOLO cuando el cover del grupo es > 0 (default 15.000/10.000 → sí aparece).
-check('Cover > 0: el atajo "Sin cover" aparece en las filas', !!q('[data-act="add-asistencia-cortesia"]'));
-// Cover = 0 (ambos grupos) → el atajo se OCULTA: exonerar de 0 no tiene sentido (no se lee como etiqueta).
-Store.actions.setCover({ ahorrador: 0, invitado: 0 });
-check('Cover = 0: el atajo "Sin cover" se oculta', !q('[data-act="add-asistencia-cortesia"]'));
-Store.actions.setCover({ ahorrador: 15000, invitado: 10000 });   // restaurar para el resto del flujo
+// Agregar = UN solo gesto: cada fila tiene SOLO "Agregar" (la cortesía salió de acá; era confuso).
+check('Hoja Agregar: NO hay atajo "Sin cover" (solo Agregar)', !q('[data-act="add-asistencia-cortesia"]') && !!q('[data-act="add-asistencia"]'));
 click(`[data-act="add-asistencia"][data-pid="${ana.id}"]`);   // un toque agrega
 click(`[data-act="add-asistencia"][data-pid="${beto.id}"]`);
 click('[data-act="close-overlay"]');
@@ -245,16 +241,17 @@ click('[data-act="toggle-balance"][data-sec="reparto"]');   // colapsar de nuevo
 check('Toggle reparto: el desglose se oculta otra vez', !/Sobrante/.test(q('#screen').innerHTML));
 cerrarBalance();   // volver a operar
 
-// Exoneración: la decisión vive al AGREGAR (acción add-asistencia-cortesia). Beto ya está agregado y
-// CON consumos, así que aquí aplicamos la exoneración por la MISMA acción de modelo que usa la cortesía
-// (toggleCoverExonerado) para verificar el EFECTO en el cálculo. La cara compacta la MUESTRA, no la edita.
-Store.actions.toggleCoverExonerado(prm().id, beto.id);
-check('Beto exonerado', betoAsis().coverExonerado === true);
+// CORTESÍA: el toggle "Sin cover" por asistente vive en Configurar › Asistentes (salió del Agregar; era confuso).
+abrirConfig();
+check('Configurar: Beto (asistente, cover>0) tiene toggle "Sin cover"', !!q(`[data-act="toggle-exonerado"][data-pid="${beto.id}"]`));
+check('Toggle OFF antes de exonerar (Beto paga cover)', !q(`[data-act="toggle-exonerado"][data-pid="${beto.id}"].on`));
+click(`[data-act="toggle-exonerado"][data-pid="${beto.id}"]`);   // exonerar por la UI (no por acción directa)
+check('Beto exonerado vía el toggle de Configurar', betoAsis().coverExonerado === true);
+check('Toggle ON (.on) tras exonerar', !!q(`[data-act="toggle-exonerado"][data-pid="${beto.id}"].on`));
 eq('Cover de Beto ahora 0', Store.select.coverDe(prm(), betoAsis()), 0);
 eq('Ganancia baja al margen puro (2.000)', Store.select.ganancia(prm()), 2000);
-// La lista compacta de Configurar (gear › Primadas) MUESTRA la excepción "Sin cover" (no la edita).
-abrirConfig();
-check('Gear › Primadas › Asistentes marca "Sin cover" en el exonerado', /Sin cover/.test(q('#overlay').innerHTML));
+// El anfitrión (Ana) es cover-free por ROL, no por cortesía → NO tiene toggle.
+check('Anfitrión (Ana) sin toggle de cortesía', !q(`[data-act="toggle-exonerado"][data-pid="${ana.id}"]`));
 click('[data-act="close-overlay"]');
 
 /* ---------- 7. Balance: Ganancia y Recaudo ---------- */
