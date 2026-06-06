@@ -58,9 +58,9 @@ async function sembrarPersonas(page, personas) {
 // Flujo completo del wizard: crea una primada con `principalNombre` como principal.
 // Asume que ya hay al menos un ahorrador con ese nombre sembrado.
 async function crearPrimada(page, principalNombre = 'Ana') {
-  // ÚNICO punto de creación: gear global › Primadas › "Nueva primada" (abre el wizard de 3 pasos).
+  // ÚNICO punto de creación: gear global › Calendario › "Nueva primada" (abre el wizard de 3 pasos).
   await page.click('#gearBtn');
-  await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
+  await page.click('[data-act="overlay-tab"][data-overlay="calendario"]');
   await page.click(SEL.nuevaPrimada);
   await page.waitForSelector(SEL.wizard, { timeout: 5000 });
   // Paso 1: elegir principal (select de ahorradores).
@@ -93,7 +93,7 @@ async function contarPrimadas(page) {
 // del calendario. Deja esa vista lista (el gear abre context-aware en Primadas si hay una activa).
 async function abrirConfig(page) {
   await page.click('#gearBtn');
-  await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
+  await page.click('[data-act="overlay-tab"][data-overlay="primada"]');
 }
 
 module.exports = { SEL, abrirApp, sembrarPersonas, crearPrimada, contarPrimadas, abrirConfig };

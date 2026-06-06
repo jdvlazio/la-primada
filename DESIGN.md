@@ -342,30 +342,36 @@ las mismas clases que la fila de Personas — mismo componente acordeón.
 `coverLinea`, `rolSelect` (el `select.sel` de rol desapareció). La lógica de precios y de cover **no** cambia;
 solo **dónde** se editan (rol → creación; exoneración → Agregar; identidad → creación).
 
-### 2.8.1 · Gear GLOBAL = ÚNICA configuración, TRES tabs (✅ CANÓNICO)
+### 2.8.1 · Gear GLOBAL = ÚNICA configuración, CUATRO tabs (✅ CANÓNICO)
 
-`overlaySheet` con seg-nav **Personas | Primadas | Ajustes** (`data-act="overlay-tab"` + `data-overlay`). **Un
-solo engranaje en pantalla** (el `settings-2` del selector se eliminó). El gear abre **context-aware** (`#gearBtn`):
-con primada activa → **Primadas**; sin activa → **Personas**.
-- **Personas** (§2.9) — directorio. **Ajustes** — cover vigente, versión, legal, cuenta.
-- **Primadas** (`primadasAdminBody`) — **DOS zonas claras**, separadas por divisor:
-  1. **`Configurar · {nombre}`** (si hay activa): el cuerpo **Asistentes | Productos** del evento activo
-     (`configPrimadaBody`, §2.8) embebido arriba. Es la config que antes vivía tras el segundo engranaje.
-  2. **`Calendario`**: **"Nueva primada"** (ÚNICO punto de creación; `.add-link`, `new-primada` → wizard SOBRE
-     el gear; al crear/cancelar, wizard y gear se cierran) + lista de TODAS agrupada (**Activa** · **Pasadas**
-     gris; el dot deriva de actividad, `dotClase`). Cada fila `.padm-fila` (NO navega, EDITA): nombre + meta +
-     acciones **Reabrir** (cerradas) y **Eliminar** (`borrar-primada`, confirmación;
-  `data-activa` en la activa para advertencia más fuerte). El **selector** (§2.11) sigue siendo navegación pura.
+`overlaySheet` con seg-nav full-width (`.cols4`, `.sm`) **Primada | Calendario | Personas | Ajustes**
+(`data-act="overlay-tab"` + `data-overlay`). **Un solo engranaje en pantalla** (el `settings-2` del selector se
+eliminó). **Cada tab = UNA intención, alcances SEPARADOS** (antes "Primadas" mezclaba config del evento +
+calendario en un scroll → mala IA). El gear abre **context-aware** (`#gearBtn`): con primada activa → **Primada**
+(configurar, ~1 tap); sin activa → **Calendario** (crear).
+- **Primada** (`primadaConfigTab`) — config del EVENTO ACTIVO, encabezada por `.cfg-primada-name` (el nombre de la
+  activa): seg-nav interno **Asistentes | Productos** (`configPrimadaBody`, §2.8). **Solo config**, sin calendario.
+- **Calendario** (`calendarioBody`) — **"Nueva primada"** (ÚNICO punto de creación; `.add-link`, `new-primada` →
+  wizard SOBRE el gear; al crear/cancelar, wizard y gear se cierran) + lista de TODAS agrupada (**Activa** ·
+  **Pasadas** gris; el dot deriva de actividad, `dotClase`). Cada fila `.padm-fila` (NO navega, EDITA): nombre +
+  meta + **Reabrir** (cerradas) y **Eliminar** (`borrar-primada`, confirmación; `data-activa` = advertencia fuerte).
+- **Personas** (§2.9) — directorio compacto + editar enfocado. **Ajustes** — cover vigente, versión, legal, cuenta.
 
-### 2.9 · Fila de persona — Directorio (✅ CANÓNICO)
+El **selector** (§2.11) sigue siendo navegación pura (solo cambiar de primada).
 
-Dos líneas, expandible inline (sin cajas anidadas). Extiende la fila de asistente (§2.1).
+### 2.9 · Directorio Personas — LISTA COMPACTA + editar ENFOCADO (✅ CANÓNICO)
+
+**Por qué.** El directorio puede ser largo; un muro de acordeones inline (editar fila por fila) se hace tedioso.
+Patrón **lista → detalle**: la lista queda escaneable y editar es un drill-in de UNA persona (no inputs por fila).
 
 | Estado | Anatomía |
 |---|---|
-| **Cerrada** (`.prow` + `.acc-head`) | caret + identidad en stack (`.acc-id-stack`): **línea 1** = `<b>nombre</b>` + rol como etiqueta tenue (`.rol-tag`, igual que §2.1); **línea 2** (`.acc-sub`, `--ink-soft` 12px) = dato secundario (nº de primadas). Separación entre filas por línea tenue (`--line-soft`) |
-| **Abierta** (`.prow.open` + `.acc-body`) | edición **en contexto**: campo Nombre (`.ti`), Rol (`.seg-nav`), Bre-B (`.ti`). No es una caja siempre abierta: se revela al tocar |
-| **Alta** | al pie, botón **`+ Agregar persona`** (`.add-link`) que despliega un form inline (`.prow-new`) — no un form siempre visible |
+| **Lista** (`.persona-list` + `.persona-fila`) | agrupada por estado (`.grp-head` = "Ahorradores"/"Invitados" + conteo, igual que la lista compacta de Asistentes §2.8). Cada fila = una línea: `<b>nombre</b>` + nº de primadas (`.persona-fila-meta`, tenue) + chevron de drill-in (`chevron-right`). Tap = `editar-persona`. Sin caja, sin editor inline |
+| **Detalle enfocado** (`personaEditView`) | back **`‹ Personas`** (`.back-link`, `cerrar-persona-edit`) + campos: Nombre (`.ti`, `rename-persona`), Estado (`.seg-nav.sm`, `set-estado-persona`), Bre-B (`.ti`, `breb-persona`), y nº de primadas. Conserva TODO lo ajustable; solo cambia la presentación |
+| **Alta** | al pie de la lista, botón **`+ Agregar persona`** (`.add-link`) que despliega un form inline (`.prow-new`) |
+
+> El acordeón inline anterior (`.prow` + `.acc-head` en Personas) se **ELIMINÓ**. Las clases `.prow`/`.acc-*`
+> siguen vivas en **Configurar › Productos** (§2.8), no en Personas.
 
 ### 2.10 · Hoja "Agregar asistente" (✅ CANÓNICO)
 

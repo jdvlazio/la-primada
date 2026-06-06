@@ -58,10 +58,10 @@ test.describe('Evidencia visual', () => {
     await expect(page.locator(`${SEL.tab('fondo')}.active`)).toBeVisible();
   });
 
-  test('V4 — wizard Nueva primada (desde el gear › Primadas)', async ({ page }) => {
+  test('V4 — wizard Nueva primada (desde el gear › Calendario)', async ({ page }) => {
     await abrirApp(page);
     await page.click('#gearBtn');
-    await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
+    await page.click('[data-act="overlay-tab"][data-overlay="calendario"]');
     await page.click(SEL.nuevaPrimada);
     await expect(page.locator(SEL.wizard)).toBeVisible();
     await page.screenshot({ path: `${VISUAL}/wizard.png`, fullPage: false });
@@ -250,10 +250,10 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
     expect(await page.locator('.overlay .prow .acc-head').count()).toBeGreaterThan(0);
     expect(await page.locator('.overlay [data-act="toggle-cfg-prod"]').count()).toBeGreaterThan(0);
     await page.click('[data-act="close-overlay"]');
-    // Personas: mismas clases .prow + .acc-head.
+    // Personas: ahora es LISTA COMPACTA (.persona-fila), no acordeón inline.
     await page.click('#gearBtn');
     await page.click('[data-act="overlay-tab"][data-overlay="personas"]');
-    expect(await page.locator('.overlay .prow .acc-head').count()).toBeGreaterThan(0);
+    expect(await page.locator('.overlay .persona-fila').count()).toBeGreaterThan(0);
   });
 
   test('E3 — tabbar anclada por estructura: el scroll del CONTENIDO (.app-scroll) no la mueve', async ({ page }) => {
@@ -320,23 +320,24 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
     await expect(rows).toHaveCount(before - 1);
   });
 
-  test('E7 — editar persona inline en el overlay Personas', async ({ page }) => {
+  test('E7 — editar persona ENFOCADO (drill-in) en el tab Personas', async ({ page }) => {
     await abrirApp(page);
     await sembrarPersonas(page, [{ nombre: 'Ana', estado: 'ahorrador' }]);
-    await page.click('#gearBtn');                  // overlay Personas
-    await expect(page.locator('.overlay .prow')).toBeVisible();
-    expect(await page.locator('.overlay [data-ch="rename-persona"]').count()).toBe(0); // cerrada: sin editor
-    await page.click('.overlay .prow .acc-head');  // expandir → edición inline
+    await page.click('#gearBtn');
+    await page.click('[data-act="overlay-tab"][data-overlay="personas"]');
+    await expect(page.locator('.overlay .persona-fila')).toBeVisible();              // lista compacta
+    expect(await page.locator('.overlay [data-ch="rename-persona"]').count()).toBe(0); // lista: sin editor inline
+    await page.locator('.overlay [data-act="editar-persona"]').first().click();      // drill-in al detalle
     const inp = page.locator('.overlay [data-ch="rename-persona"]');
     await expect(inp).toBeVisible();
+    await expect(page.locator('.overlay [data-act="cerrar-persona-edit"]')).toBeVisible();  // back "‹ Personas"
     await inp.fill('Anita');
     await inp.blur();                               // el rename se aplica en 'change' (al salir del campo)
-    // commitQuiet es DEBOUNCED ~500ms para localStorage; el estado EN MEMORIA muta sincrónico → se verifica ahí.
     const nombre = await page.evaluate(() => window.Store.select.state().personas[0].nombre);
     expect(nombre).toBe('Anita');
   });
 
-  test('E8 — el scroll del sheet se preserva al desplegar una persona (no salta al tope)', async ({ page }) => {
+  test('E8 — el scroll del sheet se preserva al re-renderizar el MISMO overlay (no salta al tope)', async ({ page }) => {
     await abrirApp(page);
     // muchas personas → el .sheet del overlay scrollea
     await page.evaluate(() => {
@@ -348,8 +349,8 @@ test.describe('Ajustes: productos en Configurar + tabbar fija', () => {
     await page.evaluate(() => { document.querySelector('#overlay .sheet').scrollTop = 300; });
     const before = await page.evaluate(() => document.querySelector('#overlay .sheet').scrollTop);
     expect(before).toBeGreaterThan(0);
-    // desplegar una persona del medio → re-render del overlay; el scroll NO debe saltar al tope
-    await page.locator('#overlay [data-act="toggle-persona"]').nth(10).click();
+    // re-render del MISMO overlay (agregar persona vía acción → commit → render): el scroll NO debe saltar al tope
+    await page.evaluate(() => window.Store.actions.addPersona({ nombre: 'ZZZ', estado: 'invitado' }));
     const after = await page.evaluate(() => document.querySelector('#overlay .sheet').scrollTop);
     expect(Math.abs(after - before)).toBeLessThan(5);
   });
@@ -390,7 +391,7 @@ test.describe('Selector de primada + nombre automático', () => {
     // crear NO vive en la cabecera; el único punto es el gear › Primadas › "Nueva primada" → wizard.
     expect(await page.locator('#screen [data-act="new-primada"]').count()).toBe(0);
     await page.click('#gearBtn');
-    await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
+    await page.click('[data-act="overlay-tab"][data-overlay="calendario"]');
     await page.click('[data-act="new-primada"]');
     await expect(page.locator('.wz')).toBeVisible();
   });
@@ -426,7 +427,7 @@ test.describe('Selector de primada + nombre automático', () => {
     await abrirApp(page);
     await sembrarPersonas(page, [{ nombre: 'Ana López', estado: 'ahorrador' }, { nombre: 'Beto', estado: 'invitado' }]);
     await page.click('#gearBtn');
-    await page.click('[data-act="overlay-tab"][data-overlay="primadas"]');
+    await page.click('[data-act="overlay-tab"][data-overlay="calendario"]');
     await page.click('[data-act="new-primada"]');
     await page.waitForSelector('.wz');
     await page.evaluate((n) => {

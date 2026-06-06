@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-title" content="Primadapp">
 <!-- build de ESTE HTML (sellado por scripts/stamp-sw.js). Verdad de tierra de qué versión corre:
      el check de versión compara version.json contra ESTO (no contra localStorage, que podía mentir). -->
-<meta name="build" content="20260605-183406-972522a">
+<meta name="build" content="20260605-191827-a665610">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -461,12 +461,15 @@
 
   /* seg-nav (segmented control) — Personas|Ajustes y estado ahorrador|invitado */
   .seg-nav{display:inline-flex;gap:0;background:var(--paper-2);border:2px solid var(--line);border-radius:var(--radius-md);padding:var(--space-1)}
-  /* Gear › Primadas: seg-nav de config del evento (Asistentes|Productos) + divisor antes del Calendario. */
+  /* Gear › tab Primada: seg-nav de config del evento (Asistentes|Productos) + nombre de la activa arriba. */
   .cfg-seg{margin-bottom:var(--space-3)}
-  .cfg-cal-head{margin-top:var(--space-5);border-top:1px solid var(--line-soft);padding-top:var(--space-4)}
+  .cfg-primada-name{font-family:"Instrument Sans",sans-serif;font-weight:800;font-size:18px;color:var(--ink);margin-bottom:var(--space-3)}
   .seg{min-height:var(--tap-sec);font-family:"Instrument Sans",sans-serif;font-weight:700;font-size:14px;cursor:pointer;border:none;background:transparent;color:var(--ink-soft);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm)}
   .seg.on{background:var(--paper-2);color:var(--ink)}
   .seg-nav.sm .seg{font-size:12px;padding:var(--space-2) var(--space-3)}
+  /* Gear: seg-nav de 4 tabs (Primada·Calendario·Personas·Ajustes) → full-width, segs distribuidos. */
+  .seg-nav.cols4{display:flex;flex:1;min-width:0}
+  .seg-nav.cols4 .seg{flex:1;text-align:center;padding:var(--space-2) var(--space-1);white-space:nowrap}
 
   /* Directorio de personas — filas livianas (DESIGN.md §2.9), sin cajas anidadas.
      Misma anatomía que la fila de asistente: caret + identidad; separación por línea tenue. */
@@ -477,6 +480,21 @@
   .prow-foot{margin-top:var(--space-4)}
   .prow-new{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:center}
   .prow-new .ti{flex:1;min-width:120px}
+
+  /* Personas = LISTA COMPACTA agrupada (Ahorradores/Invitados) + EDITAR ENFOCADO (drill-in). La lista es
+     escaneable (una línea + chevron); editar es un detalle de UNA persona, no un muro de acordeones. */
+  .persona-list{display:flex;flex-direction:column}
+  .persona-fila{display:flex;align-items:center;gap:var(--space-2);min-height:var(--tap-row);width:100%;background:transparent;border:none;border-bottom:1px solid var(--line-soft);cursor:pointer;color:var(--ink);font-family:inherit;text-align:left;padding:var(--space-1) var(--space-1)}
+  .persona-fila:last-child{border-bottom:none}
+  .persona-fila:active{background:var(--paper-2)}
+  .persona-fila-id{flex:1;min-width:0;font-size:15px;display:flex;align-items:baseline;gap:var(--space-2);flex-wrap:wrap}
+  .persona-fila-id b{font-weight:700}
+  .persona-fila-meta{font-size:12px;color:var(--ink-soft)}
+  .persona-fila-caret{flex:none;color:var(--ink-soft);display:inline-flex}
+  /* Back del detalle ("‹ Personas") + cuerpo de edición enfocada. */
+  .back-link{display:inline-flex;align-items:center;gap:var(--space-1);min-height:var(--tap-sec);background:transparent;border:none;cursor:pointer;color:var(--accent);font-family:inherit;font-weight:700;font-size:14px;padding:var(--space-1) 0;margin-bottom:var(--space-3)}
+  .back-link:active{opacity:.6}
+  .persona-edit{display:flex;flex-direction:column;gap:var(--space-3)}
 
   /* ANATOMÍA CANÓNICA del input de producto (DESIGN.md › "Input de producto"): emoji CHICO fijo +
      nombre DOMINANTE. Idéntica en Configurar›Productos (alta) y Wizard Paso 2. */
@@ -576,13 +594,13 @@
   <!-- ?v=__BUILD__ lo estampa scripts/stamp-sw.js (hook pre-commit), sincronizado con CACHE_VERSION.
        En iOS WKWebView el HTML recarga fresco pero el .js puede servirse del HTTP cache si la URL no
        cambia; el ?v= fuerza una URL distinta por build → cada deploy trae el código nuevo. -->
-  <script src="js/config.js?v=20260605-183406-972522a"></script>
-  <script src="js/util.js?v=20260605-183406-972522a"></script>
-  <script src="js/api.js?v=20260605-183406-972522a"></script>
-  <script src="js/auth.js?v=20260605-183406-972522a"></script>
-  <script src="js/store.js?v=20260605-183406-972522a"></script>
-  <script src="js/view.js?v=20260605-183406-972522a"></script>
-  <script src="js/controller.js?v=20260605-183406-972522a"></script>
+  <script src="js/config.js?v=20260605-191827-a665610"></script>
+  <script src="js/util.js?v=20260605-191827-a665610"></script>
+  <script src="js/api.js?v=20260605-191827-a665610"></script>
+  <script src="js/auth.js?v=20260605-191827-a665610"></script>
+  <script src="js/store.js?v=20260605-191827-a665610"></script>
+  <script src="js/view.js?v=20260605-191827-a665610"></script>
+  <script src="js/controller.js?v=20260605-191827-a665610"></script>
 
   <!-- PWA + propagación de versión (modelo de Otrofestiv) — fuerza la versión nueva en iOS SIN
        depender solo del SW (WKWebView lo termina entre sesiones, su controllerchange es flaky).

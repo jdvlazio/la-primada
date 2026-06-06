@@ -45,7 +45,7 @@
   // ui = estado EFÍMERO (no dominio, no se persiste):
   // - activaPid: personaId de la fila ACTIVA en el tab Consumos (Modelo 3, lista viva; UNA a la vez).
   //   Al activarse, sus productos salen inline como chips (apuntar en 1 tap) + el bloque de pago. null = ninguna.
-  // - personasAbiertas: Set de personaId con la fila de persona expandida (edición inline)
+  // - editPersonaId: personaId en EDICIÓN ENFOCADA dentro del tab Personas (drill-in detalle); null = lista
   // - nuevaPersona: form "Agregar persona" desplegado al pie del overlay Personas
   // - overlay 'add-asis': hoja simple para agregar asistentes del directorio
   // - configTab: pestaña activa del overlay Configurar primada ('asistentes' | 'productos')
@@ -56,7 +56,7 @@
   // - balance: Set de cards-acordeón del Balance abiertas ('reparto'|'informe'); el héroe (cifra grande) va
   //   SIEMPRE visible fuera del acorde, el desglose (derivación) dentro.
   const ui = { tab: 'primadas', cara: 'operacion', overlay: null, activaPid: null, wizard: null,
-               personasAbiertas: new Set(), nuevaPersona: false,
+               editPersonaId: null, nuevaPersona: false,
                configTab: 'asistentes', configProd: new Set(), pagarPid: null,
                balance: new Set(), auditPid: null, apuntadores: {}, presentes: [],
                loginEstado: 'form', loginEmail: '' };
@@ -143,11 +143,11 @@
     // Navegación: tabs y engranaje
     const tab = ev.target.closest('[data-tab]');
     if (tab) { ui.tab = tab.dataset.tab; ui.overlay = null; rerender(); return; }
-    // Gear global = ÚNICA config. Abre CONTEXT-AWARE: con primada activa → tab "Primadas" (donde vive su
-    // config Asistentes/Productos + el calendario) → configurar la activa queda en ~1 tap; sin activa → Personas.
+    // Gear global = ÚNICA config (4 tabs: Primada · Calendario · Personas · Ajustes). Abre CONTEXT-AWARE:
+    // con primada activa → "Primada" (configurar el evento, ~1 tap); sin activa → "Calendario" (crear una).
     if (ev.target.closest('#gearBtn')) {
       if (ui.overlay) { ui.overlay = null; }
-      else { ui.overlay = Store.select.activePrimada() ? 'primadas' : 'personas'; ui.configTab = 'asistentes'; }
+      else { ui.overlay = Store.select.activePrimada() ? 'primada' : 'calendario'; ui.configTab = 'asistentes'; ui.editPersonaId = null; }
       rerender(); return;
     }
     // Botón de cuenta (auth) = OPT-IN: el login NO bloquea al entrar; se abre desde acá.
@@ -359,16 +359,15 @@
         return;
       }
 
-      // ----- pantallas del engranaje (Personas / Ajustes) -----
-      case 'open-personas':  ui.overlay = 'personas'; rerender(); return;
+      // ----- pantallas del engranaje (4 tabs: Primada / Calendario / Personas / Ajustes) -----
+      case 'open-personas':  ui.overlay = 'personas'; ui.editPersonaId = null; rerender(); return;
       case 'open-ajustes':   ui.overlay = 'ajustes';  rerender(); return;
-      case 'overlay-tab':    ui.overlay = b.dataset.overlay; rerender(); return;
+      // Cambiar de tab del gear: limpia el detalle de edición de persona (vuelve a la lista al re-entrar).
+      case 'overlay-tab':    ui.overlay = b.dataset.overlay; ui.editPersonaId = null; rerender(); return;
       case 'close-overlay':  ui.overlay = null;       rerender(); return;
-      // Fila de persona: expandir/colapsar para editar inline (multiabierto).
-      case 'toggle-persona': {
-        if (ui.personasAbiertas.has(pid)) ui.personasAbiertas.delete(pid); else ui.personasAbiertas.add(pid);
-        rerender(); return;
-      }
+      // Personas (lista compacta → editar ENFOCADO): tap fila = drill-in al detalle; back = volver a la lista.
+      case 'editar-persona':       ui.editPersonaId = pid; ui.nuevaPersona = false; rerender(); return;
+      case 'cerrar-persona-edit':  ui.editPersonaId = null; rerender(); return;
       // Configurar: fila-acordeón de PRODUCTO (clon de la fila de Persona, multiabierto). Los asistentes
       // ya no son acordeón (lista compacta) → no hay toggle-cfg-asis.
       case 'toggle-cfg-prod': {

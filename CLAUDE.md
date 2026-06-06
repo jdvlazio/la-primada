@@ -205,15 +205,17 @@ El JS vive en módulos separados. **Respetar la separación es la regla #1.**
 - **UN SOLO engranaje de configuración** (principio: *minimalismo — un solo ícono de config en pantalla; una
   sola intención por pantalla; muestra la excepción, no la regla*). El segundo engranaje (`settings-2` del
   selector) se **ELIMINÓ**. Ver `DESIGN.md` §2.8 / §2.8.1:
-  - **Gear GLOBAL (⚙ en el encabezado) — ÚNICA config, TRES tabs.** Abre **context-aware** (`#gearBtn`): con
-    primada activa → **Primadas**; sin activa → **Personas**.
-    - **Personas** — directorio (alta, cambio de estado invitado↔ahorrador, `breB`). También al agregar un asistente.
-    - **Primadas** — DOS zonas separadas por divisor: (1) **`Configurar · {nombre}`** = la config del evento
-      activo embebida (`configPrimadaBody`): **Asistentes** (lista compacta agrupada, cover en el encabezado una
-      vez, `Sin cover` en la excepción; alta/baja; **rol fijo al crear** salvo el fix "Hacer principal" si está
-      incompleta) y **Productos** (precios, clon de Personas; seg-nav con `data-ctab`, NO `data-tab`). (2)
-      **`Calendario`** = **"Nueva primada"** (ÚNICO punto de creación → wizard) + lista de TODAS (Activa/Pasadas)
-      con **Eliminar** y **Reabrir** (cerradas). **El "+" de la cabecera del selector se ELIMINÓ.**
+  - **Gear GLOBAL (⚙ en el encabezado) — ÚNICA config, CUATRO tabs con alcances SEPARADOS** (cada tab = UNA
+    intención; antes "Primadas" mezclaba config + calendario en un scroll → mala IA). Abre **context-aware**
+    (`#gearBtn`): con primada activa → **Primada** (configurar, ~1 tap); sin activa → **Calendario** (crear).
+    - **Primada** (`primadaConfigTab`) — config del EVENTO ACTIVO, encabezada por su nombre: seg-nav interno
+      **Asistentes** (lista compacta agrupada, cover en el encabezado una vez, `Sin cover` en la excepción;
+      alta/baja; **rol fijo al crear** salvo el fix "Hacer principal" si está incompleta) | **Productos**
+      (precios, clon de Personas; seg-nav con `data-ctab`, NO `data-tab`). **Solo config**, sin calendario.
+    - **Calendario** (`calendarioBody`) — **"Nueva primada"** (ÚNICO punto de creación → wizard) + lista de
+      TODAS (Activa/Pasadas) con **Eliminar** y **Reabrir** (cerradas). **El "+" de la cabecera del selector se ELIMINÓ.**
+    - **Personas** — directorio: **lista COMPACTA agrupada** (Ahorradores/Invitados, una línea + nº de primadas);
+      tap → **editar ENFOCADO** (drill-in `personaEditView`: back + nombre + estado + `breB`). NO acordeón inline.
     - **Ajustes** — cover vigente, versión, legal, cuenta.
   - **Identidad de la primada** (nombre/fecha/mes) se fija al **crear** (wizard). No hay edición posterior de
     mes/fecha (un error → borrar y recrear, caso rarísimo y aceptable).
